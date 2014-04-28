@@ -1,10 +1,12 @@
 
+# Executables
+lagrange_square/sq_lgr
+lagrange_bifurcation/unstructured_three_d_fluid
 
-sq_lgr
-
+# Validate file
 Validate
 
-
+# Make files
 Makefile
 Makefile.in
 .deps
