@@ -1,7 +1,15 @@
 
+
+sq_lgr
+
+Validate
+
+
 Makefile
 Makefile.in
 .deps
 *.swp
+
+*.o
 
 validation.log
