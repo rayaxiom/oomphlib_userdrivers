@@ -45,70 +45,57 @@
 //using namespace std;
 using namespace oomph;
 
-namespace SquareLagrange
-{
-  // CL - set directly from the commandline.
-  // To set from CL - a CL value is set, this is changed depending on that
-  // value.
-
-  // Set the defaults.
-  unsigned W_solver = 0; //CL, 0 = SuperLU, no other W solver coded.
-  unsigned NS_solver = 1; //CL, 0 = SuperLU, 1 - LSC
-  unsigned F_solver = 0; //CL, 0 - SuperLU, 1 - AMG
-  unsigned P_solver = 0; //CL, 0 - SuperLU, 1 - AMG
-  unsigned Vis = 0; //CL, 0 - Simple, 1 - Stress divergence
-  double Ang = 30.0; //CL, Angle in degrees
-  double Rey = 100.0; //CL, Reynolds number
-  unsigned Noel = 4; //CL, Number of elements in 1D
-  double Scaling_sigma = 0; //CL, If the scaling sigma is not set, then
-                             // the default is the norm of the momentum block.
-
-  std::string Prob_str = "SqPo"; //Set from CL, a unique identifier.
-  std::string W_str = "We"; //Set from CL, e - Exact(LU), no other solver.
-  std::string NS_str = "Nl"; //Set from CL, e - Exact, l - LSC
-  std::string F_str = "Fe"; //Set from CL, e - Exact, a - AMG
-  std::string P_str = "Pe"; //Set from CL, e - Exact, a - AMG
-  std::string Vis_str = "Sim"; //Set from CL, Sim - Simple, Str = Stress Diver.
-  std::string Ang_str = "A30"; //Set from CL, angle of rotation about the z axis
-  std::string Rey_str = "R100"; //Set from CL, Reynolds number
-  std::string Noel_str = "N4"; //Set from CL, Number of elements in 1D
-  std::string Sigma_str = ""; //Set from CL, sigma being used. is norm, then is
-                              // null.
-  std::string W_approx_str=""; //Set from CL, use diagonal approximation for W
-                               // block?
-  bool Use_axnorm = true; //Set from CL, use norm for sigma?
-  bool Use_diagonal_w_block = true; // To set from CL
-  bool Loop_reynolds = false;
-  bool Doc_prec = false; // To set from CL
-  bool Doc_soln = false; // To set from CL
-  
-  std::string Label = ""; // To be set as the label for this problem. Contains
-                          // all the information for this run.
-  std::string Soln_dir = ""; // Where to put the solution.
-
-  // Used to determine if we are using the TrilinosAztecOOSolver solver or not.
-  // This cannot be determined by the OOMPH_HAS_TRILINOS ifdef since we may be
-  // using OOMPH-LIB's GMRES even if we have Trilinos. This should be set in
-  // the problem constuctor as soon as we set the linear_solver_pt() for the
-  // problem.
-  bool Using_trilinos_solver = false;
-
-  // Object to store the linear solver iterations and times.
-  DocLinearSolverInfo* Doc_linear_solver_info_pt;
-}
-
-/*
-void print_hypre_preconditioner_parameters(HyprePreconditioner* h_prec_pt)
-{
-  // Print AMG iterations:
-  std::cout << "max_iter: " << h_prec_pt->max_iter() << std::endl;
-  std::cout << "tolerance: " << h_prec_pt->tolerance() << std::endl;
-  std::cout << "hypre_method: " << h_prec_pt->hypre_method() << std::endl;
-  std::cout << "internal_preconditioner: " << h_prec_pt->internal_preconditioner() << std::endl;
-  std::cout << "AMG_using_simple_smoother: " << h_prec_pt->amg_using_simple_smoothing << std::endl; 
-  std::cout << "amg_simple_smoother: " <<  << std::endl; 
-}
-*/
+//namespace SquareLagrange
+//{
+//  // CL - set directly from the commandline.
+//  // To set from CL - a CL value is set, this is changed depending on that
+//  // value.
+//
+//  // Set the defaults.
+//  unsigned W_solver = 0; //CL, 0 = SuperLU, no other W solver coded.
+//  unsigned NS_solver = 1; //CL, 0 = SuperLU, 1 - LSC
+//  unsigned F_solver = 0; //CL, 0 - SuperLU, 1 - AMG
+//  unsigned P_solver = 0; //CL, 0 - SuperLU, 1 - AMG
+//  unsigned Vis = 0; //CL, 0 - Simple, 1 - Stress divergence
+//  double Ang = 30.0; //CL, Angle in degrees
+//  double Rey = 100.0; //CL, Reynolds number
+//  unsigned Noel = 4; //CL, Number of elements in 1D
+//  double Scaling_sigma = 0; //CL, If the scaling sigma is not set, then
+//                             // the default is the norm of the momentum block.
+//
+//  std::string Prob_str = "SqPo"; //Set from CL, a unique identifier.
+//  std::string W_str = "We"; //Set from CL, e - Exact(LU), no other solver.
+//  std::string NS_str = "Nl"; //Set from CL, e - Exact, l - LSC
+//  std::string F_str = "Fe"; //Set from CL, e - Exact, a - AMG
+//  std::string P_str = "Pe"; //Set from CL, e - Exact, a - AMG
+//  std::string Vis_str = "Sim"; //Set from CL, Sim - Simple, Str = Stress Diver.
+//  std::string Ang_str = "A30"; //Set from CL, angle of rotation about the z axis
+//  std::string Rey_str = "R100"; //Set from CL, Reynolds number
+//  std::string Noel_str = "N4"; //Set from CL, Number of elements in 1D
+//  std::string Sigma_str = ""; //Set from CL, sigma being used. is norm, then is
+//                              // null.
+//  std::string W_approx_str=""; //Set from CL, use diagonal approximation for W
+//                               // block?
+//  bool Use_axnorm = true; //Set from CL, use norm for sigma?
+//  bool Use_diagonal_w_block = true; // To set from CL
+//  bool Loop_reynolds = false;
+//  bool Doc_prec = false; // To set from CL
+//  bool Doc_soln = false; // To set from CL
+//  
+//  std::string Label = ""; // To be set as the label for this problem. Contains
+//                          // all the information for this run.
+//  std::string Soln_dir = ""; // Where to put the solution.
+//
+//  // Used to determine if we are using the TrilinosAztecOOSolver solver or not.
+//  // This cannot be determined by the OOMPH_HAS_TRILINOS ifdef since we may be
+//  // using OOMPH-LIB's GMRES even if we have Trilinos. This should be set in
+//  // the problem constuctor as soon as we set the linear_solver_pt() for the
+//  // problem.
+//  bool Using_trilinos_solver = false;
+//
+//  // Object to store the linear solver iterations and times.
+//  DocLinearSolverInfo* Doc_linear_solver_info_pt;
+//}
 
 
 namespace oomph
@@ -387,6 +374,8 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem()
  //Assgn equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
 
+// set_prec_and_solver();
+
  ////// Build the preconditioner
  LagrangeEnforcedflowPreconditioner* prec_pt
    = new LagrangeEnforcedflowPreconditioner;
@@ -562,24 +551,24 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem()
    {
 #ifdef OOMPH_HAS_HYPRE
      // AMG coarsening: Ruge-Stuben
-     RayParam::amg_coarsening = 1;
+     RayGlobalAMGParam::amg_coarsening = 1;
      
      // AMG smoother: Gauss-Seidel
-     RayParam::amg_smoother=0;
+     RayGlobalAMGParam::amg_smoother=0;
      
      // There is no damping with GS, otherwise we set the parameter:
-     // RayParam::amg_damping
+     // RayGlobalAMGParam::amg_damping
 
      // Different amg strength for simple/stress divergence for viscuous term.
      if(SL::Vis == 0)
      {
        // Simple form
-       RayParam::amg_strength = 0.25;
+       RayGlobalAMGParam::amg_strength = 0.25;
      }
      else
      {
        // Stress divergence form
-       RayParam::amg_strength = 0.668;
+       RayGlobalAMGParam::amg_strength = 0.668;
      }
      
      // Setup the preconditioner.
@@ -616,37 +605,37 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem()
  // Set the doc info for book keeping purposes.
  prec_pt->set_doc_linear_solver_info_pt(SL::Doc_linear_solver_info_pt);
 
- if(SL::Use_diagonal_w_block)
- {
-   prec_pt->use_diagonal_w_block();
- }
- else
- {
-   prec_pt->use_block_diagonal_w_block();
- }
+// if(SL::Use_diagonal_w_block)
+// {
+//   prec_pt->use_diagonal_w_block();
+// }
+// else
+// {
+//   prec_pt->use_block_diagonal_w_block();
+// }
 
- if(SL::Doc_prec)
- {
-   prec_pt->enable_doc_prec();
- }
+// if(SL::Doc_prec)
+// {
+//   prec_pt->enable_doc_prec();
+// }
 
  // Set the label, use to output information from the preconditioner, such
  // as the block matrices and the rhs vector
  prec_pt->set_label_pt(&SL::Label);
 
  // Build solve and preconditioner
-//#ifdef OOMPH_HAS_TRILINOS
-// TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
-// trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
-// Solver_pt = trilinos_solver_pt;
-// SL::Using_trilinos_solver = true;
-//#else
+#ifdef OOMPH_HAS_TRILINOS
+ TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+ trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+ Solver_pt = trilinos_solver_pt;
+ SL::Using_trilinos_solver = true;
+#else
  Solver_pt = new GMRES<CRDoubleMatrix>;
  // We use RHS preconditioning. Note that by default,
  // left hand preconditioning is used.
  static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
  SL::Using_trilinos_solver = false;
-//#endif
+#endif
 
  Solver_pt->tolerance() = 1.0e-6;
  this->newton_solver_tolerance() = 1.0e-6;
@@ -796,32 +785,6 @@ create_impenetrable_lagrange_elements(const unsigned &b,
   }
 }
 
-
-
-int str2int(const std::string &str)
-{
-  std::stringstream ss(str);
-  int n;
-  ss >> n;
-  return n;
-}
-
-unsigned str2unsigned(const std::string &str)
-{
-  std::stringstream ss(str);
-  unsigned n;
-  ss >> n;
-  return n;
-}
-
-double str2double(const std::string &str)
-{
-  std::stringstream ss(str);
-  double n;
-  ss >> n;
-  return n;
-}
-
 //===start_of_main======================================================
 /// Driver code
 //======================================================================
@@ -832,11 +795,12 @@ int main(int argc, char* argv[])
  MPI_Helpers::init(argc,argv);
  #endif
   // Get the global oomph-lib communicator 
-  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+//  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
   
   // my rank and number of processors. This is used later for putting the data.
-  unsigned my_rank = comm_pt->my_rank();
+//  unsigned my_rank = comm_pt->my_rank();
   //unsigned nproc = comm_pt->nproc();
+ 
 
  // Alias the namespace for convenience.
  namespace SL = SquareLagrange;
@@ -846,10 +810,11 @@ int main(int argc, char* argv[])
  
  SL::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
- SL::Soln_dir = "RESLT";
+ //SL::Soln_dir = "RESLT";
 
  // Store commandline arguments
  CommandLineArgs::setup(argc,argv);
+
 
 
  // Flag to output the solution.
@@ -870,8 +835,8 @@ int main(int argc, char* argv[])
  CommandLineArgs::specify_command_line_flag("--bdw");
 
  // These are deat with in rayheader.h
- CommandLineArgs::specify_command_line_flag("--amg_str", &RayParam::amg_strength);
- CommandLineArgs::specify_command_line_flag("--amg_damp", &RayParam::amg_damping);
+ CommandLineArgs::specify_command_line_flag("--amg_str", &RayGlobalAMGParam::amg_strength);
+ CommandLineArgs::specify_command_line_flag("--amg_damp", &RayGlobalAMGParam::amg_damping);
 
  // Parse the above flags.
  CommandLineArgs::parse_and_assign();
@@ -897,469 +862,469 @@ int main(int argc, char* argv[])
  // so we hard code this. 2DStrPo = 2 dimension, straight parallel outflow.
  // straight describes the velocity flow field. Po = Parallel outflow
  // describes the boundary type.
- SL::Prob_str = "StepPo";
+// SL::Prob_str = "StepPo";
 
  // Set the strings to identify the preconditioning,
  // This is used purely for book keeping purposes.
  
- // Default: W_solver = 0, W_str = We
- if(CommandLineArgs::command_line_flag_has_been_set("--w_solver"))
- {
-  switch(SL::W_solver)
-  {
-    case 0:
-      SL::W_str = "We";
-      break;
-    case 1:
-    {
-      pause("No other W block solver coded."); 
-      SL::W_str = "Wa";
-    }
-      break;
-    default:
-      std::cout << "Do not recognise W: " << SL::W_solver << "\n"
-                << "Exact preconditioning = 0\n"
-                << "AMG = 1\n"
-                << "Using default: Exact (W_solver = 0)"<< std::endl;
-  }  // switch
- } // if
+// // Default: W_solver = 0, W_str = We
+// if(CommandLineArgs::command_line_flag_has_been_set("--w_solver"))
+// {
+//  switch(SL::W_solver)
+//  {
+//    case 0:
+//      SL::W_str = "We";
+//      break;
+//    case 1:
+//    {
+//      pause("No other W block solver coded."); 
+//      SL::W_str = "Wa";
+//    }
+//      break;
+//    default:
+//      std::cout << "Do not recognise W: " << SL::W_solver << "\n"
+//                << "Exact preconditioning = 0\n"
+//                << "AMG = 1\n"
+//                << "Using default: Exact (W_solver = 0)"<< std::endl;
+//  }  // switch
+// } // if
 
- // Default: NS_solver = 1, NS_str = Nl
- if(CommandLineArgs::command_line_flag_has_been_set("--ns_solver"))
- {
-  switch(SL::NS_solver)
-  {
-    case 0:
-      SL::NS_str = "Ne";
-      SL::P_str = "";
-      SL::F_str = "";
-      break;
-    case 1:
-      SL::NS_str = "Nl";
-      break;
-    default:
-      std::cout << "Do not recognise NS: " << SL::NS_solver << "\n"
-                << "Exact solve = 0\n"
-                << "LSC = 1\n"
-                << "Using default: LSC for NS block (NS_solver = 1)"<<std::endl;
-  }  // switch
- } // if
+// // Default: NS_solver = 1, NS_str = Nl
+// if(CommandLineArgs::command_line_flag_has_been_set("--ns_solver"))
+// {
+//  switch(SL::NS_solver)
+//  {
+//    case 0:
+//      SL::NS_str = "Ne";
+//      SL::P_str = "";
+//      SL::F_str = "";
+//      break;
+//    case 1:
+//      SL::NS_str = "Nl";
+//      break;
+//    default:
+//      std::cout << "Do not recognise NS: " << SL::NS_solver << "\n"
+//                << "Exact solve = 0\n"
+//                << "LSC = 1\n"
+//                << "Using default: LSC for NS block (NS_solver = 1)"<<std::endl;
+//  }  // switch
+// } // if
 
- // Default: This can only be set if NS_solver != 0 i.e. we are using LSC for 
- // the NS block
- // Default: P_solver = 0, P_str = Pe
- if(CommandLineArgs::command_line_flag_has_been_set("--p_solver"))
- {
-  if(SL::NS_solver == 0)
-  {
-    pause("NS solve is exact. There cannot be a P solver.");
-  }
+// // Default: This can only be set if NS_solver != 0 i.e. we are using LSC for 
+// // the NS block
+// // Default: P_solver = 0, P_str = Pe
+// if(CommandLineArgs::command_line_flag_has_been_set("--p_solver"))
+// {
+//  if(SL::NS_solver == 0)
+//  {
+//    pause("NS solve is exact. There cannot be a P solver.");
+//  }
+//
+//  switch(SL::P_solver)
+//  {
+//    case 0:
+//      SL::P_str = "Pe";
+//      break;
+//    case 1:
+//      SL::P_str = "Pa";
+//      break;
+//    default:
+//      std::cout << "Do not recognise P: " << SL::P_solver << "\n"
+//                << "Exact preconditioning = 0\n"
+//                << "AMG = 1\n"
+//                << "Using default: Exact P solve (P_solver = 0)"<< std::endl;
+//  }  // switch
+// } // if
 
-  switch(SL::P_solver)
-  {
-    case 0:
-      SL::P_str = "Pe";
-      break;
-    case 1:
-      SL::P_str = "Pa";
-      break;
-    default:
-      std::cout << "Do not recognise P: " << SL::P_solver << "\n"
-                << "Exact preconditioning = 0\n"
-                << "AMG = 1\n"
-                << "Using default: Exact P solve (P_solver = 0)"<< std::endl;
-  }  // switch
- } // if
-
- // This can only be set if we're using LSC for the NS block.
- // Default: 0, Fe
- if(CommandLineArgs::command_line_flag_has_been_set("--f_solver"))
- {
-  if(SL::NS_solver == 0)
-  {
-    pause("NS solve is exact. There cannot be an F solver.");
-  }
-
-  switch(SL::F_solver)
-  {
-    case 0:
-      SL::F_str = "Fe";
-      break;
-    case 69:
-      SL::F_str = "Fa";
-      break;
-    case 11:
-      SL::F_str = "Fh2dp";
-      break;
-    case 12:
-      SL::F_str = "Fhns";
-      break;
-    case 13:
-      SL::F_str = "CLJPGSStrn075";
-      break;
-    case 14:
-      SL::F_str = "FRSGSStrn075";
-      break;
-    case 15:
-      SL::F_str = "FCLJPPilutStrn075";
-      break;
-    case 16:
-      SL::F_str = "FRSPilutStrn075";
-      break;
-    case 17:
-      SL::F_str = "Fray"; // I have no short hand for this...
-      break;
-    case 81:
-      SL::F_str = "CLJPGSStrn0668";
-      break;
-    case 82:
-      SL::F_str = "CLJPJStrn0668";
-      break;
-    case 83:
-      SL::F_str = "CLJPPilutStrn0668";
-      break;
-    case 84:
-      SL::F_str = "RSGSStrn0668";
-      break;
-    case 85:
-      SL::F_str = "RSJStrn0668";
-      break;
-    case 86:
-      SL::F_str = "RSPilutStrn0668";
-      break;
-    case 2:
-      SL::F_str = "Fde";
-      break;
-    case 3:
-      SL::F_str = "Fda";
-      break;
-    default:
-      std::cout << "Do not recognise F: " << SL::F_solver << "\n"
-                << "Exact preconditioning = 0\n"
-                << "AMG = xxx Look in the code...\n"
-                << "Using default: Exact F solve (F_solver = 0)"<< std::endl;
-  }  // switch
- } // if
+// // This can only be set if we're using LSC for the NS block.
+// // Default: 0, Fe
+// if(CommandLineArgs::command_line_flag_has_been_set("--f_solver"))
+// {
+//  if(SL::NS_solver == 0)
+//  {
+//    pause("NS solve is exact. There cannot be an F solver.");
+//  }
+//
+//  switch(SL::F_solver)
+//  {
+//    case 0:
+//      SL::F_str = "Fe";
+//      break;
+//    case 69:
+//      SL::F_str = "Fa";
+//      break;
+//    case 11:
+//      SL::F_str = "Fh2dp";
+//      break;
+//    case 12:
+//      SL::F_str = "Fhns";
+//      break;
+//    case 13:
+//      SL::F_str = "CLJPGSStrn075";
+//      break;
+//    case 14:
+//      SL::F_str = "FRSGSStrn075";
+//      break;
+//    case 15:
+//      SL::F_str = "FCLJPPilutStrn075";
+//      break;
+//    case 16:
+//      SL::F_str = "FRSPilutStrn075";
+//      break;
+//    case 17:
+//      SL::F_str = "Fray"; // I have no short hand for this...
+//      break;
+//    case 81:
+//      SL::F_str = "CLJPGSStrn0668";
+//      break;
+//    case 82:
+//      SL::F_str = "CLJPJStrn0668";
+//      break;
+//    case 83:
+//      SL::F_str = "CLJPPilutStrn0668";
+//      break;
+//    case 84:
+//      SL::F_str = "RSGSStrn0668";
+//      break;
+//    case 85:
+//      SL::F_str = "RSJStrn0668";
+//      break;
+//    case 86:
+//      SL::F_str = "RSPilutStrn0668";
+//      break;
+//    case 2:
+//      SL::F_str = "Fde";
+//      break;
+//    case 3:
+//      SL::F_str = "Fda";
+//      break;
+//    default:
+//      std::cout << "Do not recognise F: " << SL::F_solver << "\n"
+//                << "Exact preconditioning = 0\n"
+//                << "AMG = xxx Look in the code...\n"
+//                << "Using default: Exact F solve (F_solver = 0)"<< std::endl;
+//  }  // switch
+// } // if
  
- // Set the viscuous term.
- // Default: 0, Sim
- if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
- {
-   if (SL::Vis == 0)
-   {
-     SL::Vis_str = "Sim";
-     NavierStokesEquations<2>::Gamma[0]=0.0;
-     NavierStokesEquations<2>::Gamma[1]=0.0;
+// // Set the viscuous term.
+// // Default: 0, Sim
+// if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
+// {
+//   if (SL::Vis == 0)
+//   {
+//     SL::Vis_str = "Sim";
+//     NavierStokesEquations<2>::Gamma[0]=0.0;
+//     NavierStokesEquations<2>::Gamma[1]=0.0;
+//
+//   }
+//   else if (SL::Vis == 1)
+//   {
+//     SL::Vis_str = "Str";
+//     NavierStokesEquations<2>::Gamma[0]=1.0;
+//     NavierStokesEquations<2>::Gamma[1]=1.0;
+//   } // else - setting viscuous term.
+//   else
+//   {
+//     std::cout << "There is no such Viscous term, using 0 = simple." 
+//               << std::endl; 
+//   }
+// }
 
-   }
-   else if (SL::Vis == 1)
-   {
-     SL::Vis_str = "Str";
-     NavierStokesEquations<2>::Gamma[0]=1.0;
-     NavierStokesEquations<2>::Gamma[1]=1.0;
-   } // else - setting viscuous term.
-   else
-   {
-     std::cout << "There is no such Viscous term, using 0 = simple." 
-               << std::endl; 
-   }
- }
-
- // Set Ang_str
- // Default: A30
- if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
- {
-   std::ostringstream strs;
-   strs << "A" << SL::Ang;
-   SL::Ang_str = strs.str();
- }
+// // Set Ang_str
+// // Default: A30
+// if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+// {
+//   std::ostringstream strs;
+//   strs << "A" << SL::Ang;
+//   SL::Ang_str = strs.str();
+// }
 
  // Now we need to convert Ang into radians.
  SL::Ang = SL::Ang * (MathematicalConstants::Pi / 180.0);
 
- // Set Noel_str, used for book keeping.
- if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
- {
-   std::ostringstream strs;
-   strs << "N" << SL::Noel;
-   SL::Noel_str = strs.str();
- }
+// // Set Noel_str, used for book keeping.
+// if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+// {
+//   std::ostringstream strs;
+//   strs << "N" << SL::Noel;
+//   SL::Noel_str = strs.str();
+// }
 
- // Set Use_axnorm, if sigma has not been set, norm os momentum block is used.
- if(CommandLineArgs::command_line_flag_has_been_set("--sigma"))
- {
-   SL::Use_axnorm = false;
+// // Set Use_axnorm, if sigma has not been set, norm os momentum block is used.
+// if(CommandLineArgs::command_line_flag_has_been_set("--sigma"))
+// {
+//   SL::Use_axnorm = false;
+//
+//   std::ostringstream strs;
+//   strs << "S" << SL::Scaling_sigma;
+//   SL::Sigma_str = strs.str();
+// }
 
-   std::ostringstream strs;
-   strs << "S" << SL::Scaling_sigma;
-   SL::Sigma_str = strs.str();
- }
+// // use the diagonal or block diagonal approximation for W block.
+// if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
+// {
+//   SL::Use_diagonal_w_block = false;
+//   SL::W_approx_str = "bdw";
+// }
+// else
+// {
+//   SL::Use_diagonal_w_block = true;
+//   SL::W_approx_str = "";
+// }
 
- // use the diagonal or block diagonal approximation for W block.
- if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
- {
-   SL::Use_diagonal_w_block = false;
-   SL::W_approx_str = "bdw";
- }
- else
- {
-   SL::Use_diagonal_w_block = true;
-   SL::W_approx_str = "";
- }
-
- // Solve with Taylor-Hood element, set up problem
- // Set Rey_str, used for book keeping.
- if(CommandLineArgs::command_line_flag_has_been_set("--rey"))
- {
-   if(SL::Rey < 0)
-   {
-     SL::Loop_reynolds = true;
-   }
-   else
-   {
-     std::ostringstream strs;
-     strs << "R" << SL::Rey;
-     SL::Rey_str = strs.str();
-   }
- }
+// // Solve with Taylor-Hood element, set up problem
+// // Set Rey_str, used for book keeping.
+// if(CommandLineArgs::command_line_flag_has_been_set("--rey"))
+// {
+//   if(SL::Rey < 0)
+//   {
+//     SL::Loop_reynolds = true;
+//   }
+//   else
+//   {
+//     std::ostringstream strs;
+//     strs << "R" << SL::Rey;
+//     SL::Rey_str = strs.str();
+//   }
+// }
 
  BackwardStepProblem< QTaylorHoodElement<2> > problem;
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
- if(SL::Loop_reynolds)
- {
-   double Rey_start = 0.0;
-   double Rey_end = 200.0;
-   unsigned rey_increment = 0; // used for output of iters/times
-   for (SL::Rey = Rey_start; SL::Rey <= Rey_end; SL::Rey += 50.0) 
-   {
-     std::ostringstream strs;
-     strs << "R" << SL::Rey;
-     SL::Rey_str = strs.str();
-
-     // Setup the label. Used for doc solution and preconditioner.
-     SL::Label = SL::Prob_str
-       + SL::W_str + SL::NS_str + SL::F_str + SL::P_str
-       + SL::Vis_str + SL::Ang_str + SL::Rey_str
-       + SL::Noel_str + SL::W_approx_str + SL::Sigma_str;
-
-     time_t rawtime;
-     time(&rawtime);
-
-     std::cout << "RAYDOING: "
-       << SL::Label
-       << " on " << ctime(&rawtime) << std::endl;
-
-
-     // Solve the problem
-     problem.newton_solve();
-     
-     //Output solution
-     if(SL::Doc_soln){problem.doc_solution();}
-     
-     if(my_rank == 0)
-     {
-     // Output the iteration counts and times if my_rank = 0
-     // Create the File...
-     std::ostringstream filename_stream;
-     filename_stream << "runs"<<SL::Prob_str<<"/RAYOUT"<<SL::Label;
-     
-     std::ofstream outfile;
-     outfile.open(filename_stream.str().c_str());
-
-     // We now output the iteration and time.
-     Vector<Vector<Vector<double> > > iters_times
-       = SL::Doc_linear_solver_info_pt->iterations_and_times();
-
-     // Below outputs the iteration counts and time.
-     // Output the number of iterations
-     // Since this is a steady state problem, there is only
-     // one "time step".
-     //*
-     // Loop over the time steps and output the iterations, prec setup time and
-     // linear solver time.
-     //unsigned ntimestep = iters_times.size();
-     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-     {
-       // New timestep:
-       outfile << "RAYITS:\t" << rey_increment << "\t";
-     
-       // Loop through the Newtom Steps
-       unsigned nnewtonstep = iters_times[rey_increment].size();
-       unsigned sum_of_newtonstep_iters = 0;
-       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-           innewtonstep++)
-       {
-         sum_of_newtonstep_iters += iters_times[rey_increment][innewtonstep][0];
-         outfile << iters_times[rey_increment][innewtonstep][0] << " ";
-       }
-       double average_its = ((double)sum_of_newtonstep_iters)
-         / ((double)nnewtonstep);
-  
-       // Print to one decimal place if the average is not an exact
-       // integer. Otherwise we print normally.
-       std::streamsize cout_precision = outfile.precision();
-       ((unsigned(average_its*10))%10)?
-         outfile << "\t"<< std::fixed << std::setprecision(1)
-         << average_its << "(" << nnewtonstep << ")" << std::endl:
-         outfile << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
-       outfile << std::setprecision(cout_precision);
-     }
-
-     // Now doing the preconditioner setup time.
-     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-     {
-       // New timestep:
-       outfile << "RAYPRECSETUP:\t" << rey_increment << "\t";
-       // Loop through the Newtom Steps
-       unsigned nnewtonstep = iters_times[rey_increment].size();
-       double sum_of_newtonstep_times = 0;
-       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-           innewtonstep++)
-       {
-         sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][1];
-         outfile << iters_times[rey_increment][innewtonstep][1] << " ";
-       }
-       double average_time = ((double)sum_of_newtonstep_times)
-         / ((double)nnewtonstep);
-  
-       // Print to one decimal place if the average is not an exact
-       // integer. Otherwise we print normally.
-       outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-     }
-
-     // Now doing the linear solver time.
-     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-     {
-       // New timestep:
-       outfile << "RAYLINSOLVER:\t" << rey_increment << "\t";
-       // Loop through the Newtom Steps
-       unsigned nnewtonstep = iters_times[rey_increment].size();
-       double sum_of_newtonstep_times = 0;
-       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-           innewtonstep++)
-       {
-         sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][2];
-         outfile << iters_times[rey_increment][innewtonstep][2] << " ";
-       }
-       double average_time = ((double)sum_of_newtonstep_times)
-         / ((double)nnewtonstep);
-
-       // Print to one decimal place if the average is not an exact
-       // integer. Otherwise we print normally.
-       outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-     }
-     } // if rank == 0 output stuff
-     rey_increment++;
-   }
- }
- else
- {
-   // Setup the label. Used for doc solution and preconditioner.
-   SL::Label = SL::Prob_str
-               + SL::W_str + SL::NS_str + SL::F_str + SL::P_str
-               + SL::Vis_str + SL::Ang_str + SL::Rey_str
-               + SL::Noel_str + SL::W_approx_str + SL::Sigma_str;
-
-   time_t rawtime;
-   time(&rawtime);
-
-   std::cout << "RAYDOING: "
-     << SL::Label
-     << " on " << ctime(&rawtime) << std::endl;
-
-   // Solve the problem
-   problem.newton_solve();
-
-   //Output solution
-   if(SL::Doc_soln){problem.doc_solution();}
-
-   // We now output the iteration and time.
-   Vector<Vector<Vector<double> > > iters_times
-     = SL::Doc_linear_solver_info_pt->iterations_and_times();
-
-   // Below outputs the iteration counts and time.
-   // Output the number of iterations
-   // Since this is a steady state problem, there is only
-   // one "time step".
-   //*
-   // Loop over the time steps and output the iterations, prec setup time and
-   // linear solver time.
-   unsigned ntimestep = iters_times.size();
-   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-   {
-     // New timestep:
-     std::cout << "RAYITS:\t" << intimestep << "\t";
-     
-     // Loop through the Newtom Steps
-     unsigned nnewtonstep = iters_times[intimestep].size();
-     unsigned sum_of_newtonstep_iters = 0;
-     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-         innewtonstep++)
-     {
-       sum_of_newtonstep_iters += iters_times[intimestep][innewtonstep][0];
-       std::cout << iters_times[intimestep][innewtonstep][0] << " ";
-     }
-     double average_its = ((double)sum_of_newtonstep_iters)
-       / ((double)nnewtonstep);
-
-     // Print to one decimal place if the average is not an exact
-     // integer. Otherwise we print normally.
-     std::streamsize cout_precision = std::cout.precision();
-     ((unsigned(average_its*10))%10)?
-       std::cout << "\t"<< std::fixed << std::setprecision(1)
-       << average_its << "(" << nnewtonstep << ")" << std::endl:
-       std::cout << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
-     std::cout << std::setprecision(cout_precision);
-   }
-
-   // Now doing the preconditioner setup time.
-   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-   {
-     // New timestep:
-     std::cout << "RAYPRECSETUP:\t" << intimestep << "\t";
-     // Loop through the Newtom Steps
-     unsigned nnewtonstep = iters_times[intimestep].size();
-     double sum_of_newtonstep_times = 0;
-     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-         innewtonstep++)
-     {
-       sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][1];
-       std::cout << iters_times[intimestep][innewtonstep][1] << " ";
-     }
-     double average_time = ((double)sum_of_newtonstep_times)
-       / ((double)nnewtonstep);
-
-     // Print to one decimal place if the average is not an exact
-     // integer. Otherwise we print normally.
-     std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-   }
-
-   // Now doing the linear solver time.
-   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-   {
-     // New timestep:
-     std::cout << "RAYLINSOLVER:\t" << intimestep << "\t";
-     // Loop through the Newtom Steps
-     unsigned nnewtonstep = iters_times[intimestep].size();
-     double sum_of_newtonstep_times = 0;
-     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-         innewtonstep++)
-     {
-       sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][2];
-       std::cout << iters_times[intimestep][innewtonstep][2] << " ";
-     }
-     double average_time = ((double)sum_of_newtonstep_times)
-       / ((double)nnewtonstep);
-
-     // Print to one decimal place if the average is not an exact
-     // integer. Otherwise we print normally.
-     std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-   }
-
- }
+// if(SL::Loop_reynolds)
+// {
+//   double Rey_start = 0.0;
+//   double Rey_end = 200.0;
+//   unsigned rey_increment = 0; // used for output of iters/times
+//   for (SL::Rey = Rey_start; SL::Rey <= Rey_end; SL::Rey += 50.0) 
+//   {
+//     std::ostringstream strs;
+//     strs << "R" << SL::Rey;
+//     SL::Rey_str = strs.str();
+//
+//     // Setup the label. Used for doc solution and preconditioner.
+//     SL::Label = SL::Prob_str
+//       + SL::W_str + SL::NS_str + SL::F_str + SL::P_str
+//       + SL::Vis_str + SL::Ang_str + SL::Rey_str
+//       + SL::Noel_str + SL::W_approx_str + SL::Sigma_str;
+//
+//     time_t rawtime;
+//     time(&rawtime);
+//
+//     std::cout << "RAYDOING: "
+//       << SL::Label
+//       << " on " << ctime(&rawtime) << std::endl;
+//
+//
+//     // Solve the problem
+//     problem.newton_solve();
+//     
+//     //Output solution
+//     if(SL::Doc_soln){problem.doc_solution();}
+//     
+//     if(my_rank == 0)
+//     {
+//     // Output the iteration counts and times if my_rank = 0
+//     // Create the File...
+//     std::ostringstream filename_stream;
+//     filename_stream << "runs"<<SL::Prob_str<<"/RAYOUT"<<SL::Label;
+//     
+//     std::ofstream outfile;
+//     outfile.open(filename_stream.str().c_str());
+//
+//     // We now output the iteration and time.
+//     Vector<Vector<Vector<double> > > iters_times
+//       = SL::Doc_linear_solver_info_pt->iterations_and_times();
+//
+//     // Below outputs the iteration counts and time.
+//     // Output the number of iterations
+//     // Since this is a steady state problem, there is only
+//     // one "time step".
+//     //*
+//     // Loop over the time steps and output the iterations, prec setup time and
+//     // linear solver time.
+//     //unsigned ntimestep = iters_times.size();
+//     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//     {
+//       // New timestep:
+//       outfile << "RAYITS:\t" << rey_increment << "\t";
+//     
+//       // Loop through the Newtom Steps
+//       unsigned nnewtonstep = iters_times[rey_increment].size();
+//       unsigned sum_of_newtonstep_iters = 0;
+//       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//           innewtonstep++)
+//       {
+//         sum_of_newtonstep_iters += iters_times[rey_increment][innewtonstep][0];
+//         outfile << iters_times[rey_increment][innewtonstep][0] << " ";
+//       }
+//       double average_its = ((double)sum_of_newtonstep_iters)
+//         / ((double)nnewtonstep);
+//  
+//       // Print to one decimal place if the average is not an exact
+//       // integer. Otherwise we print normally.
+//       std::streamsize cout_precision = outfile.precision();
+//       ((unsigned(average_its*10))%10)?
+//         outfile << "\t"<< std::fixed << std::setprecision(1)
+//         << average_its << "(" << nnewtonstep << ")" << std::endl:
+//         outfile << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
+//       outfile << std::setprecision(cout_precision);
+//     }
+//
+//     // Now doing the preconditioner setup time.
+//     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//     {
+//       // New timestep:
+//       outfile << "RAYPRECSETUP:\t" << rey_increment << "\t";
+//       // Loop through the Newtom Steps
+//       unsigned nnewtonstep = iters_times[rey_increment].size();
+//       double sum_of_newtonstep_times = 0;
+//       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//           innewtonstep++)
+//       {
+//         sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][1];
+//         outfile << iters_times[rey_increment][innewtonstep][1] << " ";
+//       }
+//       double average_time = ((double)sum_of_newtonstep_times)
+//         / ((double)nnewtonstep);
+//  
+//       // Print to one decimal place if the average is not an exact
+//       // integer. Otherwise we print normally.
+//       outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
+//     }
+//
+//     // Now doing the linear solver time.
+//     //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//     {
+//       // New timestep:
+//       outfile << "RAYLINSOLVER:\t" << rey_increment << "\t";
+//       // Loop through the Newtom Steps
+//       unsigned nnewtonstep = iters_times[rey_increment].size();
+//       double sum_of_newtonstep_times = 0;
+//       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//           innewtonstep++)
+//       {
+//         sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][2];
+//         outfile << iters_times[rey_increment][innewtonstep][2] << " ";
+//       }
+//       double average_time = ((double)sum_of_newtonstep_times)
+//         / ((double)nnewtonstep);
+//
+//       // Print to one decimal place if the average is not an exact
+//       // integer. Otherwise we print normally.
+//       outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
+//     }
+//     } // if rank == 0 output stuff
+//     rey_increment++;
+//   }
+// }
+// else
+// {
+//   // Setup the label. Used for doc solution and preconditioner.
+//   SL::Label = SL::Prob_str
+//               + SL::W_str + SL::NS_str + SL::F_str + SL::P_str
+//               + SL::Vis_str + SL::Ang_str + SL::Rey_str
+//               + SL::Noel_str + SL::W_approx_str + SL::Sigma_str;
+//
+//   time_t rawtime;
+//   time(&rawtime);
+//
+//   std::cout << "RAYDOING: "
+//     << SL::Label
+//     << " on " << ctime(&rawtime) << std::endl;
+//
+//   // Solve the problem
+//   problem.newton_solve();
+//
+//   //Output solution
+//   if(SL::Doc_soln){problem.doc_solution();}
+//
+//   // We now output the iteration and time.
+//   Vector<Vector<Vector<double> > > iters_times
+//     = SL::Doc_linear_solver_info_pt->iterations_and_times();
+//
+//   // Below outputs the iteration counts and time.
+//   // Output the number of iterations
+//   // Since this is a steady state problem, there is only
+//   // one "time step".
+//   //*
+//   // Loop over the time steps and output the iterations, prec setup time and
+//   // linear solver time.
+//   unsigned ntimestep = iters_times.size();
+//   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//   {
+//     // New timestep:
+//     std::cout << "RAYITS:\t" << intimestep << "\t";
+//     
+//     // Loop through the Newtom Steps
+//     unsigned nnewtonstep = iters_times[intimestep].size();
+//     unsigned sum_of_newtonstep_iters = 0;
+//     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//         innewtonstep++)
+//     {
+//       sum_of_newtonstep_iters += iters_times[intimestep][innewtonstep][0];
+//       std::cout << iters_times[intimestep][innewtonstep][0] << " ";
+//     }
+//     double average_its = ((double)sum_of_newtonstep_iters)
+//       / ((double)nnewtonstep);
+//
+//     // Print to one decimal place if the average is not an exact
+//     // integer. Otherwise we print normally.
+//     std::streamsize cout_precision = std::cout.precision();
+//     ((unsigned(average_its*10))%10)?
+//       std::cout << "\t"<< std::fixed << std::setprecision(1)
+//       << average_its << "(" << nnewtonstep << ")" << std::endl:
+//       std::cout << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
+//     std::cout << std::setprecision(cout_precision);
+//   }
+//
+//   // Now doing the preconditioner setup time.
+//   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//   {
+//     // New timestep:
+//     std::cout << "RAYPRECSETUP:\t" << intimestep << "\t";
+//     // Loop through the Newtom Steps
+//     unsigned nnewtonstep = iters_times[intimestep].size();
+//     double sum_of_newtonstep_times = 0;
+//     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//         innewtonstep++)
+//     {
+//       sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][1];
+//       std::cout << iters_times[intimestep][innewtonstep][1] << " ";
+//     }
+//     double average_time = ((double)sum_of_newtonstep_times)
+//       / ((double)nnewtonstep);
+//
+//     // Print to one decimal place if the average is not an exact
+//     // integer. Otherwise we print normally.
+//     std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
+//   }
+//
+//   // Now doing the linear solver time.
+//   for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+//   {
+//     // New timestep:
+//     std::cout << "RAYLINSOLVER:\t" << intimestep << "\t";
+//     // Loop through the Newtom Steps
+//     unsigned nnewtonstep = iters_times[intimestep].size();
+//     double sum_of_newtonstep_times = 0;
+//     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+//         innewtonstep++)
+//     {
+//       sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][2];
+//       std::cout << iters_times[intimestep][innewtonstep][2] << " ";
+//     }
+//     double average_time = ((double)sum_of_newtonstep_times)
+//       / ((double)nnewtonstep);
+//
+//     // Print to one decimal place if the average is not an exact
+//     // integer. Otherwise we print normally.
+//     std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
+//   }
+//
+// }
 
 
 #ifdef OOMPH_HAS_MPI

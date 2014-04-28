@@ -2,6 +2,8 @@
 # Executables
 lagrange_square/sq_lgr
 lagrange_bifurcation/unstructured_three_d_fluid
+lagrange_step/step_po
+
 
 # Validate file
 Validate
