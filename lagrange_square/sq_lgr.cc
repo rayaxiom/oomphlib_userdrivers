@@ -1063,250 +1063,49 @@ int main(int argc, char* argv[])
 #endif
 
   // Alias the namespace for convenience.
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = SquareLagrange;
+
+  const unsigned dim = 2;
+
+  LPH::PrecParam prec_param;
 
   // Set up doc info
   DocLinearSolverInfo doc_linear_solver_info;
+  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
-  SL::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-
-  // RAYRAY DO THIS SL::Soln_dir = "RESLT";
-
-  // RAYRAY DO THIS SL::Doc_prec_dir = "rawdata";
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
-  CommandLineArgs::specify_command_line_flag("--dist_prob");
+  NSPP::setup_commandline_flags();
 
-  // Flag to output the solution.
-  CommandLineArgs::specify_command_line_flag("--doc_soln", &SL::Soln_dir);
-  // Flag to output the preconditioner, used for debugging.
-  CommandLineArgs::specify_command_line_flag("--doc_prec", &SL::Doc_prec_dir);
+  LPH::setup_commandline_flags(&prec_param);
 
-  // A problem ID, there are eight different types of problems.
-  // Check the header file.
-  CommandLineArgs::specify_command_line_flag("--prob_id",&SL::Prob_id);
-
-  CommandLineArgs::specify_command_line_flag("--w_solver", &SL::W_solver);
-  CommandLineArgs::specify_command_line_flag("--ns_solver", &SL::NS_solver);
-  CommandLineArgs::specify_command_line_flag("--p_solver", &SL::P_solver);
-  CommandLineArgs::specify_command_line_flag("--f_solver", &SL::F_solver);
-  CommandLineArgs::specify_command_line_flag("--visc", &SL::Vis);
-  CommandLineArgs::specify_command_line_flag("--ang", &SL::Ang_deg);
-  CommandLineArgs::specify_command_line_flag("--rey", &SL::Rey);
-  CommandLineArgs::specify_command_line_flag("--rey_start", &SL::Rey_start);
-  CommandLineArgs::specify_command_line_flag("--rey_incre", &SL::Rey_incre);
-  CommandLineArgs::specify_command_line_flag("--rey_end", &SL::Rey_end);
-  CommandLineArgs::specify_command_line_flag("--noel", &SL::Noel);
-  CommandLineArgs::specify_command_line_flag("--sigma",
-      &SL::Scaling_sigma);
-  CommandLineArgs::specify_command_line_flag("--bdw");
-
-  // Iteration count and times directory.
-  CommandLineArgs::specify_command_line_flag("--itstimedir", &SL::Itstime_dir);
-
-  // NS_F block AMG parameters
-  CommandLineArgs::specify_command_line_flag("--f_amg_str", &SL::f_amg_strength);
-  CommandLineArgs::specify_command_line_flag("--f_amg_damp", &SL::f_amg_damping);
-  CommandLineArgs::specify_command_line_flag("--f_amg_coarse", &SL::f_amg_coarsening);
-  CommandLineArgs::specify_command_line_flag("--f_amg_smoo", &SL::f_amg_smoother);
-  CommandLineArgs::specify_command_line_flag("--f_amg_iter", &SL::f_amg_iterations);
-  CommandLineArgs::specify_command_line_flag("--f_amg_smiter", &SL::f_amg_smoother_iterations);
-
-  // NS_P block AMG parameters
-  CommandLineArgs::specify_command_line_flag("--p_amg_str", &SL::p_amg_strength);
-  CommandLineArgs::specify_command_line_flag("--p_amg_damp", &SL::p_amg_damping);
-  CommandLineArgs::specify_command_line_flag("--p_amg_coarse", &SL::p_amg_coarsening);
-  CommandLineArgs::specify_command_line_flag("--p_amg_smoo", &SL::p_amg_smoother);
-  CommandLineArgs::specify_command_line_flag("--p_amg_iter", &SL::p_amg_iterations);
-  CommandLineArgs::specify_command_line_flag("--p_amg_smiter", &SL::p_amg_smoother_iterations);
-
+  SL::setup_commandline_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
+  pause("Done new cl flags"); 
+  
 
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
 
-  // Do we have to distribute the problem?
-  if(CommandLineArgs::command_line_flag_has_been_set("--dist_prob"))
-  {
-    SL::Distribute_problem = true;
-  }
-  else
-  {
-    SL::Distribute_problem = false;
-  }
+  // dim = 2
+  NSPP::generic_problem_setup(dim);
 
-  // Document the solution? Default is false.
-  if(CommandLineArgs::command_line_flag_has_been_set("--doc_soln"))
-  {
-    // The argument immediately after --doc_soln is put into SL::Soln_dir.
-    // If this begins with "--", then no solution directory has been provided.
-    std::size_t found = SL::Soln_dir.find("--");
+  LPH::generic_setup(&prec_param);
 
-    // Check if they have set the solution directory.
-    if(found != std::string::npos)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide the doc_soln directory "
-        << "after the argument --doc_soln.\n" 
-        << "This must not start with \"--\"." << std::endl;
+  SL::generic_setup(&prec_param);
 
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else
-    {
-      SL::Doc_soln = true;
-    }
-  }
-
-  // Document the preconditioner? Default is false.
-  if(CommandLineArgs::command_line_flag_has_been_set("--doc_prec"))
-  {
-    // The argument immediately after --doc_prec is put into SL::Doc_prec_dir.
-    // If this begins with "--", then no prec directory has been provided.
-    std::size_t found = SL::Doc_prec_dir.find("--");
-
-    // Check if they have set the doc_prec directory.
-    if(found != std::string::npos)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide the doc_prec directory "
-        << "after the argument --doc_prec.\n" 
-        << "This must not start with \"--\"." << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else
-    {
-      SL::Doc_prec = true;
-    }
-  }
-
-  // Set a problem id to identify the problem.
-  // This is used for book keeping purposes.
-  if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
-  {
-    // The argument immediately after --prob_id is put into SL::Prob_id.
-    // If this begins with "--", then no problem id has been provided.
-
-    // Maybe I should check if SL::Prob_id is a number or a string...
-
-    // We only accept problem IDs as defined below.
-    // Creating a set of acceptable IDs
-    int prob_id_array[]= {10,11,12,13,
-      20,21,22,23};
-
-    bool inset = check_if_in_set<int>(prob_id_array,8,SL::Prob_id);
-
-    // Check if they have provided an acceptable ID.
-    // If a new element has been inserted, it means the user has provided an
-    // ID not in the set.
-    if(inset == false)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide a problem id to identify the problem after "
-        << "after the argument --prob_id.\n" 
-        << "Acceptable IDs are:\n"
-        << "10 = (SqTmp) Square, custom stuff...\n"
-        << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-        << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-        << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-        << "\n"
-        << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-        << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-        << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-        << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
-        << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-  }
-
-
-
-  // Set the viscuous term.
-  // Default: 0, Sim
-  if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
-  {
-    if (SL::Vis == 0)
-    {
-      NavierStokesEquations<2>::Gamma[0]=0.0;
-      NavierStokesEquations<2>::Gamma[1]=0.0;
-
-    }
-    else if (SL::Vis == 1)
-    {
-      NavierStokesEquations<2>::Gamma[0]=1.0;
-      NavierStokesEquations<2>::Gamma[1]=1.0;
-    } // else - setting viscuous term.
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "Do not recognise viscuous term: " << SL::Vis << ".\n"
-        << "Vis = 0 for simple form\n"
-        << "Vis = 1 for stress divergence form\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-  }
-
-
-
-
-  // Now we need to convert Ang into radians.
-  SL::Ang = SL::Ang_deg * (MathematicalConstants::Pi / 180.0);
-
-  // Check if the Reynolds numbers have been set.
-  if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "You have set all --rey* argument, please choose carefully!\n"
-      << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-  else if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end"))
-  {
-    std::cout << "Looping Reynolds: \n"
-      << "Rey_start = " << SL::Rey_start << std::endl; 
-    std::cout << "Rey_incre = " << SL::Rey_incre << std::endl; 
-    std::cout << "Rey_end = " << SL::Rey_end << std::endl; 
-  }
-  else if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "No Reynolds numbers have been set.\n"
-      << "For a single Reynolds number, use --rey.\n"
-      << "For looping through Reynolds numbers, use:\n"
-      << "--rey_start --rey_incre --rey_end.\n"
-      << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-
-
+  pause("Paussso"); 
+  
   // Solve with Taylor-Hood element, set up problem
-  TiltedCavityProblem< QTaylorHoodElement<2> > problem;
+  TiltedCavityProblem< QTaylorHoodElement<dim> > problem;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -1330,7 +1129,7 @@ int main(int argc, char* argv[])
       //     SL::Rey_str = strs.str(); RAY RAY FIX THIS
 
       // Setup the label. Used for doc solution and preconditioner.
-      SL::Label = SL::create_label();
+      SL::Label = SL::create_label(&prec_param);
 
       time_t rawtime;
       time(&rawtime);
@@ -1474,7 +1273,7 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-    SL::Label = SL::create_label();
+    SL::Label = SL::create_label(&prec_param);
 
     time_t rawtime;
     time(&rawtime);

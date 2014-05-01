@@ -982,17 +982,926 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     return another_preconditioner_pt;
   }
-} 
+} // end of namespace Hypre_Subsidiary_Preconditioner_Helper
 #endif // End of ifdef OOMPH_HAS_HYPRE
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace NavierStokesProblemParameters
+{
+  int Prob_id = -1;
+  bool Distribute_problem = false;
+  int Vis = -1;
+  double Rey = -1.0;
+
+  double Rey_start = -1.0;
+  double Rey_incre = -1.0;
+  double Rey_end = -1.0;
+
+  bool Doc_soln = false;
+
+  std::string Soln_dir_str = "";
+  std::string Itstime_dir_str = "";
+
+  bool Using_trilinos_solver = false;
+
+  DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
+
+
+//  void setup_commandline_flags();
+
+  inline void setup_commandline_flags()
+  {
+  CommandLineArgs::specify_command_line_flag("--dist_prob");
+
+  // A problem ID, there are eight different types of problems.
+  // Check the header file.
+  CommandLineArgs::specify_command_line_flag("--prob_id",&Prob_id);
+  
+  // Flag to output the solution.
+  CommandLineArgs::specify_command_line_flag("--doc_soln", 
+                                             &Soln_dir_str);
+  CommandLineArgs::specify_command_line_flag("--visc", 
+                                             &Vis);
+  CommandLineArgs::specify_command_line_flag("--rey", &Rey);
+  CommandLineArgs::specify_command_line_flag("--rey_start", &Rey_start);
+  CommandLineArgs::specify_command_line_flag("--rey_incre", &Rey_incre);
+  CommandLineArgs::specify_command_line_flag("--rey_end", &Rey_end);
+
+  // Iteration count and times directory.
+  CommandLineArgs::specify_command_line_flag("--itstimedir", 
+      &Itstime_dir_str);
+  }
+
+  void generic_problem_setup(const unsigned dim);
+
+  inline void generic_problem_setup(const unsigned dim)
+  {
+    // Do we have to distribute the problem?
+    if(CommandLineArgs::command_line_flag_has_been_set("--dist_prob"))
+    {
+      Distribute_problem = true;
+    }
+    else
+    {
+      Distribute_problem = false;
+    }
+
+    // Document the solution? Default is false.
+    if(CommandLineArgs::command_line_flag_has_been_set("--doc_soln"))
+    {
+      // The argument immediately after --doc_soln is put into NSPP::Soln_dir_str.
+      // If this begins with "--", then no solution directory has been provided.
+      std::size_t found = Soln_dir_str.find("--");
+
+      // Check if they have set the solution directory.
+      if(found != std::string::npos)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide the doc_soln directory "
+          << "after the argument --doc_soln.\n" 
+          << "This must not start with \"--\"." << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      else
+      {
+        Doc_soln = true;
+      }
+    }
+
+    // Set the viscuous term.
+    // Default: 0, Sim
+    if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
+    {
+      if(dim == 2)
+      {
+        if (Vis == 0)
+        {
+          NavierStokesEquations<2>::Gamma[0]=0.0;
+          NavierStokesEquations<2>::Gamma[1]=0.0;
+        }
+        else if (Vis == 1)
+        {
+          NavierStokesEquations<2>::Gamma[0]=1.0;
+          NavierStokesEquations<2>::Gamma[1]=1.0;
+        } // else - setting viscuous term.
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
+            << "Vis = 0 for simple form\n"
+            << "Vis = 1 for stress divergence form\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+      else
+      {
+        if (Vis == 0)
+        {
+          NavierStokesEquations<3>::Gamma[0]=0.0;
+          NavierStokesEquations<3>::Gamma[1]=0.0;
+          NavierStokesEquations<3>::Gamma[2]=0.0;
+        }
+        else if (Vis == 1)
+        {
+          NavierStokesEquations<3>::Gamma[0]=1.0;
+          NavierStokesEquations<3>::Gamma[1]=1.0;
+          NavierStokesEquations<3>::Gamma[2]=1.0;
+        } // else - setting viscuous term.
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
+            << "Vis = 0 for simple form\n"
+            << "Vis = 1 for stress divergence form\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+    }
+    else
+    {
+    std::ostringstream err_msg;
+    err_msg << "Please set --visc to either 0 or 1.\n"
+      << std::endl;
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+    }
+
+//// RAYRAY here. Do generic Reynolds number ssetup!!!
+  // Check if the Reynolds numbers have been set.
+  if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
+      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
+      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end")
+      &&CommandLineArgs::command_line_flag_has_been_set("--rey"))
+  {
+    std::ostringstream err_msg;
+    err_msg << "You have set all --rey* argument, please choose carefully!\n"
+      << std::endl;
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+  else if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
+      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
+      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end"))
+  {
+    std::cout << "Looping Reynolds: \n"
+      << "Rey_start = " << Rey_start << std::endl; 
+    std::cout << "Rey_incre = " << Rey_incre << std::endl; 
+    std::cout << "Rey_end = " << Rey_end << std::endl; 
+  }
+  else if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
+  {
+    std::ostringstream err_msg;
+    err_msg << "No Reynolds numbers have been set.\n"
+      << "For a single Reynolds number, use --rey.\n"
+      << "For looping through Reynolds numbers, use:\n"
+      << "--rey_start --rey_incre --rey_end.\n"
+      << std::endl;
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
+  } // generic_problem_setup()
+
+  string create_label();
+
+  inline string create_label()
+  {
+    std::string vis_str = "";
+    std::string rey_str = "";
+    
+    if(Rey >= 0)
+    {
+      std::ostringstream strs;
+      strs << "R" << Rey;
+      rey_str = strs.str();
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Something has gone wrong, the Reynolds number is negative\n"
+        << "Rey = " << Rey << "\n"
+        << "Please set it again using --rey.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+
+    // Set the string for viscuous term.
+    if (Vis == 0)
+    {
+      vis_str = "Sim";
+    }
+    else if (Vis == 1)
+    {
+      vis_str = "Str";
+    } // else - setting viscuous term.
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
+        << "Vis = 0 for simple form\n"
+        << "Vis = 1 for stress divergence form\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    std::string label = vis_str + rey_str;
+
+    return label;
+  } // create_label()
+}
+
+
+namespace LagrangianPreconditionerHelpers
+{
+  struct PrecParam
+  {
+    PrecParam()
+    {
+      W_solver = -1;
+      NS_solver = -1;
+      F_solver = -1;
+      P_solver = -1;
+
+      f_amg_strength = -1.0;
+      f_amg_damping = -1.0;
+      f_amg_coarsening = -1;
+      f_amg_smoother = -1;
+      f_amg_iterations = -1;
+      f_amg_smoother_iterations = -1;
+
+      p_amg_strength = -1.0;
+      p_amg_damping = -1.0;
+      p_amg_coarsening = -1;
+      p_amg_smoother = -1;
+      p_amg_iterations = -1;
+      p_amg_smoother_iterations = -1;
+
+      Mesh_pt.resize(0);
+
+      Scaling_sigma = 0;
+
+      Use_axnorm = true;
+
+      Use_block_diagonal_w = false;
+
+      Doc_prec = false;
+      Doc_prec_dir_str = ""; // done
+
+      Print_hypre = true;
+
+      Problem_pt = 0;
+
+      Vis = -1;
+    }
+
+    Vector<Mesh*> Mesh_pt;
+
+    double Scaling_sigma;
+
+    bool Use_axnorm;
+    bool Use_block_diagonal_w;
+    bool Doc_prec;
+    bool Print_hypre;
+
+    std::string Doc_prec_dir_str;
+
+    DocLinearSolverInfo* Doc_linear_solver_info_pt;
+
+    Problem* Problem_pt;
+
+    int Vis;
+
+    int W_solver;
+    int NS_solver;
+    int F_solver;
+    int P_solver;
+
+    double f_amg_strength;
+    double f_amg_damping;
+    int f_amg_coarsening;
+    int f_amg_smoother;
+    int f_amg_iterations;
+    int f_amg_smoother_iterations;
+
+    double p_amg_strength;
+    double p_amg_damping;
+    int p_amg_coarsening;
+    int p_amg_smoother;
+    int p_amg_iterations;
+    int p_amg_smoother_iterations;
+  };
+
+
+  inline void setup_commandline_flags(PrecParam* param_pt)
+  {
+  // Flag to output the preconditioner, used for debugging.
+  CommandLineArgs::specify_command_line_flag("--doc_prec", 
+                                             &param_pt->Doc_prec_dir_str);
+
+  CommandLineArgs::specify_command_line_flag("--sigma",
+                                             &param_pt->Scaling_sigma);
+  
+  CommandLineArgs::specify_command_line_flag("--w_solver", 
+                                             &param_pt->W_solver);
+  CommandLineArgs::specify_command_line_flag("--bdw");
+
+  CommandLineArgs::specify_command_line_flag("--ns_solver", 
+                                             &param_pt->NS_solver);
+  CommandLineArgs::specify_command_line_flag("--p_solver", 
+                                             &param_pt->P_solver);
+  CommandLineArgs::specify_command_line_flag("--f_solver", 
+                                             &param_pt->F_solver);
+
+  // NS_F block AMG parameters
+  CommandLineArgs::specify_command_line_flag("--f_amg_str", 
+                                             &param_pt->f_amg_strength);
+  CommandLineArgs::specify_command_line_flag("--f_amg_damp", 
+                                             &param_pt->f_amg_damping);
+  CommandLineArgs::specify_command_line_flag("--f_amg_coarse", 
+                                             &param_pt->f_amg_coarsening);
+  CommandLineArgs::specify_command_line_flag("--f_amg_smoo", 
+                                             &param_pt->f_amg_smoother);
+  CommandLineArgs::specify_command_line_flag("--f_amg_iter", 
+                                             &param_pt->f_amg_iterations);
+  CommandLineArgs::specify_command_line_flag(
+      "--f_amg_smiter", &param_pt->f_amg_smoother_iterations);
+
+  // NS_P block AMG parameters
+  CommandLineArgs::specify_command_line_flag("--p_amg_str", 
+                                             &param_pt->p_amg_strength);
+  CommandLineArgs::specify_command_line_flag("--p_amg_damp", 
+                                             &param_pt->p_amg_damping);
+  CommandLineArgs::specify_command_line_flag("--p_amg_coarse", 
+                                             &param_pt->p_amg_coarsening);
+  CommandLineArgs::specify_command_line_flag("--p_amg_smoo", 
+                                             &param_pt->p_amg_smoother);
+  CommandLineArgs::specify_command_line_flag("--p_amg_iter", 
+                                             &param_pt->p_amg_iterations);
+  CommandLineArgs::specify_command_line_flag(
+      "--p_amg_smiter", &param_pt->p_amg_smoother_iterations);
+  }
+
+  inline void generic_setup(PrecParam* param_pt)
+  {
+
+    if(param_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "No param_pt set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    // Document the preconditioner? Default is false.
+    if(CommandLineArgs::command_line_flag_has_been_set("--doc_prec"))
+    {
+      // The argument immediately after --doc_prec is put into SL::Doc_prec_dir.
+      // If this begins with "--", then no prec directory has been provided.
+      const std::string doc_prec_dir_str = param_pt->Doc_prec_dir_str;
+
+      std::size_t found = doc_prec_dir_str.find("--");
+
+      // Check if they have set the doc_prec directory.
+      if(found != std::string::npos)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide the doc_prec directory "
+          << "after the argument --doc_prec.\n" 
+          << "This must not start with \"--\"." << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      else
+      {
+        param_pt->Doc_prec = true;
+      }
+    }
+
+  } // generic_setup()
+
+  Preconditioner* setup_preconditioner(const PrecParam*);
+
+  inline Preconditioner* setup_preconditioner(const PrecParam* param_pt = 0)
+  {
+    LagrangeEnforcedflowPreconditioner* prec_pt
+      = new LagrangeEnforcedflowPreconditioner;
+
+
+    // Set the mesh
+    Vector<Mesh*> mesh_pt = param_pt->Mesh_pt;
+    if(mesh_pt.size() == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "There is no Mesh_pt set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    prec_pt->set_meshes(mesh_pt);
+
+    // Set W solver.
+    const int w_solver = param_pt->W_solver;
+    if(w_solver == -1)
+    {
+      std::ostringstream err_msg;
+      err_msg << "There W_solver has not been set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    else if(w_solver == 0)
+    {
+      // Using SuperLU, this is the default, do nothing.
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "There is no other W solver set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+ // The preconditioner for the fluid block:
+ const int ns_solver = param_pt->NS_solver;
+   const int f_solver = param_pt->F_solver;
+   const int p_solver = param_pt->P_solver;
+ if(ns_solver == -1)
+ {
+      std::ostringstream err_msg;
+      err_msg << "The NS solver has not been set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+ }
+ else if(ns_solver == 0) // Exact solve.
+ {
+   // This is the default, do nothing.
+   // But the param's F_solver and P_solver should not have been set,
+   // i.e. it should stay as -1.
+
+   if((f_solver != -1) || (p_solver != -1))
+   {
+      std::ostringstream err_msg;
+      err_msg << "Doing exact NS solve. (NS_solver is 0)\n"
+       << "but you have set F_solver and P_solver as well."
+       << "Please leave these as -1.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+   }
+ }
+ else if(ns_solver == 1) // LSC
+ {
+   // If ns_solver is 1, this means we want to use LSC.
+   // So the F_solver and P_solver must be set.
+   if((f_solver == -1) || (p_solver == -1))
+   {
+      std::ostringstream err_msg;
+      err_msg << "Doing LSC NS solve. (NS_solver is 1)\n"
+       << "but F_solver and P_solver have not been set.\n"
+       << "0 - Exact (SuperLU)"
+       << "xy - please check the code for more details.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+   }
+
+   // Check if the problem pointer is set.
+   Problem* problem_pt = param_pt->Problem_pt;
+
+   // Check that the problem pointer is set (not null).
+   // LSC requires a problem pointer.
+   if(problem_pt != 0)
+   {
+           std::ostringstream err_msg;
+      err_msg << "Please set the Problem_pt variable.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+   }
+
+   // Create the NS LSC preconditioner.
+   NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
+     new NavierStokesSchurComplementPreconditioner(problem_pt);
+
+   // Set the NS preconditioner as LSC.
+   prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
+
+   // Give LSC the bulk mesh (Navier-Stokes mesh).
+   ns_preconditioner_pt->set_navier_stokes_mesh(mesh_pt[0]);
+
+
+   //// Setting the F solver within the NS block
+   /////////////////////////////////////////////
+
+   // Preconditioner for the F block:
+   Preconditioner* f_preconditioner_pt = 0;
+
+   const int f_solver = param_pt->F_solver;
+
+   // f_solver == 0 is default, so do nothing.
+   //
+   // AMG depends on the Reynolds number so we check that the Reynolds number
+   // is set if LSC is switched on - even if we do not want to use AMG...
+   // for consistency.
+   const int vis = param_pt->Vis;
+   if(vis == -1)
+   {
+      std::ostringstream err_msg;
+      err_msg << "Please set your viscuous term.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+   }
+
+   if(f_solver == 11)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_2D_poison_problem();
+#endif
+   }
+   else if(f_solver == 12)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_navier_stokes_momentum_block();
+#endif
+   }
+   else if(f_solver == 13)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_CLJPGSStrn075();
+#endif
+   }
+   else if(f_solver == 14)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_RSGSStrn075();
+#endif
+   }
+   else if(f_solver == 15)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_CLJPPilutStrn075();
+#endif
+   }
+   else if(f_solver == 16)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_RSPilutStrn075();
+#endif
+   }
+   else if(f_solver == 17)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_augmented_momentum_block();
+#endif
+   }
+   else if(f_solver == 81)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_CLJPGSStrn0668();
+#endif
+   }
+   else if(f_solver == 82)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_CLJPJStrn0668();
+#endif
+   }
+   else if(f_solver == 83)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_CLJPPilutStrn0668();
+#endif
+   }
+   else if(f_solver == 84)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_RSGSStrn0668();
+#endif
+   }
+   else if(f_solver == 85)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_RSJStrn0668();
+#endif
+   }
+   else if(f_solver == 86)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // LSC takes type "Preconditioner".
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_for_RSPilutStrn0668();
+#endif
+   }
+   else if(f_solver == 2)
+   {
+//     f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
+     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+   }
+   else if(f_solver == 3)
+   {
+     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+#ifdef OOMPH_HAS_HYPRE
+     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
+#endif
+   }
+   else if (f_solver == 69)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // AMG coarsening: Ruge-Stuben
+     RayGlobalAMGParam::amg_coarsening = 1;
+     
+     // AMG smoother: Gauss-Seidel
+     RayGlobalAMGParam::amg_smoother=0;
+     
+     // There is no damping with GS, otherwise we set the parameter:
+     // RayGlobalAMGParam::amg_damping
+
+     // Different amg strength for simple/stress divergence for viscuous term.
+     if(vis == 0)
+     {
+       // Simple form
+       RayGlobalAMGParam::amg_strength = 0.25;
+     }
+     else
+     {
+       // Stress divergence form
+       RayGlobalAMGParam::amg_strength = 0.668;
+     }
+     
+     // Setup the preconditioner.
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_using_2D_poisson_base();
+#endif
+   }
+   else if (f_solver == 96)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     // AMG coarsening:
+     // Set: RayGlobalAMGParam::amg_coarsening = 
+     // 0 - CLJP
+     // 1 - RS
+     
+     // AMG smoother:
+     // Set: RayGlobalAMGParam::amg_smoother = 
+     // 0 - Jacobi (Need to set damping as well)
+     // 1 - Gauss-Seidel
+     // 2 - Pilut
+     
+     // There is no damping with GS, otherwise we set the parameter:
+     // RayGlobalAMGParam::amg_damping
+
+     RayGlobalAMGParam::amg_strength = param_pt->f_amg_strength;
+     RayGlobalAMGParam::amg_damping = param_pt->f_amg_damping;
+     RayGlobalAMGParam::amg_coarsening = param_pt->f_amg_coarsening;
+     RayGlobalAMGParam::amg_smoother = param_pt->f_amg_smoother;
+     RayGlobalAMGParam::amg_iterations = param_pt->f_amg_iterations;
+     RayGlobalAMGParam::amg_smoother_iterations 
+       = param_pt->f_amg_smoother_iterations;
+     RayGlobalAMGParam::print_hypre = param_pt->Print_hypre;
+
+
+     // Different amg strength for simple/stress divergence for viscuous term.
+     if(RayGlobalAMGParam::amg_strength < 0.0)
+     {
+       if(vis == 0)
+       {
+         // Simple form
+         RayGlobalAMGParam::amg_strength = 0.25;
+       }
+       else
+       {
+         // Stress divergence form
+         RayGlobalAMGParam::amg_strength = 0.668;
+       }
+     }
+     
+     // Setup the preconditioner.
+     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_ray();
+#endif
+   }
+
+   // Set the preconditioner in the LSC preconditioner.
+   ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
+   
+   // P block solve.
+   ///////////////////////////////////////////
+
+   // Pointer to the preconditioner.
+   Preconditioner * p_preconditioner_pt = 0;
+
+   const int p_solver = param_pt->P_solver;
+
+   //SL::P_solver == 0 is default, so do nothing.
+   if(p_solver == 1) 
+   {
+#ifdef OOMPH_HAS_HYPRE
+
+     p_preconditioner_pt = new HyprePreconditioner;
+
+     // Cast it to a Hypre preconditioner so we can set AMG settings.
+     HyprePreconditioner* hypre_preconditioner_pt =
+       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+
+     Hypre_default_settings::
+     set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+
+     // Set it as the p preconditioner for LSC
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+#endif
+   }
+   else if(p_solver == 96)
+   {
+#ifdef OOMPH_HAS_HYPRE
+//* 
+     RayGlobalAMGParam::amg_iterations = param_pt->p_amg_iterations;
+     RayGlobalAMGParam::amg_smoother_iterations = param_pt->p_amg_smoother_iterations;
+     RayGlobalAMGParam::amg_smoother = param_pt->p_amg_smoother;
+     RayGlobalAMGParam::amg_strength = param_pt->p_amg_strength;
+     //RayGlobalAMGParam::amg_damping = param_pt->p_amg_damping;
+     RayGlobalAMGParam::amg_coarsening = param_pt->p_amg_coarsening;
+     RayGlobalAMGParam::print_hypre = param_pt->Print_hypre;
+
+//     std::cout << "p_amg_iterations:" << SL::p_amg_iterations << std::endl; 
+//     std::cout << "p_amg_smoother_iterations" << SL::p_amg_smoother_iterations << std::endl; 
+//     std::cout << "p_amg_strength" << SL::p_amg_strength << std::endl;
+//     std::cout << "p_amg_coarsening" << SL::p_amg_coarsening << std::endl; 
+// */
+
+     p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::set_hypre_ray();
+
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+#endif
+   }
+   else if(p_solver == 2)
+   {
+#ifdef OOMPH_HAS_HYPRE
+     p_preconditioner_pt = new HyprePreconditioner;
+
+     HyprePreconditioner* hypre_preconditioner_pt =
+       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+
+     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+
+     // Setup v-cycles
+     hypre_preconditioner_pt->set_amg_iterations(2);
+     hypre_preconditioner_pt->amg_smoother_iterations() = 2;
+     
+     // Setup smoother
+     // simple: 0 - DJ, 1 - GS
+     // compelx: Pilut - 7
+     hypre_preconditioner_pt->amg_using_simple_smoothing();
+     hypre_preconditioner_pt->amg_simple_smoother() = 0;
+     // only applicable for DJ
+     hypre_preconditioner_pt->amg_damping() = 0.8;
+
+     // Setup coarsening
+     // 0 - CLJP
+     // 1 - RS
+     hypre_preconditioner_pt->amg_coarsening() = 1;
+
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+#endif
+
+   }
+
+   ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+ } // if for using LSC as NS prec.
+//// else
+//// {
+////   pause("There is no solver for NS.");
+//// }      std::ostringstream err_msg;
+
+    return prec_pt;
+  } // setup_preconditioner
+
+
+  string create_label(const PrecParam* param_pt);
+
+  inline string create_label(const PrecParam* param_pt)
+  {
+    if(param_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "No param_pt set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    std::string w_str = "";
+    std::string ns_str = "";
+    std::string f_str = "";
+    std::string p_str = "";
+    std::string sigma_str = "";
+
+    const unsigned w_solver = param_pt->W_solver;
+    // Set the string for W_solver.
+    switch(w_solver)
+    {
+      case 0:
+        w_str = "We";
+        break;
+      default:
+        {
+          std::ostringstream err_msg;
+          err_msg << "There is an unrecognised W_solver,\n"
+            << "recognised W_solver:\n"
+            << "0 = (We) SuperLU solve\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+    } // switch
+
+    const bool use_block_diagonal_w = param_pt->Use_block_diagonal_w;
+    if(use_block_diagonal_w)
+    {
+      w_str += "bd";
+    }
+    else
+    {
+      w_str += "d";
+    }
+
+
+   
+
+
+    std::string prec_str = "";
+
+    return prec_str;
+
+  }
+
+} // end of namespace LagrangianPreconditionerHelpers
+
 namespace SquareLagrange
 {
-
-  bool Distribute_problem = false;
 
   ///////////////////////
   // Domain dimensions.//
@@ -1044,10 +1953,10 @@ namespace SquareLagrange
   // 
 
   // Default configuration
-  unsigned W_solver = 0; //CL, 0 = SuperLU, no other W solver coded.
-  unsigned NS_solver = 1; //CL, 0 = SuperLU, 1 - LSC
-  unsigned F_solver = 0; //CL, 0 - SuperLU, 1 - AMG
-  unsigned P_solver = 0; //CL, 0 - SuperLU, 1 - AMG
+  int W_solver = 0; //CL, 0 = SuperLU, no other W solver coded.
+  int NS_solver = 1; //CL, 0 = SuperLU, 1 - LSC
+  int F_solver = 0; //CL, 0 - SuperLU, 1 - AMG
+  int P_solver = 0; //CL, 0 - SuperLU, 1 - AMG
 
   // All problems based on the square domain will be in the same file.
   // Each unique problem will have an id.
@@ -1114,11 +2023,107 @@ namespace SquareLagrange
   int p_amg_iterations = -1;
   int p_amg_smoother_iterations = -1;
 
-  string create_label();
-
-  inline string create_label()
+  inline void setup_commandline_flags()
   {
+  CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
+
+  CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+  }
+
+  inline void generic_setup(LagrangianPreconditionerHelpers::PrecParam* param_pt)
+  {
+    // Check that Ang has been set.
+  if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+  {
+        std::ostringstream err_msg;
+        err_msg << "Angle has not been set. Set (in degrees) with: \n"
+          << "--ang \n"; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+  }
+    // Now we need to convert Ang into radians.
+    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+    if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
+    {
+      param_pt->Vis = NavierStokesProblemParameters::Vis;
+    }
+    else
+    {
+        std::ostringstream err_msg;
+        err_msg << "Viscuous term has not been set. Please set: \n"
+          << "--visc \n"; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+    }
+
+
+  // Set a problem id to identify the problem.
+  // This is used for book keeping purposes.
+  if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+  {
+    // The argument immediately after --prob_id is put into SL::Prob_id.
+    // If this begins with "--", then no problem id has been provided.
+
+    // Maybe I should check if SL::Prob_id is a number or a string...
+
+    // We only accept problem IDs as defined below.
+    // Creating a set of acceptable IDs
+    int prob_id_array[]= {10,11,12,13,
+      20,21,22,23};
+
+    namespace NSPP = NavierStokesProblemParameters;
+    bool inset = check_if_in_set<int>(prob_id_array,8,NSPP::Prob_id);
+
+    // Check if they have provided an acceptable ID.
+    // If a new element has been inserted, it means the user has provided an
+    // ID not in the set.
+    if(inset == false)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please provide a problem id to identify the problem after "
+        << "after the argument --prob_id.\n" 
+        << "Acceptable IDs are:\n"
+        << "10 = (SqTmp) Square, custom stuff...\n"
+        << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+        << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+        << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+        << "\n"
+        << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+        << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+        << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+        << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+        << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  }
+
+  }
+
+  string create_label(
+      const LagrangianPreconditionerHelpers::PrecParam* prec_param_pt);
+
+  inline string create_label(
+      const LagrangianPreconditionerHelpers::PrecParam* prec_param_pt)
+  {
+
+    if(prec_param_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "No param_pt set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
     std::string prob_str = "";
+    std::string prec_str = "";
     std::string w_str = "";
     std::string ns_str = "";
     std::string f_str = "";
@@ -1176,6 +2181,10 @@ namespace SquareLagrange
         } // Default case
     } // switch Prob_id
 
+
+    prec_str = LagrangianPreconditionerHelpers::create_label(prec_param_pt);
+    pause("pp from SL create label"); 
+    
 
     // Set the string for W_solver.
     switch(W_solver)
