@@ -144,7 +144,7 @@ public:
    // Get the preconditioner setup time.
    
    // Set the solver time.
-   if(SquareLagrange::Using_trilinos_solver)
+   if(NavierStokesProblemParameters::Using_trilinos_solver)
    {
      TrilinosAztecOOSolver* trilinos_solver_pt 
        = dynamic_cast<TrilinosAztecOOSolver*>(this->linear_solver_pt());
@@ -204,10 +204,6 @@ private:
  void set_bc_for_AwTf();
  void set_bc_for_AwTfPo();
 
- void set_prec_and_solver();
-
-
-
  /// Pointer to the "bulk" mesh
  SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
 
@@ -238,6 +234,8 @@ template<class ELEMENT> // rrrback - changed here.
 TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 {
   // Alias the namespace for convenience
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = SquareLagrange;
 
   Bottom_bound = 0;
@@ -245,10 +243,10 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
   Top_bound = 2;
   Left_bound = 3;
   
-  Doc_linear_solver_info_pt = SL::Doc_linear_solver_info_pt;
+  Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
   
   // First we set the mesh.
-  if((SL::Prob_id >= 10) && (SL::Prob_id < 19) )
+  if((NSPP::Prob_id >= 10) && (NSPP::Prob_id < 19) )
   {
     // This is the tilted cavity mesh.
     /// Setup the mesh
@@ -311,15 +309,45 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
    ELEMENT *el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
 
    //Set the Reynolds number, etc
-   el_pt->re_pt() = &SL::Rey;
+   el_pt->re_pt() = &NSPP::Rey;
 
   } // for(unsigned e=0;e<n_el;e++)
 
  //Assign equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
-
- set_prec_and_solver();
  
+ Vector<Mesh*> mesh_pt(2,0);
+ mesh_pt[0] = Bulk_mesh_pt;
+ mesh_pt[1] = Surface_mesh_P_pt;
+
+ NSPP::Prec_param_pt->Mesh_pt = mesh_pt;
+ NSPP::Prec_param_pt->Problem_pt = this;
+
+ Prec_pt = LPH::setup_preconditioner(NSPP::Prec_param_pt);
+
+ pause("Paused from main"); 
+ 
+
+ // Build solve and preconditioner
+#ifdef OOMPH_HAS_TRILINOS
+ TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+ trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+ Solver_pt = trilinos_solver_pt;
+ NSPP::Using_trilinos_solver = true;
+#else
+ Solver_pt = new GMRES<CRDoubleMatrix>;
+ // We use RHS preconditioning. Note that by default,
+ // left hand preconditioning is used.
+ static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+ NSPP::Using_trilinos_solver = false;
+#endif
+ 
+ Solver_pt->tolerance() = 1.0e-6;
+ this->newton_solver_tolerance() = 1.0e-6;
+
+ // Set solver and preconditioner
+ Solver_pt->preconditioner_pt() = Prec_pt;
+ linear_solver_pt() = Solver_pt; 
 
  //////////////////////////////////////////////////////////////////////////////
  // Setting up the solver an preconditioners.
@@ -340,11 +368,11 @@ template<class ELEMENT>
 void TiltedCavityProblem<ELEMENT>::doc_solution()
 {
 
-  namespace SL = SquareLagrange;
+  namespace NSPP = NavierStokesProblemParameters;
   
   std::ofstream some_file;
   std::stringstream filename;
-  filename << SL::Soln_dir<<"/"<<SL::Label<<".dat";
+  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str<<".dat";
 
   // Number of plot points
   unsigned npts=5;
@@ -355,378 +383,378 @@ void TiltedCavityProblem<ELEMENT>::doc_solution()
   some_file.close();
 }
 
-//============RAYRAY===========
-/// RAYRAY
-//=======================================================================
-template<class ELEMENT>
-void TiltedCavityProblem<ELEMENT>::set_prec_and_solver()
-{
-  // Alias the namespace for convenience
-  namespace SL = SquareLagrange;
-
-  ////// Build the preconditioner
-  LagrangeEnforcedflowPreconditioner* prec_pt
-    = new LagrangeEnforcedflowPreconditioner;
-
-  Prec_pt = prec_pt;
-
-  Vector<Mesh*> mesh_pt;
-  mesh_pt.resize(2);
-  mesh_pt[0] = Bulk_mesh_pt;
-  mesh_pt[1] = Surface_mesh_P_pt;
-  //meshes_pt[2] = Surface_mesh_T_pt;
-  
-  prec_pt->set_meshes(mesh_pt);
-
-  if(!SL::Use_axnorm)
-  {
-    prec_pt->scaling_sigma() = SL::Scaling_sigma;
-  }
-  
-   // W solver. Use SuperLU
- if(SL::W_solver == 0)
- {
- }
- else
- {
-   std::cout << "Other W solvers not complemented yet. Using default SuperLU"
-             << std::endl;
- }
-
- // The preconditioner for the fluid block:
- if(SL::NS_solver == 0) // Exact solve.
- {}
- else if(SL::NS_solver == 1) // LSC
- {
-   NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
-     new NavierStokesSchurComplementPreconditioner(this);
-
-   prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
-   ns_preconditioner_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
-
-   // F block solve
-   // Preconditioner for the F block:
-   Preconditioner* f_preconditioner_pt = 0;
-   // SL::F_solver == 0 is default, so do nothing.
-   if(SL::F_solver == 11)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_2D_poison_problem();
-#endif
-   }
-   else if(SL::F_solver == 12)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_navier_stokes_momentum_block();
-#endif
-   }
-   else if(SL::F_solver == 13)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPGSStrn075();
-#endif
-   }
-   else if(SL::F_solver == 14)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSGSStrn075();
-#endif
-   }
-   else if(SL::F_solver == 15)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPPilutStrn075();
-#endif
-   }
-   else if(SL::F_solver == 16)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSPilutStrn075();
-#endif
-   }
-   else if(SL::F_solver == 17)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_augmented_momentum_block();
-#endif
-   }
-   else if(SL::F_solver == 81)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPGSStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 82)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPJStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 83)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPPilutStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 84)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSGSStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 85)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSJStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 86)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSPilutStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 2)
-   {
-//     f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
-     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-   }
-   else if(SL::F_solver == 3)
-   {
-     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-#ifdef OOMPH_HAS_HYPRE
-     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
-       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
-#endif
-   }
-   else if (SL::F_solver == 69)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // AMG coarsening: Ruge-Stuben
-     RayGlobalAMGParam::amg_coarsening = 1;
-     
-     // AMG smoother: Gauss-Seidel
-     RayGlobalAMGParam::amg_smoother=0;
-     
-     // There is no damping with GS, otherwise we set the parameter:
-     // RayGlobalAMGParam::amg_damping
-
-     // Different amg strength for simple/stress divergence for viscuous term.
-     if(SL::Vis == 0)
-     {
-       // Simple form
-       RayGlobalAMGParam::amg_strength = 0.25;
-     }
-     else
-     {
-       // Stress divergence form
-       RayGlobalAMGParam::amg_strength = 0.668;
-     }
-     
-     // Setup the preconditioner.
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_using_2D_poisson_base();
-#endif
-   }
-   else if (SL::F_solver == 96)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // AMG coarsening:
-     // Set: RayGlobalAMGParam::amg_coarsening = 
-     // 0 - CLJP
-     // 1 - RS
-     
-     // AMG smoother:
-     // Set: RayGlobalAMGParam::amg_smoother = 
-     // 0 - Jacobi (Need to set damping as well)
-     // 1 - Gauss-Seidel
-     // 2 - Pilut
-     
-     // There is no damping with GS, otherwise we set the parameter:
-     // RayGlobalAMGParam::amg_damping
-
-     RayGlobalAMGParam::amg_strength = SL::f_amg_strength;
-     RayGlobalAMGParam::amg_damping = SL::f_amg_damping;
-     RayGlobalAMGParam::amg_coarsening = SL::f_amg_coarsening;
-     RayGlobalAMGParam::amg_smoother = SL::f_amg_smoother;
-     RayGlobalAMGParam::amg_iterations = SL::f_amg_iterations;
-     RayGlobalAMGParam::amg_smoother_iterations = SL::f_amg_smoother_iterations;
-     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
-
-
-     // Different amg strength for simple/stress divergence for viscuous term.
-     if(RayGlobalAMGParam::amg_strength < 0.0)
-     {
-       if(SL::Vis == 0)
-       {
-         // Simple form
-         RayGlobalAMGParam::amg_strength = 0.25;
-       }
-       else
-       {
-         // Stress divergence form
-         RayGlobalAMGParam::amg_strength = 0.668;
-       }
-     }
-     
-     // Setup the preconditioner.
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_ray();
-#endif
-   }
-
-   // Set the preconditioner in the LSC preconditioner.
-   ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
-   
-   // P block solve
-   //SL::P_solver == 0 is default, so do nothing.
-   if(SL::P_solver == 1)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
-
-     HyprePreconditioner* hypre_preconditioner_pt =
-       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-
-     Hypre_default_settings::
-     set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-   }
-   else if(SL::P_solver == 96)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = 0;
-     
-//* 
-     RayGlobalAMGParam::amg_iterations = SL::p_amg_iterations;
-     RayGlobalAMGParam::amg_smoother_iterations = SL::p_amg_smoother_iterations;
-     RayGlobalAMGParam::amg_smoother = SL::p_amg_smoother;
-     RayGlobalAMGParam::amg_strength = SL::p_amg_strength;
-     //RayGlobalAMGParam::amg_damping = SL::p_amg_damping;
-     RayGlobalAMGParam::amg_coarsening = SL::p_amg_coarsening;
-     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
-
-//     std::cout << "p_amg_iterations:" << SL::p_amg_iterations << std::endl; 
-//     std::cout << "p_amg_smoother_iterations" << SL::p_amg_smoother_iterations << std::endl; 
-//     std::cout << "p_amg_strength" << SL::p_amg_strength << std::endl;
-//     std::cout << "p_amg_coarsening" << SL::p_amg_coarsening << std::endl; 
-// */
-
-     p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::set_hypre_ray();
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-   }
-   else if(SL::P_solver == 2)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
-
-     HyprePreconditioner* hypre_preconditioner_pt =
-       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-
-     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-
-     // Setup v-cycles
-     hypre_preconditioner_pt->set_amg_iterations(2);
-     hypre_preconditioner_pt->amg_smoother_iterations() = 2;
-     
-     // Setup smoother
-     // simple: 0 - DJ, 1 - GS
-     // compelx: Pilut - 7
-     hypre_preconditioner_pt->amg_using_simple_smoothing();
-     hypre_preconditioner_pt->amg_simple_smoother() = 0;
-     // only applicable for DJ
-     hypre_preconditioner_pt->amg_damping() = 0.8;
-
-     // Setup coarsening
-     // 0 - CLJP
-     // 1 - RS
-     hypre_preconditioner_pt->amg_coarsening() = 1;
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-
-   }
- } // if for using LSC as NS prec.
- else
- {
-   pause("There is no solver for NS.");
- }
-
-
- // Set the doc info for book keeping purposes.
- prec_pt->set_doc_linear_solver_info_pt(SL::Doc_linear_solver_info_pt);
-
- if(SL::Use_block_diagonal_w)
- {
-   prec_pt->use_block_diagonal_w_block();
- }
- else
- {
-   prec_pt->use_diagonal_w_block();
- }
-
- if(SL::Doc_prec)
- {
-   prec_pt->enable_doc_prec();
- }
-
- // Set the label, use to output information from the preconditioner, such
- // as the block matrices and the rhs vector
- prec_pt->set_label_pt(&SL::Label);
- prec_pt->set_doc_prec_directory_pt(&SL::Doc_prec_dir);
-
- // Build solve and preconditioner
-#ifdef OOMPH_HAS_TRILINOS
- TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
- trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
- Solver_pt = trilinos_solver_pt;
- SL::Using_trilinos_solver = true;
-#else
- Solver_pt = new GMRES<CRDoubleMatrix>;
- // We use RHS preconditioning. Note that by default,
- // left hand preconditioning is used.
- static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
- SL::Using_trilinos_solver = false;
-#endif
-
- Solver_pt->tolerance() = 1.0e-6;
- this->newton_solver_tolerance() = 1.0e-6;
-
- // Set solver and preconditioner
- Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt;
-}
+////============RAYRAY===========
+///// RAYRAY
+////=======================================================================
+//template<class ELEMENT>
+//void TiltedCavityProblem<ELEMENT>::set_prec_and_solver()
+//{
+//  // Alias the namespace for convenience
+//  namespace SL = SquareLagrange;
+//
+//  ////// Build the preconditioner
+//  LagrangeEnforcedflowPreconditioner* prec_pt
+//    = new LagrangeEnforcedflowPreconditioner;
+//
+//  Prec_pt = prec_pt;
+//
+//  Vector<Mesh*> mesh_pt;
+//  mesh_pt.resize(2);
+//  mesh_pt[0] = Bulk_mesh_pt;
+//  mesh_pt[1] = Surface_mesh_P_pt;
+//  //meshes_pt[2] = Surface_mesh_T_pt;
+//  
+//  prec_pt->set_meshes(mesh_pt);
+//
+//  if(!SL::Use_axnorm)
+//  {
+//    prec_pt->scaling_sigma() = SL::Scaling_sigma;
+//  }
+//  
+//   // W solver. Use SuperLU
+// if(SL::W_solver == 0)
+// {
+// }
+// else
+// {
+//   std::cout << "Other W solvers not complemented yet. Using default SuperLU"
+//             << std::endl;
+// }
+//
+// // The preconditioner for the fluid block:
+// if(SL::NS_solver == 0) // Exact solve.
+// {}
+// else if(SL::NS_solver == 1) // LSC
+// {
+//   NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
+//     new NavierStokesSchurComplementPreconditioner(this);
+//
+//   prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
+//   ns_preconditioner_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
+//
+//   // F block solve
+//   // Preconditioner for the F block:
+//   Preconditioner* f_preconditioner_pt = 0;
+//   // SL::F_solver == 0 is default, so do nothing.
+//   if(SL::F_solver == 11)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_2D_poison_problem();
+//#endif
+//   }
+//   else if(SL::F_solver == 12)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_navier_stokes_momentum_block();
+//#endif
+//   }
+//   else if(SL::F_solver == 13)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_CLJPGSStrn075();
+//#endif
+//   }
+//   else if(SL::F_solver == 14)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_RSGSStrn075();
+//#endif
+//   }
+//   else if(SL::F_solver == 15)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_CLJPPilutStrn075();
+//#endif
+//   }
+//   else if(SL::F_solver == 16)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_RSPilutStrn075();
+//#endif
+//   }
+//   else if(SL::F_solver == 17)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_augmented_momentum_block();
+//#endif
+//   }
+//   else if(SL::F_solver == 81)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_CLJPGSStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 82)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_CLJPJStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 83)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_CLJPPilutStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 84)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_RSGSStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 85)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_RSJStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 86)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // LSC takes type "Preconditioner".
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_for_RSPilutStrn0668();
+//#endif
+//   }
+//   else if(SL::F_solver == 2)
+//   {
+////     f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
+//     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+//   }
+//   else if(SL::F_solver == 3)
+//   {
+//     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+//#ifdef OOMPH_HAS_HYPRE
+//     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+//       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+//       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
+//#endif
+//   }
+//   else if (SL::F_solver == 69)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // AMG coarsening: Ruge-Stuben
+//     RayGlobalAMGParam::amg_coarsening = 1;
+//     
+//     // AMG smoother: Gauss-Seidel
+//     RayGlobalAMGParam::amg_smoother=0;
+//     
+//     // There is no damping with GS, otherwise we set the parameter:
+//     // RayGlobalAMGParam::amg_damping
+//
+//     // Different amg strength for simple/stress divergence for viscuous term.
+//     if(SL::Vis == 0)
+//     {
+//       // Simple form
+//       RayGlobalAMGParam::amg_strength = 0.25;
+//     }
+//     else
+//     {
+//       // Stress divergence form
+//       RayGlobalAMGParam::amg_strength = 0.668;
+//     }
+//     
+//     // Setup the preconditioner.
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_using_2D_poisson_base();
+//#endif
+//   }
+//   else if (SL::F_solver == 96)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     // AMG coarsening:
+//     // Set: RayGlobalAMGParam::amg_coarsening = 
+//     // 0 - CLJP
+//     // 1 - RS
+//     
+//     // AMG smoother:
+//     // Set: RayGlobalAMGParam::amg_smoother = 
+//     // 0 - Jacobi (Need to set damping as well)
+//     // 1 - Gauss-Seidel
+//     // 2 - Pilut
+//     
+//     // There is no damping with GS, otherwise we set the parameter:
+//     // RayGlobalAMGParam::amg_damping
+//
+//     RayGlobalAMGParam::amg_strength = SL::f_amg_strength;
+//     RayGlobalAMGParam::amg_damping = SL::f_amg_damping;
+//     RayGlobalAMGParam::amg_coarsening = SL::f_amg_coarsening;
+//     RayGlobalAMGParam::amg_smoother = SL::f_amg_smoother;
+//     RayGlobalAMGParam::amg_iterations = SL::f_amg_iterations;
+//     RayGlobalAMGParam::amg_smoother_iterations = SL::f_amg_smoother_iterations;
+//     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
+//
+//
+//     // Different amg strength for simple/stress divergence for viscuous term.
+//     if(RayGlobalAMGParam::amg_strength < 0.0)
+//     {
+//       if(SL::Vis == 0)
+//       {
+//         // Simple form
+//         RayGlobalAMGParam::amg_strength = 0.25;
+//       }
+//       else
+//       {
+//         // Stress divergence form
+//         RayGlobalAMGParam::amg_strength = 0.668;
+//       }
+//     }
+//     
+//     // Setup the preconditioner.
+//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+//       set_hypre_ray();
+//#endif
+//   }
+//
+//   // Set the preconditioner in the LSC preconditioner.
+//   ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
+//   
+//   // P block solve
+//   //SL::P_solver == 0 is default, so do nothing.
+//   if(SL::P_solver == 1)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
+//
+//     HyprePreconditioner* hypre_preconditioner_pt =
+//       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+//
+//     Hypre_default_settings::
+//     set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+//#endif
+//   }
+//   else if(SL::P_solver == 96)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     Preconditioner* p_preconditioner_pt = 0;
+//     
+////* 
+//     RayGlobalAMGParam::amg_iterations = SL::p_amg_iterations;
+//     RayGlobalAMGParam::amg_smoother_iterations = SL::p_amg_smoother_iterations;
+//     RayGlobalAMGParam::amg_smoother = SL::p_amg_smoother;
+//     RayGlobalAMGParam::amg_strength = SL::p_amg_strength;
+//     //RayGlobalAMGParam::amg_damping = SL::p_amg_damping;
+//     RayGlobalAMGParam::amg_coarsening = SL::p_amg_coarsening;
+//     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
+//
+////     std::cout << "p_amg_iterations:" << SL::p_amg_iterations << std::endl; 
+////     std::cout << "p_amg_smoother_iterations" << SL::p_amg_smoother_iterations << std::endl; 
+////     std::cout << "p_amg_strength" << SL::p_amg_strength << std::endl;
+////     std::cout << "p_amg_coarsening" << SL::p_amg_coarsening << std::endl; 
+//// */
+//
+//     p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::set_hypre_ray();
+//
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+//#endif
+//   }
+//   else if(SL::P_solver == 2)
+//   {
+//#ifdef OOMPH_HAS_HYPRE
+//     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
+//
+//     HyprePreconditioner* hypre_preconditioner_pt =
+//       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+//
+//     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+//
+//     // Setup v-cycles
+//     hypre_preconditioner_pt->set_amg_iterations(2);
+//     hypre_preconditioner_pt->amg_smoother_iterations() = 2;
+//     
+//     // Setup smoother
+//     // simple: 0 - DJ, 1 - GS
+//     // compelx: Pilut - 7
+//     hypre_preconditioner_pt->amg_using_simple_smoothing();
+//     hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//     // only applicable for DJ
+//     hypre_preconditioner_pt->amg_damping() = 0.8;
+//
+//     // Setup coarsening
+//     // 0 - CLJP
+//     // 1 - RS
+//     hypre_preconditioner_pt->amg_coarsening() = 1;
+//
+//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+//#endif
+//
+//   }
+// } // if for using LSC as NS prec.
+// else
+// {
+//   pause("There is no solver for NS.");
+// }
+//
+//
+// // Set the doc info for book keeping purposes.
+// prec_pt->set_doc_linear_solver_info_pt(SL::Doc_linear_solver_info_pt);
+//
+// if(SL::Use_block_diagonal_w)
+// {
+//   prec_pt->use_block_diagonal_w_block();
+// }
+// else
+// {
+//   prec_pt->use_diagonal_w_block();
+// }
+//
+// if(SL::Doc_prec)
+// {
+//   prec_pt->enable_doc_prec();
+// }
+//
+// // Set the label, use to output information from the preconditioner, such
+// // as the block matrices and the rhs vector
+// prec_pt->set_label_pt(&SL::Label);
+// prec_pt->set_doc_prec_directory_pt(&SL::Doc_prec_dir);
+//
+// // Build solve and preconditioner
+//#ifdef OOMPH_HAS_TRILINOS
+// TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+// trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+// Solver_pt = trilinos_solver_pt;
+// SL::Using_trilinos_solver = true;
+//#else
+// Solver_pt = new GMRES<CRDoubleMatrix>;
+// // We use RHS preconditioning. Note that by default,
+// // left hand preconditioning is used.
+// static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+// SL::Using_trilinos_solver = false;
+//#endif
+//
+// Solver_pt->tolerance() = 1.0e-6;
+// this->newton_solver_tolerance() = 1.0e-6;
+//
+// // Set solver and preconditioner
+// Solver_pt->preconditioner_pt() = Prec_pt;
+// linear_solver_pt() = Solver_pt;
+//}
 
 
 //============RAYRAY===========
@@ -1067,12 +1095,18 @@ int main(int argc, char* argv[])
   namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = SquareLagrange;
 
+  // Problem dimension.
   const unsigned dim = 2;
 
+  // Create PrecParam to hold all the preconditioner parameters.
   LPH::PrecParam prec_param;
+  // This is give to the general NavierStokesProblemParameters namespace.
+  NSPP::Prec_param_pt = &prec_param;
 
-  // Set up doc info
+
+  // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
+  // Again, pass this to the NSPP
   NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
 
@@ -1080,33 +1114,58 @@ int main(int argc, char* argv[])
   CommandLineArgs::setup(argc,argv);
 
   NSPP::setup_commandline_flags();
-
   LPH::setup_commandline_flags(&prec_param);
-
   SL::setup_commandline_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
-  pause("Done new cl flags"); 
-  
 
+  ////////////////////////////////////////////////////////////////
+  // Flag to output the preconditioner, used for debugging.
+  std::cout << "Doc_prec_dir_str: " << prec_param.Doc_prec_dir_str << std::endl;
+  std::cout << "Scaling_sigma: " << prec_param.Scaling_sigma << std::endl; 
+  std::cout << "W_solver: " << prec_param.W_solver << std::endl; 
+  if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
+  {
+    std::cout << "have set bdw" << std::endl; 
+  }
+  else
+  {
+    std::cout << "have no set bdw" << std::endl; 
+  }
+  std::cout << "NS_solver: " << prec_param.NS_solver << std::endl; 
+  std::cout << "P_solver: " << prec_param.P_solver << std::endl; 
+  std::cout << "F_solver: " << prec_param.F_solver << std::endl; 
+  std::cout << "f_amg_strength: " << prec_param.f_amg_strength << std::endl;
+  std::cout << "f_amg_damping: " << prec_param.f_amg_damping << std::endl; 
+  std::cout << "f_amg_coarsening" << prec_param.f_amg_coarsening << std::endl; 
+  std::cout << "f_amg_smoother: " << prec_param.f_amg_smoother << std::endl; 
+  std::cout << "f_amg_iterations: " << prec_param.f_amg_iterations << std::endl; 
+  std::cout << "f_amg_smoother_iterations: " << prec_param.f_amg_smoother_iterations << std::endl;
+  std::cout << "p_amg_strength: " << prec_param.p_amg_strength << std::endl;
+  std::cout << "p_amg_damping: " << prec_param.p_amg_damping << std::endl; 
+  std::cout << "p_amg_coarsening" << prec_param.p_amg_coarsening << std::endl; 
+  std::cout << "p_amg_smoother: " << prec_param.p_amg_smoother << std::endl; 
+  std::cout << "p_amg_iterations: " << prec_param.p_amg_iterations << std::endl; 
+  std::cout << "p_amg_smoother_iterations: " << prec_param.p_amg_smoother_iterations << std::endl;   
+
+  
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
 
   // dim = 2
   NSPP::generic_problem_setup(dim);
-
   LPH::generic_setup(&prec_param);
 
+  std::cout << "Doc_prec: " << prec_param.Doc_prec << std::endl;
+  std::cout << "Use_axnorm: " << prec_param.Use_axnorm << std::endl;
+  std::cout << "Use_block_diagonal_w: " << prec_param.Use_block_diagonal_w << std::endl; 
   SL::generic_setup(&prec_param);
 
-  pause("Paussso"); 
-  
   // Solve with Taylor-Hood element, set up problem
   TiltedCavityProblem< QTaylorHoodElement<dim> > problem;
-
 
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1121,21 +1180,21 @@ int main(int argc, char* argv[])
   {
     unsigned rey_increment = 0;
 
-    for (SL::Rey = SL::Rey_start; 
-        SL::Rey <= SL::Rey_end; SL::Rey += SL::Rey_incre)
+    for (NSPP::Rey = NSPP::Rey_start; 
+        NSPP::Rey <= NSPP::Rey_end; NSPP::Rey += NSPP::Rey_incre)
     {
       std::ostringstream strs;
-      strs << "R" << SL::Rey;
-      //     SL::Rey_str = strs.str(); RAY RAY FIX THIS
+      strs << "R" << NSPP::Rey;
+      //     NSPP::Rey_str = strs.str(); RAY RAY FIX THIS
 
       // Setup the label. Used for doc solution and preconditioner.
-      SL::Label = SL::create_label(&prec_param);
+      NSPP::Label_str = SL::create_label(&prec_param);
 
       time_t rawtime;
       time(&rawtime);
 
       std::cout << "RAYDOING: "
-        << SL::Label
+        << NSPP::Label_str
         << " on " << ctime(&rawtime) << std::endl;
 
 
@@ -1143,7 +1202,7 @@ int main(int argc, char* argv[])
       problem.newton_solve();
 
       //Output solution
-      if(SL::Doc_soln){problem.doc_solution();}
+      if(NSPP::Doc_soln){problem.doc_solution();}
 
       //////////////////////////////////////////////////////////////////////////
       ////////////// Outputting results ////////////////////////////////////////
@@ -1163,13 +1222,13 @@ int main(int argc, char* argv[])
 
         // Create the File...
         std::ostringstream filename_stream;
-        filename_stream << SL::Itstime_dir<<"/"<<SL::Label;
+        filename_stream << NSPP::Itstime_dir_str<<"/"<<NSPP::Label_str;
         std::ofstream outfile;
         outfile.open(filename_stream.str().c_str());
 
         // We now output the iteration and time.
         Vector<Vector<Vector<double> > > iters_times
-          = SL::Doc_linear_solver_info_pt->iterations_and_times();
+          = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
 
         // Below outputs the iteration counts and time.
         // Output the number of iterations
@@ -1273,13 +1332,13 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-    SL::Label = SL::create_label(&prec_param);
+    NSPP::Label_str = SL::create_label(&prec_param);
 
     time_t rawtime;
     time(&rawtime);
 
     std::cout << "RAYDOING: "
-      << SL::Label
+      << NSPP::Label_str
       << " on " << ctime(&rawtime) << std::endl;
 
     problem.distribute();
@@ -1288,7 +1347,7 @@ int main(int argc, char* argv[])
     problem.newton_solve();
 
     //Output solution
-    if(SL::Doc_soln)
+    if(NSPP::Doc_soln)
     {problem.doc_solution();}
 
 
@@ -1315,8 +1374,8 @@ int main(int argc, char* argv[])
     {
       output_to_file = true;
       std::ostringstream filename_stream;
-      filename_stream << SL::Itstime_dir<<"/"
-        << SL::Label
+      filename_stream << NSPP::Itstime_dir_str<<"/"
+        << NSPP::Label_str
         <<"NP"<<nproc<<"R"<<my_rank;
       outfile.open(filename_stream.str().c_str());
     }
@@ -1328,7 +1387,7 @@ int main(int argc, char* argv[])
 
     // Get the 3D vector which holds the iteration counts and timing results.
     Vector<Vector<Vector<double> > > iters_times
-      = SL::Doc_linear_solver_info_pt->iterations_and_times();
+      = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
 
     // Since this is a steady state problem, there is only
     // one "time step", thus it is essentially a 2D vector 
