@@ -264,7 +264,6 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
     
     Bulk_mesh_pt =
       new SlopingQuadMesh<ELEMENT>(nx,ny,lx,ly,SL::Ang);
-      
   }
   else
   {
@@ -320,13 +319,11 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
  mesh_pt[0] = Bulk_mesh_pt;
  mesh_pt[1] = Surface_mesh_P_pt;
 
- NSPP::Prec_param_pt->Mesh_pt = mesh_pt;
- NSPP::Prec_param_pt->Problem_pt = this;
+ LPH::Mesh_pt = mesh_pt;
+ LPH::Problem_pt = this;
 
- Prec_pt = LPH::setup_preconditioner(NSPP::Prec_param_pt);
 
- pause("Paused from main"); 
- 
+ Prec_pt = LPH::get_preconditioner();
 
  // Build solve and preconditioner
 #ifdef OOMPH_HAS_TRILINOS
@@ -841,7 +838,7 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
    double x1=nod_pt->x(1);
 
    // Tilt x1 by -SL::Ang, this will give us the original coordinate.
-   double x1_old = x0*sin(-SL::Ang) + x1*cos(-SL::Ang);
+   double x1_old = x0*sin(-SL::Ang) + x1*cos(-SL::Ang); 
 
    // Now calculate the parabolic inflow at this point.
    double u0_old = (x1_old - SL::Y_min)*(SL::Y_max - x1_old);
@@ -1098,71 +1095,46 @@ int main(int argc, char* argv[])
   // Problem dimension.
   const unsigned dim = 2;
 
-  // Create PrecParam to hold all the preconditioner parameters.
-  LPH::PrecParam prec_param;
-  // This is give to the general NavierStokesProblemParameters namespace.
-  NSPP::Prec_param_pt = &prec_param;
-
-
   // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
-  // Again, pass this to the NSPP
+  // Again, pass this to the NSPP and LPH
   NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
+  // Set the Label_pt
+  LPH::Label_str_pt = &NSPP::Label_str;
+  LPH::Vis_pt = &NSPP::Vis;
+  SL::Prob_id_pt = &NSPP::Prob_id;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
   NSPP::setup_commandline_flags();
-  LPH::setup_commandline_flags(&prec_param);
+  LPH::setup_commandline_flags();
   SL::setup_commandline_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
 
-  ////////////////////////////////////////////////////////////////
-  // Flag to output the preconditioner, used for debugging.
-  std::cout << "Doc_prec_dir_str: " << prec_param.Doc_prec_dir_str << std::endl;
-  std::cout << "Scaling_sigma: " << prec_param.Scaling_sigma << std::endl; 
-  std::cout << "W_solver: " << prec_param.W_solver << std::endl; 
-  if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
-  {
-    std::cout << "have set bdw" << std::endl; 
-  }
-  else
-  {
-    std::cout << "have no set bdw" << std::endl; 
-  }
-  std::cout << "NS_solver: " << prec_param.NS_solver << std::endl; 
-  std::cout << "P_solver: " << prec_param.P_solver << std::endl; 
-  std::cout << "F_solver: " << prec_param.F_solver << std::endl; 
-  std::cout << "f_amg_strength: " << prec_param.f_amg_strength << std::endl;
-  std::cout << "f_amg_damping: " << prec_param.f_amg_damping << std::endl; 
-  std::cout << "f_amg_coarsening" << prec_param.f_amg_coarsening << std::endl; 
-  std::cout << "f_amg_smoother: " << prec_param.f_amg_smoother << std::endl; 
-  std::cout << "f_amg_iterations: " << prec_param.f_amg_iterations << std::endl; 
-  std::cout << "f_amg_smoother_iterations: " << prec_param.f_amg_smoother_iterations << std::endl;
-  std::cout << "p_amg_strength: " << prec_param.p_amg_strength << std::endl;
-  std::cout << "p_amg_damping: " << prec_param.p_amg_damping << std::endl; 
-  std::cout << "p_amg_coarsening" << prec_param.p_amg_coarsening << std::endl; 
-  std::cout << "p_amg_smoother: " << prec_param.p_amg_smoother << std::endl; 
-  std::cout << "p_amg_iterations: " << prec_param.p_amg_iterations << std::endl; 
-  std::cout << "p_amg_smoother_iterations: " << prec_param.p_amg_smoother_iterations << std::endl;   
-
-  
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
 
   // dim = 2
   NSPP::generic_problem_setup(dim);
-  LPH::generic_setup(&prec_param);
+  LPH::generic_setup();
 
-  std::cout << "Doc_prec: " << prec_param.Doc_prec << std::endl;
-  std::cout << "Use_axnorm: " << prec_param.Use_axnorm << std::endl;
-  std::cout << "Use_block_diagonal_w: " << prec_param.Use_block_diagonal_w << std::endl; 
-  SL::generic_setup(&prec_param);
+  
+
+  
+//  std::cout << "Doc_prec: " << prec_param.Doc_prec << std::endl;
+//  std::cout << "Use_axnorm: " << prec_param.Use_axnorm << std::endl;
+//  std::cout << "Use_block_diagonal_w: " << prec_param.Use_block_diagonal_w << std::endl; 
+  SL::generic_setup();
+//  std::string tmplabels = SL::create_label() + NSPP::create_label() + LPH::create_label();
+//  NSPP::Label_str = tmplabels;
+//  std::cout << "NPH::Label: " << *LPH::Label_str_pt << std::endl; 
 
   // Solve with Taylor-Hood element, set up problem
   TiltedCavityProblem< QTaylorHoodElement<dim> > problem;
@@ -1188,7 +1160,8 @@ int main(int argc, char* argv[])
       //     NSPP::Rey_str = strs.str(); RAY RAY FIX THIS
 
       // Setup the label. Used for doc solution and preconditioner.
-      NSPP::Label_str = SL::create_label(&prec_param);
+//      NSPP::Label_str = SL::create_label(&prec_param); RAYRAY old
+      NSPP::Label_str = "";
 
       time_t rawtime;
       time(&rawtime);
@@ -1332,7 +1305,7 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-    NSPP::Label_str = SL::create_label(&prec_param);
+    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
 
     time_t rawtime;
     time(&rawtime);
