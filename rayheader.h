@@ -51,7 +51,7 @@ using namespace oomph;
 ///   bool inset = check_if_in_set<int>(prob_id_array,8,91);
 ///
 //=============================================================================
-template <typename T>
+  template <typename T>
 bool check_if_in_set(T myarray[], unsigned nval, T number)
 {
   // Convert the array of numbers into a set.
@@ -66,7 +66,7 @@ bool check_if_in_set(T myarray[], unsigned nval, T number)
   // The second in the pair is false if not added. 
   // This means it is in the set, so we negate this to make it true.
   ret = myset.insert(number);
-  
+
   return (!ret.second);
 } // check_if_in_set(...)
 
@@ -106,33 +106,33 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     HyprePreconditioner* h_prec_pt 
       = checked_dynamic_cast<HyprePreconditioner*>(preconditioner_pt);
-    
+
     // Print AMG iterations:
     std::cout << "HyprePreconditioner settings are: " << std::endl;
     std::cout << "Max_iter: " << h_prec_pt->amg_iterations() << std::endl;
     std::cout << "smoother iter: " << h_prec_pt->amg_smoother_iterations() 
-              << std::endl;
+      << std::endl;
     std::cout << "Hypre_method: " << h_prec_pt->hypre_method() << std::endl;
     std::cout << "internal_preconditioner: " 
-              << h_prec_pt->internal_preconditioner() << std::endl;
+      << h_prec_pt->internal_preconditioner() << std::endl;
     std::cout << "AMG_using_simple_smoothing: " 
-              << h_prec_pt->amg_using_simple_smoothing_flag() << std::endl; 
+      << h_prec_pt->amg_using_simple_smoothing_flag() << std::endl; 
     std::cout << "AMG_simple_smoother: " 
-              << h_prec_pt->amg_simple_smoother() << std::endl; 
+      << h_prec_pt->amg_simple_smoother() << std::endl; 
     std::cout << "AMG_complex_smoother: " 
-              << h_prec_pt->amg_complex_smoother() << std::endl; 
+      << h_prec_pt->amg_complex_smoother() << std::endl; 
     std::cout << "AMG_coarsening: " 
-              << h_prec_pt->amg_coarsening() << std::endl;
+      << h_prec_pt->amg_coarsening() << std::endl;
     std::cout << "AMG_max_levels: " 
-              << h_prec_pt->amg_max_levels() << std::endl;
+      << h_prec_pt->amg_max_levels() << std::endl;
     std::cout << "AMG_damping: " 
-              << h_prec_pt->amg_damping() << std::endl;
+      << h_prec_pt->amg_damping() << std::endl;
     std::cout << "AMG_strength: " 
-              << h_prec_pt->amg_strength() << std::endl;;
+      << h_prec_pt->amg_strength() << std::endl;;
     std::cout << "AMG_max_row_sum: " 
-              << h_prec_pt->amg_max_row_sum() << std::endl;
+      << h_prec_pt->amg_max_row_sum() << std::endl;
     std::cout << "AMG_truncation: " 
-              << h_prec_pt->amg_truncation() << std::endl;
+      << h_prec_pt->amg_truncation() << std::endl;
     std::cout << "\n" << std::endl;
   }
 
@@ -141,13 +141,13 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   //===========================================================================
   void reset_amg_param()
   {
-     RayGlobalAMGParam::amg_strength = -1.0;
-     RayGlobalAMGParam::amg_damping = -1.0;
-     RayGlobalAMGParam::amg_coarsening = -1;
-     RayGlobalAMGParam::amg_smoother = -1;
-     RayGlobalAMGParam::amg_iterations = -1;
-     RayGlobalAMGParam::amg_smoother_iterations = -1;
-     RayGlobalAMGParam::print_hypre = false;
+    RayGlobalAMGParam::amg_strength = -1.0;
+    RayGlobalAMGParam::amg_damping = -1.0;
+    RayGlobalAMGParam::amg_coarsening = -1;
+    RayGlobalAMGParam::amg_smoother = -1;
+    RayGlobalAMGParam::amg_iterations = -1;
+    RayGlobalAMGParam::amg_smoother_iterations = -1;
+    RayGlobalAMGParam::print_hypre = false;
   }
 
   //===========================================================================
@@ -194,7 +194,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   /// To use these methods set AMG_using_simple_smoothing to false
   /// unsigned AMG_complex_smoother; 
   //===========================================================================
-  
+
   //===========================================================================
   /// Preconditioner* set_hypre_for_2D_poison_problem()
   ///
@@ -248,11 +248,11 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       print_hypre_settings(hypre_preconditioner_pt);
     }
-    
+
     // Return the hypre preconditioner.
     return another_preconditioner_pt;
   } // set_hypre_for_2D_poison_problem()
-  
+
   //===========================================================================
   /// Preconditioner* set_hypre_for_navier_stokes_momentum_block()
   ///
@@ -279,11 +279,11 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       new HyprePreconditioner;
     HyprePreconditioner* hypre_preconditioner_pt = 
       checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-    
+
     // Defaults for Navier Stokes momentum block as defined above.
     Hypre_default_settings::
       set_defaults_for_navier_stokes_momentum_block(hypre_preconditioner_pt);
-    
+
     // Have the strength parameter been set?
     if(RayGlobalAMGParam::amg_strength >= 0)
     {
@@ -296,7 +296,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
     }
-    
+
     // Reset the amg parameters.
     reset_amg_param();
 
@@ -330,45 +330,45 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     // Set the amg_iterations.
     // This is usually set to 1
     if(RayGlobalAMGParam::amg_iterations == -1)
-     {
+    {
       std::ostringstream err_msg;
       err_msg << "The number of AMG iterations must be set." << std::endl;
 
       throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
-     }
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
     else
-     {
+    {
       hypre_preconditioner_pt
         ->set_amg_iterations(RayGlobalAMGParam::amg_iterations);
-     }
+    }
 
-    
+
     // Set the number of amg smoother iterations.
     // This is usually set to 2
     if(RayGlobalAMGParam::amg_smoother_iterations == -1)
-     {
+    {
       std::ostringstream err_msg;
       err_msg << "The number of smoother iterations must be set." << std::endl;
 
       throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
-     }
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
     else
-     {
+    {
       hypre_preconditioner_pt
         ->amg_smoother_iterations() 
-          = RayGlobalAMGParam::amg_smoother_iterations;
-     }
+        = RayGlobalAMGParam::amg_smoother_iterations;
+    }
 
 
     // Store this information.
     std::stringstream cyclestream;
     cyclestream << "its"<<RayGlobalAMGParam::amg_iterations
-                << "smits" << RayGlobalAMGParam::amg_smoother_iterations;
-    
+      << "smits" << RayGlobalAMGParam::amg_smoother_iterations;
+
     string cycle_str = cyclestream.str();
     string smoother_str = "";
     string damping_str = "";
@@ -395,7 +395,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       smoother_str = "J";
       hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
-      
+
       // Setting up Jacobi with damping.
       hypre_preconditioner_pt->amg_using_simple_smoothing();
       hypre_preconditioner_pt->amg_simple_smoother() 
@@ -412,8 +412,8 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
         err_msg << "Please set the damping parameter for Jacobi" << std::endl;
 
         throw OomphLibError(err_msg.str(),
-                            OOMPH_CURRENT_FUNCTION,
-                            OOMPH_EXCEPTION_LOCATION);
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
       }
     }
     else if(RayGlobalAMGParam::amg_smoother == 2)
@@ -426,14 +426,14 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       std::ostringstream err_msg;
       err_msg << "You have supplied smoother: " 
-              << RayGlobalAMGParam::amg_smoother << "\n";
+        << RayGlobalAMGParam::amg_smoother << "\n";
 
       err_msg << "No such smoother. 0 = Jacobi, 1 = GS, 2 = Pilut\n";
 
       err_msg << "Please set RayGlobalAMGParam::smoother\n";
       throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
     }
 
     // AMG coarsening strategy. Coarsening types include:
@@ -456,15 +456,15 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       std::ostringstream err_msg;
       err_msg << "There is no such coarsening: " 
-              << RayGlobalAMGParam::amg_coarsening << "\n";
+        << RayGlobalAMGParam::amg_coarsening << "\n";
       err_msg << "0 - CLJP, 1 - RS\n";
 
       err_msg << "Please set RayGlobalAMGParam::amg_coarsening\n";
       throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
     }
-    
+
     // Now set the AMG strength parameter.
     if(RayGlobalAMGParam::amg_strength >= 0)
     {
@@ -479,8 +479,8 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       std::ostringstream err_msg;
       err_msg << "Please set RayGlobalAMGParam::amg_strength\n"; 
       throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
     }
 
     // Reset the global AMG parameters
@@ -488,17 +488,17 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     // Print out the settings?
     if(RayGlobalAMGParam::print_hypre)
-     {
+    {
       print_hypre_settings(another_preconditioner_pt);
-     }
-    
+    }
+
     std::cout << "RAYHYPRE: " << cycle_str
-                              << coarsening_str 
-                              << smoother_str
-                              << damping_str
-                              << strength_str
-                              << std::endl;
-    
+      << coarsening_str 
+      << smoother_str
+      << damping_str
+      << strength_str
+      << std::endl;
+
     return another_preconditioner_pt;
   } // set_hypre_ray
 
@@ -538,7 +538,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     {
       smoother_str = "J";
       hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
-      
+
       // Setting up Jacobi with damping.
       hypre_preconditioner_pt->amg_using_simple_smoothing();
       hypre_preconditioner_pt->amg_simple_smoother() = 0;
@@ -588,9 +588,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       std::cout << "There is no such coarsening: " << RayGlobalAMGParam::amg_coarsening << std::endl;
       std::cout << "0 - CLJP, 1 - RS, use --amg_coarsening" << std::endl;
       pause("Do not continue"); 
-      
+
     }
-    
+
     if(!(RayGlobalAMGParam::amg_strength < 0))
     {
       hypre_preconditioner_pt->amg_strength() = RayGlobalAMGParam::amg_strength;
@@ -603,13 +603,13 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       std::cout << "Please set the amg_strengh using --amg_strength" << std::endl;
       pause("Do not continue");
     }
-    
+
     std::cout << "RAYHYPRE: " << coarsening_str 
-                              << smoother_str
-                              << damping_str
-                              << strength_str
-                              << std::endl;
-    
+      << smoother_str
+      << damping_str
+      << strength_str
+      << std::endl;
+
     return another_preconditioner_pt;
   }
   /////////////////////////////////////////////////////////////////////////////
@@ -627,7 +627,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_strength() = 0.668;
 
     hypre_preconditioner_pt->amg_damping() = 1.0;
- 
+
     return another_preconditioner_pt;
   } 
 
@@ -766,9 +766,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     return another_preconditioner_pt;
   }
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////////////////
   Preconditioner* set_hypre_for_CLJPGSStrn0668()
   {
     Preconditioner* another_preconditioner_pt =  
@@ -791,7 +791,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_using_simple_smoothing();
     hypre_preconditioner_pt->amg_simple_smoother() = 1;
     //hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     //hypre_preconditioner_pt->amg_using_complex_smoothing();
     //hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -826,7 +826,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_using_simple_smoothing();
     hypre_preconditioner_pt->amg_simple_smoother() = 0;
     hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     //hypre_preconditioner_pt->amg_using_complex_smoothing();
     //hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -861,7 +861,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     //hypre_preconditioner_pt->amg_using_simple_smoothing();
     //hypre_preconditioner_pt->amg_simple_smoother() = 0;
     //hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     hypre_preconditioner_pt->amg_using_complex_smoothing();
     hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -874,9 +874,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     return another_preconditioner_pt;
   }
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//
+  ///////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////
+  //
   Preconditioner* set_hypre_for_RSGSStrn0668()
   {
     Preconditioner* another_preconditioner_pt =  
@@ -899,7 +899,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_using_simple_smoothing();
     hypre_preconditioner_pt->amg_simple_smoother() = 1;
     //hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     //hypre_preconditioner_pt->amg_using_complex_smoothing();
     //hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -934,7 +934,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_using_simple_smoothing();
     hypre_preconditioner_pt->amg_simple_smoother() = 0;
     hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     //hypre_preconditioner_pt->amg_using_complex_smoothing();
     //hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -969,7 +969,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     //hypre_preconditioner_pt->amg_using_simple_smoothing();
     //hypre_preconditioner_pt->amg_simple_smoother() = 0;
     //hypre_preconditioner_pt->amg_damping() = 1.0;
-   
+
     hypre_preconditioner_pt->amg_using_complex_smoothing();
     hypre_preconditioner_pt->amg_complex_smoother() = 7;
 
@@ -989,10 +989,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-
-
-
-namespace SquareLagrange
+namespace StepLagrange
 {
 
 
@@ -1089,12 +1086,12 @@ namespace SquareLagrange
     {
       if(Prob_id_pt == 0)
       {
-      std::ostringstream err_msg;
-      err_msg << "Please set Prob_id_pt from NSPP." << std::endl;
+        std::ostringstream err_msg;
+        err_msg << "Please set Prob_id_pt from NSPP." << std::endl;
 
-      throw OomphLibError(err_msg.str(),
-                          OOMPH_CURRENT_FUNCTION,
-                          OOMPH_EXCEPTION_LOCATION);
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
       }
 
       // The argument immediately after --prob_id is put into SL::Prob_id.
@@ -1136,7 +1133,7 @@ namespace SquareLagrange
     }
     else
     {
-            std::ostringstream err_msg;
+      std::ostringstream err_msg;
       err_msg << "Please set Prob_id with: \n"
         << "--prob_id \n"; 
       throw OomphLibError(err_msg.str(),
@@ -1248,124 +1245,508 @@ namespace SquareLagrange
 
   inline string create_label()
   {
-//    std::string prob_str = "";
-//    //    std::string w_str = "";
-//    //    std::string ns_str = "";
-//    //    std::string f_str = "";
-//    //    std::string p_str = "";
-//    //    std::string vis_str = "";
-//    std::string ang_str = "";
-//    //    std::string rey_str = "";
-//    std::string noel_str = "";
-//    //    std::string w_approx_str = "";
-//    //    std::string sigma_str = "";
-//    if(Prob_id_pt == 0)
-//    {
-//      std::ostringstream err_msg;
-//      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
-//      throw OomphLibError(err_msg.str(),
-//          OOMPH_CURRENT_FUNCTION,
-//          OOMPH_EXCEPTION_LOCATION);
-//    }
-//
-//    const int prob_id = *Prob_id_pt;
-//    switch(prob_id)
-//    {
-//      case 10:
-//        prob_str = "SqTmp";
-//        break;
-//      case 11:
-//        prob_str = "SqPo";
-//        break;
-//      case 12:
-//        prob_str = "SqTf";
-//        break;
-//      case 13:
-//        prob_str = "SqTfPo";
-//        break;
-//      case 20:
-//        prob_str = "AwTmp";
-//        break;
-//      case 21:
-//        prob_str = "AwPo";
-//        break;
-//      case 22:
-//        prob_str = "AwTf";
-//        break;
-//      case 23:
-//        prob_str = "AwTfPo";
-//        break;
-//      default:
-//        {
-//          std::ostringstream err_msg;
-//          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-//            << "10 = (SqTmp) Square, custom stuff...\n"
-//            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-//            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-//            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-//            << "\n"
-//            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-//            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-//            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-//            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
-//            << std::endl;
-//          throw OomphLibError(err_msg.str(),
-//              OOMPH_CURRENT_FUNCTION,
-//              OOMPH_EXCEPTION_LOCATION);
-//        } // Default case
-//    } // switch Prob_id
-//
-//    // Set Ang_str, this exists for only the Sq problems, not Aw.
-//    std::size_t found = prob_str.find("Sq");
-//    if(found != std::string::npos)
-//    {
-//      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-//      {
-//        std::ostringstream strs;
-//        strs << "A" << Ang_deg;
-//        ang_str = strs.str();
-//      }
-//      else
-//      {
-//        std::ostringstream err_msg;
-//        err_msg << "You have selected an Sq problem."
-//          << "Please supply the tilting angle with --ang.\n"
-//          << std::endl;
-//        throw OomphLibError(err_msg.str(),
-//            OOMPH_CURRENT_FUNCTION,
-//            OOMPH_EXCEPTION_LOCATION);
-//      }
-//    }
-//    else
-//    {
-//      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-//      {
-//        std::ostringstream err_msg;
-//        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
-//          << "Please take off the --ang command line argument.\n"
-//          << std::endl;
-//        throw OomphLibError(err_msg.str(),
-//            OOMPH_CURRENT_FUNCTION,
-//            OOMPH_EXCEPTION_LOCATION);
-//      }
-//    }
-//
-//    // Set Noel_str, used for book keeping.
-//    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
-//    {
-//      std::ostringstream strs;
-//      strs << "N" <<Noel;
-//      noel_str = strs.str();
-//    }
-//    else
-//    {
-//      std::ostringstream err_msg;
-//      err_msg << "Please supply the number of elements in 1D using --noel.\n"
-//        << std::endl;
-//      throw OomphLibError(err_msg.str(),
-//          OOMPH_CURRENT_FUNCTION,
-//          OOMPH_EXCEPTION_LOCATION);
-//    }
+    //    std::string prob_str = "";
+    //    //    std::string w_str = "";
+    //    //    std::string ns_str = "";
+    //    //    std::string f_str = "";
+    //    //    std::string p_str = "";
+    //    //    std::string vis_str = "";
+    //    std::string ang_str = "";
+    //    //    std::string rey_str = "";
+    //    std::string noel_str = "";
+    //    //    std::string w_approx_str = "";
+    //    //    std::string sigma_str = "";
+    //    if(Prob_id_pt == 0)
+    //    {
+    //      std::ostringstream err_msg;
+    //      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
+    //      throw OomphLibError(err_msg.str(),
+    //          OOMPH_CURRENT_FUNCTION,
+    //          OOMPH_EXCEPTION_LOCATION);
+    //    }
+    //
+    //    const int prob_id = *Prob_id_pt;
+    //    switch(prob_id)
+    //    {
+    //      case 10:
+    //        prob_str = "SqTmp";
+    //        break;
+    //      case 11:
+    //        prob_str = "SqPo";
+    //        break;
+    //      case 12:
+    //        prob_str = "SqTf";
+    //        break;
+    //      case 13:
+    //        prob_str = "SqTfPo";
+    //        break;
+    //      case 20:
+    //        prob_str = "AwTmp";
+    //        break;
+    //      case 21:
+    //        prob_str = "AwPo";
+    //        break;
+    //      case 22:
+    //        prob_str = "AwTf";
+    //        break;
+    //      case 23:
+    //        prob_str = "AwTfPo";
+    //        break;
+    //      default:
+    //        {
+    //          std::ostringstream err_msg;
+    //          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
+    //            << "10 = (SqTmp) Square, custom stuff...\n"
+    //            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+    //            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+    //            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+    //            << "\n"
+    //            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+    //            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+    //            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+    //            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+    //            << std::endl;
+    //          throw OomphLibError(err_msg.str(),
+    //              OOMPH_CURRENT_FUNCTION,
+    //              OOMPH_EXCEPTION_LOCATION);
+    //        } // Default case
+    //    } // switch Prob_id
+    //
+    //    // Set Ang_str, this exists for only the Sq problems, not Aw.
+    //    std::size_t found = prob_str.find("Sq");
+    //    if(found != std::string::npos)
+    //    {
+    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    //      {
+    //        std::ostringstream strs;
+    //        strs << "A" << Ang_deg;
+    //        ang_str = strs.str();
+    //      }
+    //      else
+    //      {
+    //        std::ostringstream err_msg;
+    //        err_msg << "You have selected an Sq problem."
+    //          << "Please supply the tilting angle with --ang.\n"
+    //          << std::endl;
+    //        throw OomphLibError(err_msg.str(),
+    //            OOMPH_CURRENT_FUNCTION,
+    //            OOMPH_EXCEPTION_LOCATION);
+    //      }
+    //    }
+    //    else
+    //    {
+    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    //      {
+    //        std::ostringstream err_msg;
+    //        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
+    //          << "Please take off the --ang command line argument.\n"
+    //          << std::endl;
+    //        throw OomphLibError(err_msg.str(),
+    //            OOMPH_CURRENT_FUNCTION,
+    //            OOMPH_EXCEPTION_LOCATION);
+    //      }
+    //    }
+    //
+    //    // Set Noel_str, used for book keeping.
+    //    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    //    {
+    //      std::ostringstream strs;
+    //      strs << "N" <<Noel;
+    //      noel_str = strs.str();
+    //    }
+    //    else
+    //    {
+    //      std::ostringstream err_msg;
+    //      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+    //        << std::endl;
+    //      throw OomphLibError(err_msg.str(),
+    //          OOMPH_CURRENT_FUNCTION,
+    //          OOMPH_EXCEPTION_LOCATION);
+    //    }
+
+    std::string label = Prob_str + Ang_deg_str + Noel_str;
+
+    return label; 
+  } // inlined function create_label
+
+} // Namespace SquareLagrange
+
+
+
+namespace SquareLagrange
+{
+
+
+  // Prob id, set by main method
+  int* Prob_id_pt = 0;
+
+  std::string Prob_str = "";
+  std::string Ang_deg_str = "";
+  std::string Noel_str = "";
+
+
+  ///////////////////////
+  // Domain dimensions.//
+  ///////////////////////
+  //
+  // This is a square domain: x,y \in [0,1]
+  //
+
+  // Min and max x value respectively.
+  double X_min = 0.0;
+  double X_max = 1.0;
+
+  // Min and max y value respectively.
+  double Y_min = 0.0;
+  double Y_max = 1.0;
+
+  // The length in the x and y direction respectively.
+  double Lx = X_max - X_min;
+  double Ly = Y_max - Y_min;
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // CL - set directly from the command line.
+  // To set from CL - a CL value is set, this is changed depending on that
+  // value.
+  //
+  // Problem parameter overview:
+  //
+  // // Solvers:
+  //
+  //
+  // F_ns + L^T inv(W) L | B^T
+  // --------------------------
+  //                     | W
+  //
+  // W = 0 (SuperLU)
+  // NS_solver = 0 (SuperLU) or 1 (LSC)
+  // 
+  // If NS_solver = 1, then we have:
+  //
+  // | F | B^T |   |
+  // |----------   |
+  // |   |-M_s |   |
+  // |-------------|
+  // |         | W |
+  //
+  // F_solver = 0 (SuperLU) or 1 (AMG)
+  // P_solver = 0 (SuperLU) or 1 (AMG)
+  // 
+
+  // All problems based on the square domain will be in the same file.
+  // Each unique problem will have an id.
+  // 00 = (SqTmp) Square, custom stuff...
+  // 01 = (SqPo) Square, Parallel outflow (para inflow) 
+  // 02 = (SqTf) Square, Tangential flow (Semi para inflow)
+  // 03 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)
+  //
+  // 10 = (AwTmp) Annulus wedge, custom stuff...
+  // 11 = (AwPo) Annulus wedge, Parallel outflow (para inflow)
+  // 12 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)
+  // 13 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)
+
+  // These are self explanatory:
+  double Ang_deg = 30.0; //CL, Angle in degrees
+  double Ang = 0.0; //CL, Angle in degrees
+  unsigned Noel = 4; //CL, Number of elements in 1D
+  // the default is the norm of the momentum block.
+
+  inline void setup_commandline_flags()
+  {
+    CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
+
+    CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+  }
+
+  inline void generic_setup()
+  {
+
+
+
+    // Set a problem id to identify the problem.
+    // This is used for book keeping purposes.
+    if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+    {
+      if(Prob_id_pt == 0)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please set Prob_id_pt from NSPP." << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // The argument immediately after --prob_id is put into SL::Prob_id.
+      // If this begins with "--", then no problem id has been provided.
+
+      // Maybe I should check if SL::Prob_id is a number or a string...
+
+      // We only accept problem IDs as defined below.
+      // Creating a set of acceptable IDs
+      int prob_id_array[]= {10,11,12,13,
+        20,21,22,23};
+
+      bool inset = check_if_in_set<int>(prob_id_array,8,(*Prob_id_pt));
+
+      // Check if they have provided an acceptable ID.
+      // If a new element has been inserted, it means the user has provided an
+      // ID not in the set.
+      if(inset == false)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide a problem id to identify the problem after "
+          << "after the argument --prob_id.\n" 
+          << "Acceptable IDs are:\n"
+          << "10 = (SqTmp) Square, custom stuff...\n"
+          << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+          << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+          << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+          << "\n"
+          << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+          << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+          << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+          << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set Prob_id with: \n"
+        << "--prob_id \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    // We know that --prob_id is set and is set up properly. We now set the
+    // Prob_str.
+    const int prob_id = *Prob_id_pt;
+    switch(prob_id)
+    {
+      case 10:
+        Prob_str = "SqTmp";
+        break;
+      case 11:
+        Prob_str = "SqPo";
+        break;
+      case 12:
+        Prob_str = "SqTf";
+        break;
+      case 13:
+        Prob_str = "SqTfPo";
+        break;
+      case 20:
+        Prob_str = "AwTmp";
+        break;
+      case 21:
+        Prob_str = "AwPo";
+        break;
+      case 22:
+        Prob_str = "AwTf";
+        break;
+      case 23:
+        Prob_str = "AwTfPo";
+        break;
+      default:
+        {
+          std::ostringstream err_msg;
+          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
+            << "10 = (SqTmp) Square, custom stuff...\n"
+            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+            << "\n"
+            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        } // Default case
+    } // switch Prob_id
+
+    // Check that Ang has been set.
+    if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Angle has not been set. Set (in degrees) with: \n"
+        << "--ang \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    // Now we need to convert Ang into radians.
+    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+    // Now we set the Ang_deg_str.
+    // this exists for only the Sq problems, not Aw.
+    std::size_t found = Prob_str.find("Sq");
+    if(found != std::string::npos)
+    {
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream strs;
+        strs << "A" << Ang_deg;
+        Ang_deg_str = strs.str();
+      }
+      else
+      {
+        std::ostringstream err_msg;
+        err_msg << "You have selected an Sq problem."
+          << "Please supply the tilting angle with --ang.\n"
+          << std::endl;
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+    }
+
+    // Set Noel_str, used for book keeping.
+    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    {
+      std::ostringstream strs;
+      strs << "N" <<Noel;
+      Noel_str = strs.str();
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  }
+
+  inline string create_label()
+  {
+    //    std::string prob_str = "";
+    //    //    std::string w_str = "";
+    //    //    std::string ns_str = "";
+    //    //    std::string f_str = "";
+    //    //    std::string p_str = "";
+    //    //    std::string vis_str = "";
+    //    std::string ang_str = "";
+    //    //    std::string rey_str = "";
+    //    std::string noel_str = "";
+    //    //    std::string w_approx_str = "";
+    //    //    std::string sigma_str = "";
+    //    if(Prob_id_pt == 0)
+    //    {
+    //      std::ostringstream err_msg;
+    //      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
+    //      throw OomphLibError(err_msg.str(),
+    //          OOMPH_CURRENT_FUNCTION,
+    //          OOMPH_EXCEPTION_LOCATION);
+    //    }
+    //
+    //    const int prob_id = *Prob_id_pt;
+    //    switch(prob_id)
+    //    {
+    //      case 10:
+    //        prob_str = "SqTmp";
+    //        break;
+    //      case 11:
+    //        prob_str = "SqPo";
+    //        break;
+    //      case 12:
+    //        prob_str = "SqTf";
+    //        break;
+    //      case 13:
+    //        prob_str = "SqTfPo";
+    //        break;
+    //      case 20:
+    //        prob_str = "AwTmp";
+    //        break;
+    //      case 21:
+    //        prob_str = "AwPo";
+    //        break;
+    //      case 22:
+    //        prob_str = "AwTf";
+    //        break;
+    //      case 23:
+    //        prob_str = "AwTfPo";
+    //        break;
+    //      default:
+    //        {
+    //          std::ostringstream err_msg;
+    //          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
+    //            << "10 = (SqTmp) Square, custom stuff...\n"
+    //            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+    //            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+    //            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+    //            << "\n"
+    //            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+    //            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+    //            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+    //            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+    //            << std::endl;
+    //          throw OomphLibError(err_msg.str(),
+    //              OOMPH_CURRENT_FUNCTION,
+    //              OOMPH_EXCEPTION_LOCATION);
+    //        } // Default case
+    //    } // switch Prob_id
+    //
+    //    // Set Ang_str, this exists for only the Sq problems, not Aw.
+    //    std::size_t found = prob_str.find("Sq");
+    //    if(found != std::string::npos)
+    //    {
+    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    //      {
+    //        std::ostringstream strs;
+    //        strs << "A" << Ang_deg;
+    //        ang_str = strs.str();
+    //      }
+    //      else
+    //      {
+    //        std::ostringstream err_msg;
+    //        err_msg << "You have selected an Sq problem."
+    //          << "Please supply the tilting angle with --ang.\n"
+    //          << std::endl;
+    //        throw OomphLibError(err_msg.str(),
+    //            OOMPH_CURRENT_FUNCTION,
+    //            OOMPH_EXCEPTION_LOCATION);
+    //      }
+    //    }
+    //    else
+    //    {
+    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    //      {
+    //        std::ostringstream err_msg;
+    //        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
+    //          << "Please take off the --ang command line argument.\n"
+    //          << std::endl;
+    //        throw OomphLibError(err_msg.str(),
+    //            OOMPH_CURRENT_FUNCTION,
+    //            OOMPH_EXCEPTION_LOCATION);
+    //      }
+    //    }
+    //
+    //    // Set Noel_str, used for book keeping.
+    //    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    //    {
+    //      std::ostringstream strs;
+    //      strs << "N" <<Noel;
+    //      noel_str = strs.str();
+    //    }
+    //    else
+    //    {
+    //      std::ostringstream err_msg;
+    //      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+    //        << std::endl;
+    //      throw OomphLibError(err_msg.str(),
+    //          OOMPH_CURRENT_FUNCTION,
+    //          OOMPH_EXCEPTION_LOCATION);
+    //    }
 
     std::string label = Prob_str + Ang_deg_str + Noel_str;
 
@@ -2296,21 +2677,19 @@ namespace NavierStokesProblemParameters
     if(CommandLineArgs::command_line_flag_has_been_set("--dist_prob"))
     {
       Distribute_problem = true;
-      std::cout << "Distributed is true" << std::endl; 
     }
     else
     {
       Distribute_problem = false;
-      std::cout << "Distributed is false" << std::endl; 
     }
 
     if(!CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
     {
-        std::ostringstream err_msg;
-        err_msg << "Please set --prob_id." << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
+      std::ostringstream err_msg;
+      err_msg << "Please set --prob_id." << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
     }
 
     // Document the solution? Default is false.
@@ -2346,19 +2725,13 @@ namespace NavierStokesProblemParameters
     {
       if(dim == 2)
       {
-        std::cout << "dim is 2" << std::endl; 
-        
         if (Vis == 0)
         {
-          std::cout << "setting simple" << std::endl; 
-          
           NavierStokesEquations<2>::Gamma[0]=0.0;
           NavierStokesEquations<2>::Gamma[1]=0.0;
         }
         else if (Vis == 1)
         {
-          std::cout << "setting stress" << std::endl; 
-          
           NavierStokesEquations<2>::Gamma[0]=1.0;
           NavierStokesEquations<2>::Gamma[1]=1.0;
         } // else - setting viscuous term.

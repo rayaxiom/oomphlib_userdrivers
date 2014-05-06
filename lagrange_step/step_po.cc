@@ -42,7 +42,6 @@
 #include "meshes/rectangular_quadmesh.h"
 #include "meshes/backward_step_mesh.h"
 
-//using namespace std;
 using namespace oomph;
 
 namespace oomph
@@ -147,11 +146,9 @@ public:
 #endif
 
    // Get the preconditioner setup time.
-   
-
 
    // Set the solver time.
-   if(StepLagrange::Using_trilinos_solver)
+   if(NavierStokesProblemParameters::Using_trilinos_solver)
    {
      TrilinosAztecOOSolver* trilinos_solver_pt 
        = dynamic_cast<TrilinosAztecOOSolver*>(this->linear_solver_pt());
@@ -164,6 +161,21 @@ public:
 
    Doc_linear_solver_info_pt->add_iteration_and_time
      (iters,preconditioner_setup_time,solver_time);
+ }
+
+ void delete_flux_elements(Mesh* const &surface_mesh_pt);
+
+ void actions_before_distribute()
+ {
+    delete_flux_elements(Surface_mesh_P_pt);
+    rebuild_global_mesh();
+ }
+
+
+ void actions_after_distribute()
+ {
+   create_parall_outflow_lagrange_elements(5,Bulk_mesh_pt,Surface_mesh_P_pt);
+   rebuild_global_mesh();
  }
 
  /// Doc the solution
@@ -207,9 +219,11 @@ template<class ELEMENT> // rrrback - changed here.
 BackwardStepProblem<ELEMENT>::BackwardStepProblem()
 {
  // Alias the namespace for convenience
+ namespace NSPP = NavierStokesProblemParameters;
+ namespace LPH = LagrangianPreconditionerHelpers;
  namespace SL = StepLagrange;
  
- Doc_linear_solver_info_pt = SL::Doc_linear_solver_info_pt;
+ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 
  // Assign the boundaries:
  const unsigned if_b=3;
@@ -315,661 +329,45 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem()
    ELEMENT *el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
 
    //Set the Reynolds number, etc
-   el_pt->re_pt() = &SL::Rey;
+   el_pt->re_pt() = &NSPP::Rey;
 
   } // for(unsigned e=0;e<n_el;e++)
 
  //Assgn equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
 
-// set_prec_and_solver();
-
- ////// Build the preconditioner
-// LagrangeEnforcedflowPreconditioner* prec_pt
-//   = new LagrangeEnforcedflowPreconditioner;
- 
-// Prec_pt = prec_pt;
-
-// Vector<Mesh*> mesh_pt;
-// mesh_pt.resize(2);
-// mesh_pt[0] = Bulk_mesh_pt;
-// mesh_pt[1] = Surface_mesh_P_pt;
- //meshes_pt[2] = Surface_mesh_T_pt;
-// prec_pt->set_meshes(mesh_pt);
- 
-
-// if(!SL::Use_axnorm)
-// {
-//   prec_pt->scaling_sigma() = SL::Scaling_sigma;
-// }
-
- //////////////////////////////////////////////////////////////////////////////
- // Setting up the solver an preconditioners.
-
-// // W solver. Use SuperLU
-// if(SL::W_solver == 0)
-// {
-// }
-// else
-// {
-//   std::cout << "Other W solvers not complemented yet. Using default SuperLU"
-//             << std::endl;
-// }
-
- //////////////////////////////////////////////////////////////////////////////
- // NS preconditioner
-// ConstrainedNavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
-// new ConstrainedNavierStokesSchurComplementPreconditioner;
-
-
-// // The preconditioner for the fluid block:
-// if(SL::NS_solver == 0) // Exact solve.
-// {}
-// else if(SL::NS_solver == 1) // LSC
-// {
-//   NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
-//     new NavierStokesSchurComplementPreconditioner(this);
-//
-//   prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
-//   ns_preconditioner_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
-//
-//   // F block solve
-//   // Preconditioner for the F block:
-//   Preconditioner* f_preconditioner_pt = 0;
-//   // SL::F_solver == 0 is default, so do nothing.
-//   if(SL::F_solver == 11)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_2D_poison_problem();
-//#endif
-//   }
-//   else if(SL::F_solver == 12)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_navier_stokes_momentum_block();
-//#endif
-//   }
-//   else if(SL::F_solver == 13)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_CLJPGSStrn075();
-//#endif
-//   }
-//   else if(SL::F_solver == 14)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_RSGSStrn075();
-//#endif
-//   }
-//   else if(SL::F_solver == 15)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_CLJPPilutStrn075();
-//#endif
-//   }
-//   else if(SL::F_solver == 16)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_RSPilutStrn075();
-//#endif
-//   }
-//   else if(SL::F_solver == 17)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_augmented_momentum_block();
-//#endif
-//   }
-//   else if(SL::F_solver == 81)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_CLJPGSStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 82)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_CLJPJStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 83)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_CLJPPilutStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 84)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_RSGSStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 85)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_RSJStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 86)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // LSC takes type "Preconditioner".
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_for_RSPilutStrn0668();
-//#endif
-//   }
-//   else if(SL::F_solver == 2)
-//   {
-////     f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
-//     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-//   }
-//   else if(SL::F_solver == 3)
-//   {
-//     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-//#ifdef OOMPH_HAS_HYPRE
-//     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
-//       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-//       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
-//#endif
-//   }
-//   else if (SL::F_solver == 69)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     // AMG coarsening: Ruge-Stuben
-//     RayGlobalAMGParam::amg_coarsening = 1;
-//     
-//     // AMG smoother: Gauss-Seidel
-//     RayGlobalAMGParam::amg_smoother=0;
-//     
-//     // There is no damping with GS, otherwise we set the parameter:
-//     // RayGlobalAMGParam::amg_damping
-//
-//     // Different amg strength for simple/stress divergence for viscuous term.
-//     if(SL::Vis == 0)
-//     {
-//       // Simple form
-//       RayGlobalAMGParam::amg_strength = 0.25;
-//     }
-//     else
-//     {
-//       // Stress divergence form
-//       RayGlobalAMGParam::amg_strength = 0.668;
-//     }
-//     
-//     // Setup the preconditioner.
-//     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-//       set_hypre_using_2D_poisson_base();
-//#endif
-//   }
-//
-//   // Set the preconditioner in the LSC preconditioner.
-//   ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
-//   
-//   // P block solve
-//   //SL::P_solver == 0 is default, so do nothing.
-//   if(SL::P_solver == 1)
-//   {
-//#ifdef OOMPH_HAS_HYPRE
-//     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
-//
-//     HyprePreconditioner* hypre_preconditioner_pt =
-//       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-//
-//     Hypre_default_settings::
-//     set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-//
-//     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-//#endif
-//   }
-// } // if for using LSC as NS prec.
-// else
-// {
-//   pause("There is no solver for NS.");
-// }
-//
-// // Set the doc info for book keeping purposes.
-// prec_pt->set_doc_linear_solver_info_pt(SL::Doc_linear_solver_info_pt);
-//
-// if(SL::Use_diagonal_w_block)
-// {
-//   prec_pt->use_diagonal_w_block();
-// }
-// else
-// {
-//   prec_pt->use_block_diagonal_w_block();
-// }
-
-// if(SL::Doc_prec)
-// {
-//   prec_pt->enable_doc_prec();
-// }
-
- // Set the label, use to output information from the preconditioner, such
- // as the block matrices and the rhs vector
-// prec_pt->set_label_pt(&SL::Label);
-
-// // Build solve and preconditioner
-//#ifdef OOMPH_HAS_TRILINOS
-// TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
-// trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
-// Solver_pt = trilinos_solver_pt;
-// SL::Using_trilinos_solver = true;
-//#else
-// Solver_pt = new GMRES<CRDoubleMatrix>;
-// // We use RHS preconditioning. Note that by default,
-// // left hand preconditioning is used.
-// static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
-// SL::Using_trilinos_solver = false;
-//#endif
-//
-// Solver_pt->tolerance() = 1.0e-6;
-// this->newton_solver_tolerance() = 1.0e-6;
-//
-// // Set solver and preconditioner
-// Solver_pt->preconditioner_pt() = Prec_pt;
-// linear_solver_pt() = Solver_pt;
-}
-
-//==start_of_doc_solution=================================================
-/// Set up the solver and preconditioners.
-//========================================================================
-template<class ELEMENT>
-void BackwardStepProblem<ELEMENT>::set_prec_and_solver()
-{
-  // Alias the namespace for convenience
-  namespace SL = StepLagrange;
-
- ////// Build the preconditioner
- LagrangeEnforcedflowPreconditioner* prec_pt
-   = new LagrangeEnforcedflowPreconditioner;
-
- Prec_pt = prec_pt;
-
- Vector<Mesh*> mesh_pt;
- mesh_pt.resize(2);
+ Vector<Mesh*> mesh_pt(2,0);
  mesh_pt[0] = Bulk_mesh_pt;
  mesh_pt[1] = Surface_mesh_P_pt;
 
- prec_pt->set_meshes(mesh_pt);
+ LPH::Mesh_pt = mesh_pt;
+ LPH::Problem_pt = this;
 
-  if(!SL::Use_axnorm)
-  {
-    prec_pt->scaling_sigma() = SL::Scaling_sigma;
-  }
+ Prec_pt = LPH::get_preconditioner();
 
-   // W solver. Use SuperLU
-
-   // W solver. Use SuperLU
- if(SL::W_solver == 0)
- {
- }
- else
- {
-   std::cout << "Other W solvers not complemented yet. Using default SuperLU"
-             << std::endl;
- }
-
- // The preconditioner for the fluid block:
- if(SL::NS_solver == 0) // Exact solve.
- {}
- else if(SL::NS_solver == 1) // LSC
- {
-   NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
-     new NavierStokesSchurComplementPreconditioner(this);
-
-   prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
-   ns_preconditioner_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
-
-   // F block solve
-   // Preconditioner for the F block:
-   Preconditioner* f_preconditioner_pt = 0;
-   // SL::F_solver == 0 is default, so do nothing.
-   if(SL::F_solver == 11)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_2D_poison_problem();
-#endif
-   }
-   else if(SL::F_solver == 12)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_navier_stokes_momentum_block();
-#endif
-   }
-   else if(SL::F_solver == 13)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPGSStrn075();
-#endif
-   }
-   else if(SL::F_solver == 14)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSGSStrn075();
-#endif
-   }
-   else if(SL::F_solver == 15)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPPilutStrn075();
-#endif
-   }
-   else if(SL::F_solver == 16)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSPilutStrn075();
-#endif
-   }
-   else if(SL::F_solver == 17)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_augmented_momentum_block();
-#endif
-   }
-   else if(SL::F_solver == 81)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPGSStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 82)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPJStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 83)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_CLJPPilutStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 84)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSGSStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 85)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSJStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 86)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // LSC takes type "Preconditioner".
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_for_RSPilutStrn0668();
-#endif
-   }
-   else if(SL::F_solver == 2)
-   {
-//     f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
-     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-   }
-   else if(SL::F_solver == 3)
-   {
-     f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-#ifdef OOMPH_HAS_HYPRE
-     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
-       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
-#endif
-   }
-   else if (SL::F_solver == 69)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // AMG coarsening: Ruge-Stuben
-     RayGlobalAMGParam::amg_coarsening = 1;
-     
-     // AMG smoother: Gauss-Seidel
-     RayGlobalAMGParam::amg_smoother=0;
-     
-     // There is no damping with GS, otherwise we set the parameter:
-     // RayGlobalAMGParam::amg_damping
-
-     // Different amg strength for simple/stress divergence for viscuous term.
-     if(SL::Vis == 0)
-     {
-       // Simple form
-       RayGlobalAMGParam::amg_strength = 0.25;
-     }
-     else
-     {
-       // Stress divergence form
-       RayGlobalAMGParam::amg_strength = 0.668;
-     }
-     
-     // Setup the preconditioner.
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_using_2D_poisson_base();
-#endif
-   }
-   else if (SL::F_solver == 96)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     // AMG coarsening:
-     // Set: RayGlobalAMGParam::amg_coarsening = 
-     // 0 - CLJP
-     // 1 - RS
-     
-     // AMG smoother:
-     // Set: RayGlobalAMGParam::amg_smoother = 
-     // 0 - Jacobi (Need to set damping as well)
-     // 1 - Gauss-Seidel
-     // 2 - Pilut
-     
-     // There is no damping with GS, otherwise we set the parameter:
-     // RayGlobalAMGParam::amg_damping
-
-     RayGlobalAMGParam::amg_strength = SL::f_amg_strength;
-     RayGlobalAMGParam::amg_damping = SL::f_amg_damping;
-     RayGlobalAMGParam::amg_coarsening = SL::f_amg_coarsening;
-     RayGlobalAMGParam::amg_smoother = SL::f_amg_smoother;
-     RayGlobalAMGParam::amg_iterations = SL::f_amg_iterations;
-     RayGlobalAMGParam::amg_smoother_iterations = SL::f_amg_smoother_iterations;
-     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
-
-
-     // Different amg strength for simple/stress divergence for viscuous term.
-     if(RayGlobalAMGParam::amg_strength < 0.0)
-     {
-       if(SL::Vis == 0)
-       {
-         // Simple form
-         RayGlobalAMGParam::amg_strength = 0.25;
-       }
-       else
-       {
-         // Stress divergence form
-         RayGlobalAMGParam::amg_strength = 0.668;
-       }
-     }
-     
-     // Setup the preconditioner.
-     f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-       set_hypre_ray();
-#endif
-   }
-
-   // Set the preconditioner in the LSC preconditioner.
-   ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
-   
-   // P block solve
-   //SL::P_solver == 0 is default, so do nothing.
-   if(SL::P_solver == 1)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
-
-     HyprePreconditioner* hypre_preconditioner_pt =
-       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-
-     Hypre_default_settings::
-     set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-   }
-   else if(SL::P_solver == 96)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = 0;
-     
-//* 
-     RayGlobalAMGParam::amg_iterations = SL::p_amg_iterations;
-     RayGlobalAMGParam::amg_smoother_iterations = SL::p_amg_smoother_iterations;
-     RayGlobalAMGParam::amg_smoother = SL::p_amg_smoother;
-     RayGlobalAMGParam::amg_strength = SL::p_amg_strength;
-     //RayGlobalAMGParam::amg_damping = SL::p_amg_damping;
-     RayGlobalAMGParam::amg_coarsening = SL::p_amg_coarsening;
-     RayGlobalAMGParam::print_hypre = SL::Print_hypre;
-
-//     std::cout << "p_amg_iterations:" << SL::p_amg_iterations << std::endl; 
-//     std::cout << "p_amg_smoother_iterations" << SL::p_amg_smoother_iterations << std::endl; 
-//     std::cout << "p_amg_strength" << SL::p_amg_strength << std::endl;
-//     std::cout << "p_amg_coarsening" << SL::p_amg_coarsening << std::endl; 
-// */
-
-     p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::set_hypre_ray();
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-   }
-   else if(SL::P_solver == 2)
-   {
-#ifdef OOMPH_HAS_HYPRE
-     Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
-
-     HyprePreconditioner* hypre_preconditioner_pt =
-       static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-
-     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-
-     // Setup v-cycles
-     hypre_preconditioner_pt->set_amg_iterations(2);
-     hypre_preconditioner_pt->amg_smoother_iterations() = 2;
-     
-     // Setup smoother
-     // simple: 0 - DJ, 1 - GS
-     // compelx: Pilut - 7
-     hypre_preconditioner_pt->amg_using_simple_smoothing();
-     hypre_preconditioner_pt->amg_simple_smoother() = 0;
-     // only applicable for DJ
-     hypre_preconditioner_pt->amg_damping() = 0.8;
-
-     // Setup coarsening
-     // 0 - CLJP
-     // 1 - RS
-     hypre_preconditioner_pt->amg_coarsening() = 1;
-
-     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-
-   }
- } // if for using LSC as NS prec.
- else
- {
-   pause("There is no solver for NS.");
- }
-
-
- // Set the doc info for book keeping purposes.
- prec_pt->set_doc_linear_solver_info_pt(SL::Doc_linear_solver_info_pt);
-
- if(SL::Use_block_diagonal_w)
- {
-   prec_pt->use_block_diagonal_w_block();
- }
- else
- {
-   prec_pt->use_diagonal_w_block();
- }
-
- if(SL::Doc_prec)
- {
-   prec_pt->enable_doc_prec();
- }
-
- // Set the label, use to output information from the preconditioner, such
- // as the block matrices and the rhs vector
- prec_pt->set_label_pt(&SL::Label);
- prec_pt->set_doc_prec_directory_pt(&SL::Doc_prec_dir);
 
  // Build solve and preconditioner
 #ifdef OOMPH_HAS_TRILINOS
  TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
  trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
  Solver_pt = trilinos_solver_pt;
- SL::Using_trilinos_solver = true;
+ NSPP::Using_trilinos_solver = true;
 #else
  Solver_pt = new GMRES<CRDoubleMatrix>;
  // We use RHS preconditioning. Note that by default,
  // left hand preconditioning is used.
  static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
- SL::Using_trilinos_solver = false;
+ NSPP::Using_trilinos_solver = false;
 #endif
-
+ 
  Solver_pt->tolerance() = 1.0e-6;
  this->newton_solver_tolerance() = 1.0e-6;
 
  // Set solver and preconditioner
  Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt;
-
-
-
-
+ linear_solver_pt() = Solver_pt; 
 }
+
 
 //==start_of_doc_solution=================================================
 /// Doc the solution
@@ -978,11 +376,11 @@ template<class ELEMENT>
 void BackwardStepProblem<ELEMENT>::doc_solution()
 {
 
-  namespace SL = StepLagrange;
+  namespace NSPP = NavierStokesProblemParameters;
   
   std::ofstream some_file;
   std::stringstream filename;
-  filename << SL::Soln_dir<<"/"<<SL::Label<<".dat";
+  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str<<".dat";
 
   // Number of plot points
   unsigned npts=5;
@@ -993,7 +391,23 @@ void BackwardStepProblem<ELEMENT>::doc_solution()
   some_file.close();
 }
 
+template<class ELEMENT>
+void BackwardStepProblem<ELEMENT>::
+delete_flux_elements(Mesh* const &surface_mesh_pt)
+{
+  // How many surface elements are there in the mesh?
+  unsigned n_element = surface_mesh_pt->nelement();
 
+  // Loop over the surface elements
+  for(unsigned e=0;e<n_element;e++)
+  {
+    // Kill surface elements
+    delete surface_mesh_pt->element_pt(e);
+  }
+
+  // Wipe the mesh
+  surface_mesh_pt->flush_element_and_node_storage();
+} //  end of delete_flux_elements
 
 //============start_of_create_parall_outflow_lagrange_elements===========
 /// Create ImposeParallelOutflowElement on the b-th boundary of the
@@ -1111,6 +525,29 @@ create_impenetrable_lagrange_elements(const unsigned &b,
   }
 }
 
+std::string create_label()
+{
+  // We want the unique problem label, then the generic problem label, then
+  // preconditioner used.
+  //
+  // Because the unique problem label contains a label for the problem
+  // and parameters such as angle/noel, we want the unique problem 
+  // identifier to be first, then the parameters last, with the generic
+  // problem stuff in between.
+  //
+  // i.e.
+  // SqPo + NSPP::label + LPH::label Ang Noel.
+  
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
+  namespace SL = StepLagrange;
+
+  std::string label = SL::Prob_str 
+                      + NSPP::create_label() 
+                      + LPH::create_label() 
+                      + SL::Ang_deg_str + SL::Noel_str;
+  return label;
+}
 //===start_of_main======================================================
 /// Driver code
 //======================================================================
@@ -1120,6 +557,12 @@ int main(int argc, char* argv[])
   // Initialise MPI
   MPI_Helpers::init(argc,argv);
 #endif
+
+  // Alias the namespace for convenience.
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
+  namespace SL = StepLagrange;
+
   // Get the global oomph-lib communicator 
   //  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
@@ -1127,76 +570,25 @@ int main(int argc, char* argv[])
   //  unsigned my_rank = comm_pt->my_rank();
   //unsigned nproc = comm_pt->nproc();
 
+  const unsigned dim = 2;
 
-  // Alias the namespace for convenience.
-  namespace SL = StepLagrange;
 
   // Set up doc info
   DocLinearSolverInfo doc_linear_solver_info;
+  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
-  SL::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-
-  //SL::Soln_dir = "RESLT";
+  // Set the Label_pt
+  LPH::Label_str_pt = &NSPP::Label_str;
+  LPH::Vis_pt = &NSPP::Vis;
+  SL::Prob_id_pt = &NSPP::Prob_id;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
-  CommandLineArgs::specify_command_line_flag("--dist_prob");
-
-  // Flag to output the solution.
-  CommandLineArgs::specify_command_line_flag("--doc_soln", &SL::Soln_dir);
-  // Flag to output the preconditioner, used for debugging.
-  CommandLineArgs::specify_command_line_flag("--doc_prec", &SL::Doc_prec_dir);
-
-  // A problem ID, there are eight different types of problems.
-  // Check the header file.
-  CommandLineArgs::specify_command_line_flag("--prob_id",&SL::Prob_id);
-
-  CommandLineArgs::specify_command_line_flag("--w_solver", &SL::W_solver);
-  CommandLineArgs::specify_command_line_flag("--ns_solver", &SL::NS_solver);
-  CommandLineArgs::specify_command_line_flag("--p_solver", &SL::P_solver);
-  CommandLineArgs::specify_command_line_flag("--f_solver", &SL::F_solver);
-  CommandLineArgs::specify_command_line_flag("--visc", &SL::Vis);
-  CommandLineArgs::specify_command_line_flag("--ang", &SL::Ang_deg);
-  CommandLineArgs::specify_command_line_flag("--rey", &SL::Rey);
-  CommandLineArgs::specify_command_line_flag("--rey_start", &SL::Rey_start);
-  CommandLineArgs::specify_command_line_flag("--rey_incre", &SL::Rey_incre);
-  CommandLineArgs::specify_command_line_flag("--rey_end", &SL::Rey_end);
-  CommandLineArgs::specify_command_line_flag("--noel", &SL::Noel);
-  CommandLineArgs::specify_command_line_flag("--sigma",
-      &SL::Scaling_sigma);
-  CommandLineArgs::specify_command_line_flag("--bdw");
-
-  // Iteration count and times directory.
-  CommandLineArgs::specify_command_line_flag("--itstimedir", &SL::Itstime_dir);
-
-  // NS_F block AMG parameters
-  CommandLineArgs::specify_command_line_flag("--f_amg_str", 
-      &SL::f_amg_strength);
-  CommandLineArgs::specify_command_line_flag("--f_amg_damp", 
-      &SL::f_amg_damping);
-  CommandLineArgs::specify_command_line_flag("--f_amg_coarse", 
-      &SL::f_amg_coarsening);
-  CommandLineArgs::specify_command_line_flag("--f_amg_smoo", 
-      &SL::f_amg_smoother);
-  CommandLineArgs::specify_command_line_flag("--f_amg_iter", 
-      &SL::f_amg_iterations);
-  CommandLineArgs::specify_command_line_flag("--f_amg_smiter", 
-      &SL::f_amg_smoother_iterations);
-
-  // NS_P block AMG parameters
-  CommandLineArgs::specify_command_line_flag("--p_amg_str", 
-      &SL::p_amg_strength);
-  CommandLineArgs::specify_command_line_flag("--p_amg_damp", 
-      &SL::p_amg_damping);
-  CommandLineArgs::specify_command_line_flag("--p_amg_coarse", 
-      &SL::p_amg_coarsening);
-  CommandLineArgs::specify_command_line_flag("--p_amg_smoo", 
-      &SL::p_amg_smoother);
-  CommandLineArgs::specify_command_line_flag("--p_amg_iter", 
-      &SL::p_amg_iterations);
-  CommandLineArgs::specify_command_line_flag("--p_amg_smiter", 
-      &SL::p_amg_smoother_iterations);
+  NSPP::setup_commandline_flags();
+  LPH::setup_commandline_flags();
+  SL::setup_commandline_flags(); 
 
 
   // Parse the above flags.
@@ -1206,412 +598,12 @@ int main(int argc, char* argv[])
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
+  // dim = 2
+  NSPP::generic_problem_setup(dim);
+  LPH::generic_setup();
+  SL::generic_setup();
 
-  // Do we have to distribute the problem?
-  if(CommandLineArgs::command_line_flag_has_been_set("--dist_prob"))
-  {
-    SL::Distribute_problem = true;
-  }
-  else
-  {
-    SL::Distribute_problem = false;
-  }
-
-  // Document the solution? Default is false.
-  if(CommandLineArgs::command_line_flag_has_been_set("--doc_soln"))
-  {
-    // The argument immediately after --doc_soln is put into SL::Soln_dir.
-    // If this begins with "--", then no solution directory has been provided.
-    std::size_t found = SL::Soln_dir.find("--");
-
-    // Check if they have set the solution directory.
-    if(found != std::string::npos)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide the doc_soln directory "
-        << "after the argument --doc_soln.\n" 
-        << "This must not start with \"--\"." << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else
-    {
-      SL::Doc_soln = true;
-    }
-  }
-
-
-  // Document the preconditioner? Default is false.
-  if(CommandLineArgs::command_line_flag_has_been_set("--doc_prec"))
-  {
-    // The argument immediately after --doc_prec is put into SL::Doc_prec_dir.
-    // If this begins with "--", then no prec directory has been provided.
-    std::size_t found = SL::Doc_prec_dir.find("--");
-
-    // Check if they have set the doc_prec directory.
-    if(found != std::string::npos)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide the doc_prec directory "
-        << "after the argument --doc_prec.\n" 
-        << "This must not start with \"--\"." << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else
-    {
-      SL::Doc_prec = true;
-    }
-  }
-
-
-    // Set a problem id to identify the problem.
-  // This is used for book keeping purposes.
-  if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
-  {
-    // The argument immediately after --prob_id is put into SL::Prob_id.
-    // If this begins with "--", then no problem id has been provided.
-
-    // Maybe I should check if SL::Prob_id is a number or a string...
-
-    // We only accept problem IDs as defined below.
-    // Creating a set of acceptable IDs
-    int prob_id_array[]= {10,11};
-
-    const bool inset = check_if_in_set<int>(prob_id_array,2,SL::Prob_id);
-
-    // Check if they have provided an acceptable ID.
-    // If a new element has been inserted, it means the user has provided an
-    // ID not in the set.
-    if(inset == false)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please provide a problem id to identify the problem after "
-        << "after the argument --prob_id.\n" 
-        << "Acceptable IDs are:\n"
-        << "10 = (StpTmp) Step, custom stuff...\n"
-        << "11 = (StpPo) Step, Parallel outflow (para inflow)\n"
-        << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-  }
-
-
-  // Set the viscuous term.
-  // Default: 0, Sim
-  if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
-  {
-    if (SL::Vis == 0)
-    {
-      NavierStokesEquations<2>::Gamma[0]=0.0;
-      NavierStokesEquations<2>::Gamma[1]=0.0;
-
-    }
-    else if (SL::Vis == 1)
-    {
-      NavierStokesEquations<2>::Gamma[0]=1.0;
-      NavierStokesEquations<2>::Gamma[1]=1.0;
-    } // else - setting viscuous term.
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "Do not recognise viscuous term: " << SL::Vis << ".\n"
-        << "Vis = 0 for simple form\n"
-        << "Vis = 1 for stress divergence form\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-  }
-
-  // Now we need to convert Ang into radians.
-  SL::Ang = SL::Ang_deg * (MathematicalConstants::Pi / 180.0);
-
-
-
-  // Now we need to convert Ang into radians.
-  SL::Ang = SL::Ang_deg * (MathematicalConstants::Pi / 180.0);
-
-  // Check if the Reynolds numbers have been set.
-  if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "You have set all --rey* argument, please choose carefully!\n"
-      << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-  else if(  CommandLineArgs::command_line_flag_has_been_set("--rey_start")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
-      &&CommandLineArgs::command_line_flag_has_been_set("--rey_end"))
-  {
-    std::cout << "Looping Reynolds: \n"
-      << "Rey_start = " << SL::Rey_start << std::endl; 
-    std::cout << "Rey_incre = " << SL::Rey_incre << std::endl; 
-    std::cout << "Rey_end = " << SL::Rey_end << std::endl; 
-  }
-  else if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "No Reynolds numbers have been set.\n"
-      << "For a single Reynolds number, use --rey.\n"
-      << "For looping through Reynolds numbers, use:\n"
-      << "--rey_start --rey_incre --rey_end.\n"
-      << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-
-
-
-
-
-
-
-  // Set a string to identify the problem. This is unique to each problem,
-  // so we hard code this. 2DStrPo = 2 dimension, straight parallel outflow.
-  // straight describes the velocity flow field. Po = Parallel outflow
-  // describes the boundary type.
-  // SL::Prob_str = "StepPo";
-
-  // Set the strings to identify the preconditioning,
-  // This is used purely for book keeping purposes.
-
-  // // Default: W_solver = 0, W_str = We
-  // if(CommandLineArgs::command_line_flag_has_been_set("--w_solver"))
-  // {
-  //  switch(SL::W_solver)
-  //  {
-  //    case 0:
-  //      SL::W_str = "We";
-  //      break;
-  //    case 1:
-  //    {
-  //      pause("No other W block solver coded."); 
-  //      SL::W_str = "Wa";
-  //    }
-  //      break;
-  //    default:
-  //      std::cout << "Do not recognise W: " << SL::W_solver << "\n"
-  //                << "Exact preconditioning = 0\n"
-  //                << "AMG = 1\n"
-  //                << "Using default: Exact (W_solver = 0)"<< std::endl;
-  //  }  // switch
-  // } // if
-
-  // // Default: NS_solver = 1, NS_str = Nl
-  // if(CommandLineArgs::command_line_flag_has_been_set("--ns_solver"))
-  // {
-  //  switch(SL::NS_solver)
-  //  {
-  //    case 0:
-  //      SL::NS_str = "Ne";
-  //      SL::P_str = "";
-  //      SL::F_str = "";
-  //      break;
-  //    case 1:
-  //      SL::NS_str = "Nl";
-  //      break;
-  //    default:
-  //      std::cout << "Do not recognise NS: " << SL::NS_solver << "\n"
-  //                << "Exact solve = 0\n"
-  //                << "LSC = 1\n"
-  //                << "Using default: LSC for NS block (NS_solver = 1)"<<std::endl;
-  //  }  // switch
-  // } // if
-
-  // // Default: This can only be set if NS_solver != 0 i.e. we are using LSC for 
-  // // the NS block
-  // // Default: P_solver = 0, P_str = Pe
-  // if(CommandLineArgs::command_line_flag_has_been_set("--p_solver"))
-  // {
-  //  if(SL::NS_solver == 0)
-  //  {
-  //    pause("NS solve is exact. There cannot be a P solver.");
-  //  }
-  //
-  //  switch(SL::P_solver)
-  //  {
-  //    case 0:
-  //      SL::P_str = "Pe";
-  //      break;
-  //    case 1:
-  //      SL::P_str = "Pa";
-  //      break;
-  //    default:
-  //      std::cout << "Do not recognise P: " << SL::P_solver << "\n"
-  //                << "Exact preconditioning = 0\n"
-  //                << "AMG = 1\n"
-  //                << "Using default: Exact P solve (P_solver = 0)"<< std::endl;
-  //  }  // switch
-  // } // if
-
-  // // This can only be set if we're using LSC for the NS block.
-  // // Default: 0, Fe
-  // if(CommandLineArgs::command_line_flag_has_been_set("--f_solver"))
-  // {
-  //  if(SL::NS_solver == 0)
-  //  {
-  //    pause("NS solve is exact. There cannot be an F solver.");
-  //  }
-  //
-  //  switch(SL::F_solver)
-  //  {
-  //    case 0:
-  //      SL::F_str = "Fe";
-  //      break;
-  //    case 69:
-  //      SL::F_str = "Fa";
-  //      break;
-  //    case 11:
-  //      SL::F_str = "Fh2dp";
-  //      break;
-  //    case 12:
-  //      SL::F_str = "Fhns";
-  //      break;
-  //    case 13:
-  //      SL::F_str = "CLJPGSStrn075";
-  //      break;
-  //    case 14:
-  //      SL::F_str = "FRSGSStrn075";
-  //      break;
-  //    case 15:
-  //      SL::F_str = "FCLJPPilutStrn075";
-  //      break;
-  //    case 16:
-  //      SL::F_str = "FRSPilutStrn075";
-  //      break;
-  //    case 17:
-  //      SL::F_str = "Fray"; // I have no short hand for this...
-  //      break;
-  //    case 81:
-  //      SL::F_str = "CLJPGSStrn0668";
-  //      break;
-  //    case 82:
-  //      SL::F_str = "CLJPJStrn0668";
-  //      break;
-  //    case 83:
-  //      SL::F_str = "CLJPPilutStrn0668";
-  //      break;
-  //    case 84:
-  //      SL::F_str = "RSGSStrn0668";
-  //      break;
-  //    case 85:
-  //      SL::F_str = "RSJStrn0668";
-  //      break;
-  //    case 86:
-  //      SL::F_str = "RSPilutStrn0668";
-  //      break;
-  //    case 2:
-  //      SL::F_str = "Fde";
-  //      break;
-  //    case 3:
-  //      SL::F_str = "Fda";
-  //      break;
-  //    default:
-  //      std::cout << "Do not recognise F: " << SL::F_solver << "\n"
-  //                << "Exact preconditioning = 0\n"
-  //                << "AMG = xxx Look in the code...\n"
-  //                << "Using default: Exact F solve (F_solver = 0)"<< std::endl;
-  //  }  // switch
-  // } // if
-
-  // // Set the viscuous term.
-  // // Default: 0, Sim
-  // if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
-  // {
-  //   if (SL::Vis == 0)
-  //   {
-  //     SL::Vis_str = "Sim";
-  //     NavierStokesEquations<2>::Gamma[0]=0.0;
-  //     NavierStokesEquations<2>::Gamma[1]=0.0;
-  //
-  //   }
-  //   else if (SL::Vis == 1)
-  //   {
-  //     SL::Vis_str = "Str";
-  //     NavierStokesEquations<2>::Gamma[0]=1.0;
-  //     NavierStokesEquations<2>::Gamma[1]=1.0;
-  //   } // else - setting viscuous term.
-  //   else
-  //   {
-  //     std::cout << "There is no such Viscous term, using 0 = simple." 
-  //               << std::endl; 
-  //   }
-  // }
-
-  // // Set Ang_str
-  // // Default: A30
-  // if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-  // {
-  //   std::ostringstream strs;
-  //   strs << "A" << SL::Ang;
-  //   SL::Ang_str = strs.str();
-  // }
-
-  // Now we need to convert Ang into radians.
-  //SL::Ang = SL::Ang * (MathematicalConstants::Pi / 180.0);
-
-  // // Set Noel_str, used for book keeping.
-  // if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
-  // {
-  //   std::ostringstream strs;
-  //   strs << "N" << SL::Noel;
-  //   SL::Noel_str = strs.str();
-  // }
-
-  // // Set Use_axnorm, if sigma has not been set, norm os momentum block is used.
-  // if(CommandLineArgs::command_line_flag_has_been_set("--sigma"))
-  // {
-  //   SL::Use_axnorm = false;
-  //
-  //   std::ostringstream strs;
-  //   strs << "S" << SL::Scaling_sigma;
-  //   SL::Sigma_str = strs.str();
-  // }
-
-  // // use the diagonal or block diagonal approximation for W block.
-  // if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
-  // {
-  //   SL::Use_diagonal_w_block = false;
-  //   SL::W_approx_str = "bdw";
-  // }
-  // else
-  // {
-  //   SL::Use_diagonal_w_block = true;
-  //   SL::W_approx_str = "";
-  // }
-
-  // // Solve with Taylor-Hood element, set up problem
-  // // Set Rey_str, used for book keeping.
-  // if(CommandLineArgs::command_line_flag_has_been_set("--rey"))
-  // {
-  //   if(SL::Rey < 0)
-  //   {
-  //     SL::Loop_reynolds = true;
-  //   }
-  //   else
-  //   {
-  //     std::ostringstream strs;
-  //     strs << "R" << SL::Rey;
-  //     SL::Rey_str = strs.str();
-  //   }
-  // }
-
-  BackwardStepProblem< QTaylorHoodElement<2> > problem;
+  BackwardStepProblem< QTaylorHoodElement<dim> > problem;
 
 
   ///////////////////////////////////////////////////////////////////////////////
