@@ -227,6 +227,7 @@ private:
 
 
 
+
 //===start_of_constructor=============================================
 /// Problem constructor
 //====================================================================
@@ -1076,6 +1077,29 @@ create_impenetrable_lagrange_elements(const unsigned &b,
   }
 }
 
+std::string create_label()
+{
+  // We want the unique problem label, then the generic problem label, then
+  // preconditioner used.
+  //
+  // Because the unique problem label contains a label for the problem
+  // and parameters such as angle/noel, we want the unique problem 
+  // identifier to be first, then the parameters last, with the generic
+  // problem stuff in between.
+  //
+  // i.e.
+  // SqPo + NSPP::label + LPH::label Ang Noel.
+  
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
+  namespace SL = SquareLagrange;
+
+  std::string label = SL::Prob_str 
+                      + NSPP::create_label() 
+                      + LPH::create_label() 
+                      + SL::Ang_deg_str + SL::Noel_str;
+  return label;
+}
 
 //===start_of_main======================================================
 /// Driver code
@@ -1305,7 +1329,8 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
+//    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
+    NSPP::Label_str = create_label();
 
     time_t rawtime;
     time(&rawtime);

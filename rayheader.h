@@ -999,6 +999,11 @@ namespace SquareLagrange
   // Prob id, set by main method
   int* Prob_id_pt = 0;
 
+  std::string Prob_str = "";
+  std::string Ang_deg_str = "";
+  std::string Noel_str = "";
+
+
   ///////////////////////
   // Domain dimensions.//
   ///////////////////////
@@ -1075,18 +1080,7 @@ namespace SquareLagrange
 
   inline void generic_setup()
   {
-    // Check that Ang has been set.
-    if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
-    {
-      std::ostringstream err_msg;
-      err_msg << "Angle has not been set. Set (in degrees) with: \n"
-        << "--ang \n"; 
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    // Now we need to convert Ang into radians.
-    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
 
 
     // Set a problem id to identify the problem.
@@ -1149,57 +1143,34 @@ namespace SquareLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-
-  }
-
-  inline string create_label()
-  {
-    std::string prob_str = "";
-    //    std::string w_str = "";
-    //    std::string ns_str = "";
-    //    std::string f_str = "";
-    //    std::string p_str = "";
-    //    std::string vis_str = "";
-    std::string ang_str = "";
-    //    std::string rey_str = "";
-    std::string noel_str = "";
-    //    std::string w_approx_str = "";
-    //    std::string sigma_str = "";
-    if(Prob_id_pt == 0)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-
+    // We know that --prob_id is set and is set up properly. We now set the
+    // Prob_str.
     const int prob_id = *Prob_id_pt;
     switch(prob_id)
     {
       case 10:
-        prob_str = "SqTmp";
+        Prob_str = "SqTmp";
         break;
       case 11:
-        prob_str = "SqPo";
+        Prob_str = "SqPo";
         break;
       case 12:
-        prob_str = "SqTf";
+        Prob_str = "SqTf";
         break;
       case 13:
-        prob_str = "SqTfPo";
+        Prob_str = "SqTfPo";
         break;
       case 20:
-        prob_str = "AwTmp";
+        Prob_str = "AwTmp";
         break;
       case 21:
-        prob_str = "AwPo";
+        Prob_str = "AwPo";
         break;
       case 22:
-        prob_str = "AwTf";
+        Prob_str = "AwTf";
         break;
       case 23:
-        prob_str = "AwTfPo";
+        Prob_str = "AwTfPo";
         break;
       default:
         {
@@ -1221,15 +1192,29 @@ namespace SquareLagrange
         } // Default case
     } // switch Prob_id
 
-    // Set Ang_str, this exists for only the Sq problems, not Aw.
-    std::size_t found = prob_str.find("Sq");
+    // Check that Ang has been set.
+    if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Angle has not been set. Set (in degrees) with: \n"
+        << "--ang \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    // Now we need to convert Ang into radians.
+    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+    // Now we set the Ang_deg_str.
+    // this exists for only the Sq problems, not Aw.
+    std::size_t found = Prob_str.find("Sq");
     if(found != std::string::npos)
     {
       if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
       {
         std::ostringstream strs;
         strs << "A" << Ang_deg;
-        ang_str = strs.str();
+        Ang_deg_str = strs.str();
       }
       else
       {
@@ -1242,26 +1227,13 @@ namespace SquareLagrange
             OOMPH_EXCEPTION_LOCATION);
       }
     }
-    else
-    {
-      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-      {
-        std::ostringstream err_msg;
-        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
-          << "Please take off the --ang command line argument.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-    }
 
     // Set Noel_str, used for book keeping.
     if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
     {
       std::ostringstream strs;
       strs << "N" <<Noel;
-      noel_str = strs.str();
+      Noel_str = strs.str();
     }
     else
     {
@@ -1272,8 +1244,130 @@ namespace SquareLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
+  }
 
-    std::string label = prob_str + ang_str + noel_str;
+  inline string create_label()
+  {
+//    std::string prob_str = "";
+//    //    std::string w_str = "";
+//    //    std::string ns_str = "";
+//    //    std::string f_str = "";
+//    //    std::string p_str = "";
+//    //    std::string vis_str = "";
+//    std::string ang_str = "";
+//    //    std::string rey_str = "";
+//    std::string noel_str = "";
+//    //    std::string w_approx_str = "";
+//    //    std::string sigma_str = "";
+//    if(Prob_id_pt == 0)
+//    {
+//      std::ostringstream err_msg;
+//      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
+//      throw OomphLibError(err_msg.str(),
+//          OOMPH_CURRENT_FUNCTION,
+//          OOMPH_EXCEPTION_LOCATION);
+//    }
+//
+//    const int prob_id = *Prob_id_pt;
+//    switch(prob_id)
+//    {
+//      case 10:
+//        prob_str = "SqTmp";
+//        break;
+//      case 11:
+//        prob_str = "SqPo";
+//        break;
+//      case 12:
+//        prob_str = "SqTf";
+//        break;
+//      case 13:
+//        prob_str = "SqTfPo";
+//        break;
+//      case 20:
+//        prob_str = "AwTmp";
+//        break;
+//      case 21:
+//        prob_str = "AwPo";
+//        break;
+//      case 22:
+//        prob_str = "AwTf";
+//        break;
+//      case 23:
+//        prob_str = "AwTfPo";
+//        break;
+//      default:
+//        {
+//          std::ostringstream err_msg;
+//          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
+//            << "10 = (SqTmp) Square, custom stuff...\n"
+//            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
+//            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
+//            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+//            << "\n"
+//            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
+//            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
+//            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
+//            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+//            << std::endl;
+//          throw OomphLibError(err_msg.str(),
+//              OOMPH_CURRENT_FUNCTION,
+//              OOMPH_EXCEPTION_LOCATION);
+//        } // Default case
+//    } // switch Prob_id
+//
+//    // Set Ang_str, this exists for only the Sq problems, not Aw.
+//    std::size_t found = prob_str.find("Sq");
+//    if(found != std::string::npos)
+//    {
+//      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+//      {
+//        std::ostringstream strs;
+//        strs << "A" << Ang_deg;
+//        ang_str = strs.str();
+//      }
+//      else
+//      {
+//        std::ostringstream err_msg;
+//        err_msg << "You have selected an Sq problem."
+//          << "Please supply the tilting angle with --ang.\n"
+//          << std::endl;
+//        throw OomphLibError(err_msg.str(),
+//            OOMPH_CURRENT_FUNCTION,
+//            OOMPH_EXCEPTION_LOCATION);
+//      }
+//    }
+//    else
+//    {
+//      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+//      {
+//        std::ostringstream err_msg;
+//        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
+//          << "Please take off the --ang command line argument.\n"
+//          << std::endl;
+//        throw OomphLibError(err_msg.str(),
+//            OOMPH_CURRENT_FUNCTION,
+//            OOMPH_EXCEPTION_LOCATION);
+//      }
+//    }
+//
+//    // Set Noel_str, used for book keeping.
+//    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+//    {
+//      std::ostringstream strs;
+//      strs << "N" <<Noel;
+//      noel_str = strs.str();
+//    }
+//    else
+//    {
+//      std::ostringstream err_msg;
+//      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+//        << std::endl;
+//      throw OomphLibError(err_msg.str(),
+//          OOMPH_CURRENT_FUNCTION,
+//          OOMPH_EXCEPTION_LOCATION);
+//    }
+
+    std::string label = Prob_str + Ang_deg_str + Noel_str;
 
     return label; 
   } // inlined function create_label
