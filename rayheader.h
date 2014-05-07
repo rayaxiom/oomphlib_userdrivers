@@ -991,8 +991,6 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
 namespace StepLagrange
 {
-
-
   // Prob id, set by main method
   int* Prob_id_pt = 0;
 
@@ -1007,18 +1005,6 @@ namespace StepLagrange
   //
   // This is a square domain: x,y \in [0,1]
   //
-
-  // Min and max x value respectively.
-  double X_min = 0.0;
-  double X_max = 1.0;
-
-  // Min and max y value respectively.
-  double Y_min = 0.0;
-  double Y_max = 1.0;
-
-  // The length in the x and y direction respectively.
-  double Lx = X_max - X_min;
-  double Ly = Y_max - Y_min;
 
   /////////////////////////////////////////////////////////////////////////////
 
@@ -1077,9 +1063,6 @@ namespace StepLagrange
 
   inline void generic_setup()
   {
-
-
-
     // Set a problem id to identify the problem.
     // This is used for book keeping purposes.
     if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
@@ -1101,10 +1084,9 @@ namespace StepLagrange
 
       // We only accept problem IDs as defined below.
       // Creating a set of acceptable IDs
-      int prob_id_array[]= {10,11,12,13,
-        20,21,22,23};
+      int prob_id_array[]= {10,11,12,13};
 
-      bool inset = check_if_in_set<int>(prob_id_array,8,(*Prob_id_pt));
+      bool inset = check_if_in_set<int>(prob_id_array,4,(*Prob_id_pt));
 
       // Check if they have provided an acceptable ID.
       // If a new element has been inserted, it means the user has provided an
@@ -1119,11 +1101,6 @@ namespace StepLagrange
           << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
           << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
           << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-          << "\n"
-          << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-          << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-          << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-          << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
           << std::endl;
 
         throw OomphLibError(err_msg.str(),
@@ -1146,42 +1123,25 @@ namespace StepLagrange
     switch(prob_id)
     {
       case 10:
-        Prob_str = "SqTmp";
+        Prob_str = "StTmp";
         break;
       case 11:
-        Prob_str = "SqPo";
+        Prob_str = "StPo";
         break;
       case 12:
-        Prob_str = "SqTf";
+        Prob_str = "StTf";
         break;
       case 13:
-        Prob_str = "SqTfPo";
-        break;
-      case 20:
-        Prob_str = "AwTmp";
-        break;
-      case 21:
-        Prob_str = "AwPo";
-        break;
-      case 22:
-        Prob_str = "AwTf";
-        break;
-      case 23:
-        Prob_str = "AwTfPo";
+        Prob_str = "StTfPo";
         break;
       default:
         {
           std::ostringstream err_msg;
           err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-            << "10 = (SqTmp) Square, custom stuff...\n"
-            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-            << "\n"
-            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
+            << "10 = (StTmp) Step, custom stuff...\n"
+            << "11 = (StPo) Step, Parallel outflow (para inflow)\n"
+            << "12 = (StTf) Step, Tangential flow (Semi para inflow)\n"
+            << "13 = (StTfPo) Step, Tangential flow, Parallel outflow (semi para inflow)\n"
             << std::endl;
           throw OomphLibError(err_msg.str(),
               OOMPH_CURRENT_FUNCTION,
@@ -1245,125 +1205,6 @@ namespace StepLagrange
 
   inline string create_label()
   {
-    //    std::string prob_str = "";
-    //    //    std::string w_str = "";
-    //    //    std::string ns_str = "";
-    //    //    std::string f_str = "";
-    //    //    std::string p_str = "";
-    //    //    std::string vis_str = "";
-    //    std::string ang_str = "";
-    //    //    std::string rey_str = "";
-    //    std::string noel_str = "";
-    //    //    std::string w_approx_str = "";
-    //    //    std::string sigma_str = "";
-    //    if(Prob_id_pt == 0)
-    //    {
-    //      std::ostringstream err_msg;
-    //      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
-    //      throw OomphLibError(err_msg.str(),
-    //          OOMPH_CURRENT_FUNCTION,
-    //          OOMPH_EXCEPTION_LOCATION);
-    //    }
-    //
-    //    const int prob_id = *Prob_id_pt;
-    //    switch(prob_id)
-    //    {
-    //      case 10:
-    //        prob_str = "SqTmp";
-    //        break;
-    //      case 11:
-    //        prob_str = "SqPo";
-    //        break;
-    //      case 12:
-    //        prob_str = "SqTf";
-    //        break;
-    //      case 13:
-    //        prob_str = "SqTfPo";
-    //        break;
-    //      case 20:
-    //        prob_str = "AwTmp";
-    //        break;
-    //      case 21:
-    //        prob_str = "AwPo";
-    //        break;
-    //      case 22:
-    //        prob_str = "AwTf";
-    //        break;
-    //      case 23:
-    //        prob_str = "AwTfPo";
-    //        break;
-    //      default:
-    //        {
-    //          std::ostringstream err_msg;
-    //          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-    //            << "10 = (SqTmp) Square, custom stuff...\n"
-    //            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-    //            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-    //            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-    //            << "\n"
-    //            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-    //            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-    //            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-    //            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
-    //            << std::endl;
-    //          throw OomphLibError(err_msg.str(),
-    //              OOMPH_CURRENT_FUNCTION,
-    //              OOMPH_EXCEPTION_LOCATION);
-    //        } // Default case
-    //    } // switch Prob_id
-    //
-    //    // Set Ang_str, this exists for only the Sq problems, not Aw.
-    //    std::size_t found = prob_str.find("Sq");
-    //    if(found != std::string::npos)
-    //    {
-    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-    //      {
-    //        std::ostringstream strs;
-    //        strs << "A" << Ang_deg;
-    //        ang_str = strs.str();
-    //      }
-    //      else
-    //      {
-    //        std::ostringstream err_msg;
-    //        err_msg << "You have selected an Sq problem."
-    //          << "Please supply the tilting angle with --ang.\n"
-    //          << std::endl;
-    //        throw OomphLibError(err_msg.str(),
-    //            OOMPH_CURRENT_FUNCTION,
-    //            OOMPH_EXCEPTION_LOCATION);
-    //      }
-    //    }
-    //    else
-    //    {
-    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-    //      {
-    //        std::ostringstream err_msg;
-    //        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
-    //          << "Please take off the --ang command line argument.\n"
-    //          << std::endl;
-    //        throw OomphLibError(err_msg.str(),
-    //            OOMPH_CURRENT_FUNCTION,
-    //            OOMPH_EXCEPTION_LOCATION);
-    //      }
-    //    }
-    //
-    //    // Set Noel_str, used for book keeping.
-    //    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
-    //    {
-    //      std::ostringstream strs;
-    //      strs << "N" <<Noel;
-    //      noel_str = strs.str();
-    //    }
-    //    else
-    //    {
-    //      std::ostringstream err_msg;
-    //      err_msg << "Please supply the number of elements in 1D using --noel.\n"
-    //        << std::endl;
-    //      throw OomphLibError(err_msg.str(),
-    //          OOMPH_CURRENT_FUNCTION,
-    //          OOMPH_EXCEPTION_LOCATION);
-    //    }
-
     std::string label = Prob_str + Ang_deg_str + Noel_str;
 
     return label; 
@@ -1629,127 +1470,7 @@ namespace SquareLagrange
 
   inline string create_label()
   {
-    //    std::string prob_str = "";
-    //    //    std::string w_str = "";
-    //    //    std::string ns_str = "";
-    //    //    std::string f_str = "";
-    //    //    std::string p_str = "";
-    //    //    std::string vis_str = "";
-    //    std::string ang_str = "";
-    //    //    std::string rey_str = "";
-    //    std::string noel_str = "";
-    //    //    std::string w_approx_str = "";
-    //    //    std::string sigma_str = "";
-    //    if(Prob_id_pt == 0)
-    //    {
-    //      std::ostringstream err_msg;
-    //      err_msg << "Please set Prob_id_pt, this exists is NSPP namespace.\n";
-    //      throw OomphLibError(err_msg.str(),
-    //          OOMPH_CURRENT_FUNCTION,
-    //          OOMPH_EXCEPTION_LOCATION);
-    //    }
-    //
-    //    const int prob_id = *Prob_id_pt;
-    //    switch(prob_id)
-    //    {
-    //      case 10:
-    //        prob_str = "SqTmp";
-    //        break;
-    //      case 11:
-    //        prob_str = "SqPo";
-    //        break;
-    //      case 12:
-    //        prob_str = "SqTf";
-    //        break;
-    //      case 13:
-    //        prob_str = "SqTfPo";
-    //        break;
-    //      case 20:
-    //        prob_str = "AwTmp";
-    //        break;
-    //      case 21:
-    //        prob_str = "AwPo";
-    //        break;
-    //      case 22:
-    //        prob_str = "AwTf";
-    //        break;
-    //      case 23:
-    //        prob_str = "AwTfPo";
-    //        break;
-    //      default:
-    //        {
-    //          std::ostringstream err_msg;
-    //          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-    //            << "10 = (SqTmp) Square, custom stuff...\n"
-    //            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-    //            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-    //            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-    //            << "\n"
-    //            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-    //            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-    //            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-    //            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
-    //            << std::endl;
-    //          throw OomphLibError(err_msg.str(),
-    //              OOMPH_CURRENT_FUNCTION,
-    //              OOMPH_EXCEPTION_LOCATION);
-    //        } // Default case
-    //    } // switch Prob_id
-    //
-    //    // Set Ang_str, this exists for only the Sq problems, not Aw.
-    //    std::size_t found = prob_str.find("Sq");
-    //    if(found != std::string::npos)
-    //    {
-    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-    //      {
-    //        std::ostringstream strs;
-    //        strs << "A" << Ang_deg;
-    //        ang_str = strs.str();
-    //      }
-    //      else
-    //      {
-    //        std::ostringstream err_msg;
-    //        err_msg << "You have selected an Sq problem."
-    //          << "Please supply the tilting angle with --ang.\n"
-    //          << std::endl;
-    //        throw OomphLibError(err_msg.str(),
-    //            OOMPH_CURRENT_FUNCTION,
-    //            OOMPH_EXCEPTION_LOCATION);
-    //      }
-    //    }
-    //    else
-    //    {
-    //      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-    //      {
-    //        std::ostringstream err_msg;
-    //        err_msg << "You have selected a Aw problem, there is no tilting angle.\n"
-    //          << "Please take off the --ang command line argument.\n"
-    //          << std::endl;
-    //        throw OomphLibError(err_msg.str(),
-    //            OOMPH_CURRENT_FUNCTION,
-    //            OOMPH_EXCEPTION_LOCATION);
-    //      }
-    //    }
-    //
-    //    // Set Noel_str, used for book keeping.
-    //    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
-    //    {
-    //      std::ostringstream strs;
-    //      strs << "N" <<Noel;
-    //      noel_str = strs.str();
-    //    }
-    //    else
-    //    {
-    //      std::ostringstream err_msg;
-    //      err_msg << "Please supply the number of elements in 1D using --noel.\n"
-    //        << std::endl;
-    //      throw OomphLibError(err_msg.str(),
-    //          OOMPH_CURRENT_FUNCTION,
-    //          OOMPH_EXCEPTION_LOCATION);
-    //    }
-
     std::string label = Prob_str + Ang_deg_str + Noel_str;
-
     return label; 
   } // inlined function create_label
 
