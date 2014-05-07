@@ -790,7 +790,7 @@ int main(int argc, char* argv[])
 
       // Setup the label. Used for doc solution and preconditioner.
 //      NSPP::Label_str = SL::create_label(&prec_param); RAYRAY old
-      NSPP::Label_str = "";
+      NSPP::Label_str = "TODO_THIS_LABEL";
 
       time_t rawtime;
       time(&rawtime);
