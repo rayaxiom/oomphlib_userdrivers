@@ -709,10 +709,10 @@ std::string create_label()
   namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = SquareLagrange;
 
-  std::string label = SL::Prob_str 
+  std::string label = SL::prob_str()
                       + NSPP::create_label() 
                       + LPH::create_label() 
-                      + SL::Ang_deg_str + SL::Noel_str;
+                      + SL::ang_deg_str() + SL::noel_str();
   return label;
 }
 
@@ -784,13 +784,8 @@ int main(int argc, char* argv[])
     for (NSPP::Rey = NSPP::Rey_start; 
         NSPP::Rey <= NSPP::Rey_end; NSPP::Rey += NSPP::Rey_incre)
     {
-      std::ostringstream strs;
-      strs << "R" << NSPP::Rey;
-      //     NSPP::Rey_str = strs.str(); RAY RAY FIX THIS
-
       // Setup the label. Used for doc solution and preconditioner.
-//      NSPP::Label_str = SL::create_label(&prec_param); RAYRAY old
-      NSPP::Label_str = "TODO_THIS_LABEL";
+      NSPP::Label_str = create_label();
 
       time_t rawtime;
       time(&rawtime);
@@ -800,11 +795,14 @@ int main(int argc, char* argv[])
         << " on " << ctime(&rawtime) << std::endl;
 
 
+      problem.distribute();
+
       // Solve the problem
       problem.newton_solve();
 
       //Output solution
-      if(NSPP::Doc_soln){problem.doc_solution();}
+      if(NSPP::Doc_soln)
+      {problem.doc_solution();}
 
       //////////////////////////////////////////////////////////////////////////
       ////////////// Outputting results ////////////////////////////////////////
@@ -815,117 +813,61 @@ int main(int argc, char* argv[])
 
       // My rank and number of processors. 
       // This is used later for putting the data.
-      unsigned my_rank = comm_pt->my_rank();
+      const unsigned my_rank = comm_pt->my_rank();
+      const unsigned nproc = comm_pt->nproc();
 
-      // Output the iteration counts and times if my_rank == 0
-      if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir") 
-          && (my_rank == 0))
+      // Variable to indicate if we want to output to a file or not.
+      bool output_to_file = false;
+
+      // The output file.
+      std::ofstream outfile;
+
+      // If we want to output to a file, we create the outfile.
+      if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
       {
-
-        // Create the File...
+        output_to_file = true;
         std::ostringstream filename_stream;
-        filename_stream << NSPP::Itstime_dir_str<<"/"<<NSPP::Label_str;
-        std::ofstream outfile;
+        filename_stream << NSPP::Itstime_dir_str<<"/"
+          << NSPP::Label_str
+          <<"NP"<<nproc<<"R"<<my_rank;
         outfile.open(filename_stream.str().c_str());
+      }
 
-        // We now output the iteration and time.
-        Vector<Vector<Vector<double> > > iters_times
-          = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
 
-        // Below outputs the iteration counts and time.
-        // Output the number of iterations
-        // Since this is a steady state problem, there is only
-        // one "time step".
-        //*
-        // Loop over the time steps and output the iterations, prec setup time and
-        // linear solver time.
-        //unsigned ntimestep = iters_times.size();
-        //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+      // Stringstream to hold the results. We do not output the results
+      // (timing/iteration counts) as we get it since it will interlace with the
+      // other processors and becomes hard to read.
+      std::ostringstream results_stream;
+
+      // Get the 3D vector which holds the iteration counts and timing results.
+      Vector<Vector<Vector<double> > > iters_times
+        = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
+
+      ResultsFormat::format_rayits(rey_increment,&iters_times,&results_stream);
+      ResultsFormat::format_prectime(rey_increment,&iters_times,&results_stream);
+      ResultsFormat::format_solvertime(rey_increment,&iters_times,&results_stream);
+
+      // Print the result to oomph_info one processor at a time...
+      // This still doesn't seem to always work, since there are other calls
+      // to oomph_info before this one...
+      for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
+      {
+        if(proc_i == my_rank)
         {
-          // New timestep:
-          outfile << "RAYITS:\t" << rey_increment << "\t";
-          std::cout << "RAYITS:\t" << rey_increment << "\t";
-
-          // Loop through the Newtom Steps
-          unsigned nnewtonstep = iters_times[rey_increment].size();
-          unsigned sum_of_newtonstep_iters = 0;
-          for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-              innewtonstep++)
-          {
-            sum_of_newtonstep_iters += iters_times[rey_increment][innewtonstep][0];
-            outfile << iters_times[rey_increment][innewtonstep][0] << " ";
-            std::cout << iters_times[rey_increment][innewtonstep][0] << " ";
-          }
-          double average_its = ((double)sum_of_newtonstep_iters)
-            / ((double)nnewtonstep);
-
-          // Print to one decimal place if the average is not an exact
-          // integer. Otherwise we print normally.
-          std::streamsize cout_precision = std::cout.precision();
-          ((unsigned(average_its*10))%10)?
-            outfile << "\t"<< std::fixed << std::setprecision(1)
-            << average_its << "(" << nnewtonstep << ")" << std::endl:
-            outfile << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
-          outfile << std::setprecision(cout_precision);
-
-          ((unsigned(average_its*10))%10)?
-            std::cout << "\t"<< std::fixed << std::setprecision(1)
-            << average_its << "(" << nnewtonstep << ")" << std::endl:
-            std::cout << "\t"<< average_its << "(" << nnewtonstep << ")" << std::endl;
-          std::cout << std::setprecision(cout_precision);
+          oomph_info << "\n" 
+            << "========================================================\n"
+            << results_stream.str()
+            << "========================================================\n"
+            << "\n" << std::endl;
         }
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
 
-        // Now doing the preconditioner setup time.
-        //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-        {
-          // New timestep:
-          outfile << "RAYPRECSETUP:\t" << rey_increment << "\t";
-          std::cout << "RAYPRECSETUP:\t" << rey_increment << "\t";
-          // Loop through the Newton Steps
-          unsigned nnewtonstep = iters_times[rey_increment].size();
-          double sum_of_newtonstep_times = 0;
-          for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-              innewtonstep++)
-          {
-            sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][1];
-            outfile << iters_times[rey_increment][innewtonstep][1] << " ";
-            std::cout << iters_times[rey_increment][innewtonstep][1] << " ";
-          }
-          double average_time = ((double)sum_of_newtonstep_times)
-            / ((double)nnewtonstep);
-
-          // Print to one decimal place if the average is not an exact
-          // integer. Otherwise we print normally.
-          outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-          std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-        }
-
-        // Now doing the linear solver time.
-        //for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-        {
-          // New timestep:
-          outfile << "RAYLINSOLVER:\t" << rey_increment << "\t";
-          std::cout << "RAYLINSOLVER:\t" << rey_increment << "\t";
-          // Loop through the Newtom Steps
-          unsigned nnewtonstep = iters_times[rey_increment].size();
-          double sum_of_newtonstep_times = 0;
-          for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-              innewtonstep++)
-          {
-            sum_of_newtonstep_times += iters_times[rey_increment][innewtonstep][2];
-            outfile << iters_times[rey_increment][innewtonstep][2] << " ";
-            std::cout << iters_times[rey_increment][innewtonstep][2] << " ";
-          }
-          double average_time = ((double)sum_of_newtonstep_times)
-            / ((double)nnewtonstep);
-
-          // Print to one decimal place if the average is not an exact
-          // integer. Otherwise we print normally.
-          outfile << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-          std::cout << "\t"<< average_time << "(" << nnewtonstep << ")" << std::endl;
-        }
+      if(output_to_file)
+      {
+        outfile << "\n" << results_stream.str();
         outfile.close();
-      } // if my_rank == 0
+      }
 
       rey_increment++;
 
@@ -934,7 +876,7 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-//    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
+    //    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
     NSPP::Label_str = create_label();
 
     time_t rawtime;
@@ -963,8 +905,8 @@ int main(int argc, char* argv[])
 
     // my rank and number of processors. 
     // This is used later for putting the data.
-    unsigned my_rank = comm_pt->my_rank();
-    unsigned nproc = comm_pt->nproc();
+    const unsigned my_rank = comm_pt->my_rank();
+    const unsigned nproc = comm_pt->nproc();
 
     // Variable to indicate if we want to output to a file or not.
     bool output_to_file = false;
@@ -1001,72 +943,19 @@ int main(int argc, char* argv[])
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      // New timestep:
-      results_stream << "RAYITS:\t" << intimestep << "\t";
-
-      // Loop through the Newton Steps
-      unsigned nnewtonstep = iters_times[intimestep].size();
-      unsigned sum_of_newtonstep_iters = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_iters += iters_times[intimestep][innewtonstep][0];
-        results_stream << iters_times[intimestep][innewtonstep][0] << " ";
-      }
-      double average_its = ((double)sum_of_newtonstep_iters)
-        / ((double)nnewtonstep);
-
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      ((unsigned(average_its*10))%10)?
-        results_stream << "\t"<< std::fixed << std::setprecision(1)
-        << average_its << "(" << nnewtonstep << ")" << "\n":
-        results_stream << "\t"<< average_its << "(" << nnewtonstep << ")" << "\n";
-      results_stream << std::setprecision(std::cout.precision());
+      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
     }
 
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      // New timestep:
-      results_stream << "RAYPRECSETUP:\t" << intimestep << "\t";
-      // Loop through the Newtom Steps
-      unsigned nnewtonstep = iters_times[intimestep].size();
-      double sum_of_newtonstep_times = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][1];
-        results_stream << iters_times[intimestep][innewtonstep][1] << " ";
-      }
-      double average_time = ((double)sum_of_newtonstep_times)
-        / ((double)nnewtonstep);
-
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      results_stream << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
     }
 
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      // New timestep:
-      results_stream << "RAYLINSOLVER:\t" << intimestep << "\t";
-      // Loop through the Newtom Steps
-      unsigned nnewtonstep = iters_times[intimestep].size();
-      double sum_of_newtonstep_times = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_times += iters_times[intimestep][innewtonstep][2];
-        results_stream << iters_times[intimestep][innewtonstep][2] << " ";
-      }
-      double average_time = ((double)sum_of_newtonstep_times)
-        / ((double)nnewtonstep);
-
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      results_stream << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
     }
 
     // Print the result to oomph_info one processor at a time...
