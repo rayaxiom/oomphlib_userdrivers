@@ -1164,8 +1164,6 @@ namespace StepLagrange
 
     // Now we set the Ang_deg_str.
     // this exists for only the Sq problems, not Aw.
-    std::size_t found = Prob_str.find("Sq");
-    if(found != std::string::npos)
     {
       if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
       {
