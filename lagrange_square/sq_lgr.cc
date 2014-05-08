@@ -163,15 +163,20 @@ public:
 
  void actions_before_distribute()
  {
+   if(NavierStokesProblemParameters::Distribute_problem)
+   {
     delete_flux_elements(Surface_mesh_P_pt);
     rebuild_global_mesh();
+   }
  }
 
  void actions_after_distribute()
  {
-
-   create_parall_outflow_lagrange_elements(1,Bulk_mesh_pt,Surface_mesh_P_pt);
-   rebuild_global_mesh();
+   if(NavierStokesProblemParameters::Distribute_problem)
+   {
+     create_parall_outflow_lagrange_elements(1,Bulk_mesh_pt,Surface_mesh_P_pt);
+     rebuild_global_mesh();
+   }
  }
 
  /// Doc the solution
@@ -768,6 +773,11 @@ int main(int argc, char* argv[])
   // Solve with Taylor-Hood element, set up problem
   TiltedCavityProblem< QTaylorHoodElement<dim> > problem;
 
+  if(NavierStokesProblemParameters::Distribute_problem)
+  {
+    problem.distribute();
+  }
+
   //////////////////////////////////////////////////////////////////////////////
 
   // If the Reynolds number is not set, I assume that all the below are set:
@@ -793,9 +803,6 @@ int main(int argc, char* argv[])
       std::cout << "RAYDOING: "
         << NSPP::Label_str
         << " on " << ctime(&rawtime) << std::endl;
-
-
-      problem.distribute();
 
       // Solve the problem
       problem.newton_solve();
@@ -885,8 +892,6 @@ int main(int argc, char* argv[])
     std::cout << "RAYDOING: "
       << NSPP::Label_str
       << " on " << ctime(&rawtime) << std::endl;
-
-    problem.distribute();
 
     // Solve the problem
     problem.newton_solve();

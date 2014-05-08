@@ -42,69 +42,69 @@ mkdir $VALIDATEDIR
 cd $VALIDATEDIR
 mkdir $TEMPVALIDATADIR
 
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-
-
-
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
 
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+
+
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+
+
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+RUNARGUMENTS="--dist_prob --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
