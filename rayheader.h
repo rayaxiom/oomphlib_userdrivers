@@ -1978,6 +1978,12 @@ namespace LagrangianPreconditionerHelpers
         // Setup the preconditioner.
         f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
           set_hypre_using_2D_poisson_base();
+
+        if(Print_hypre)
+        {
+          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+              f_preconditioner_pt);
+        }
 #endif
       }
       else if (F_solver == 96)
