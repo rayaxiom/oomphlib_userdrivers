@@ -609,6 +609,7 @@ int main(int argc, char* argv[])
 
   ///////////////////////////////////////////////////////////////////////////////
 
+  problem.distribute();
   if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
   {
     unsigned rey_increment = 0; // used for output of iters/times
@@ -624,7 +625,6 @@ int main(int argc, char* argv[])
         << NSPP::Label_str
         << " on " << ctime(&rawtime) << std::endl;
 
-      problem.distribute();
       // Solve the problem
       problem.newton_solve();
 
@@ -714,7 +714,7 @@ int main(int argc, char* argv[])
       << NSPP::Label_str
       << " on " << ctime(&rawtime) << std::endl;
 
-    problem.distribute();
+//    problem.distribute();
 
     // Solve the problem
     problem.newton_solve();
