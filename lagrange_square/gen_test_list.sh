@@ -42,14 +42,9 @@ touch $ITSTIMEDIR
 rm -rf $ITSTIMEDIR
 mkdir $ITSTIMEDIR
 
-TESTLIST_FILE="tests.list"
-#TESTOUT_FILE="test_output"
-#TESTLISTFIN_FILE="tests_done"
-
-
-
-
-gen_tests()
+TEST1_FILEBASE="tests_4_128"
+TEST1_FILELIST="$TEST1_FILEBASE.list"
+gen_tests1()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -86,7 +81,7 @@ do
       do
         for NOEL in $NOELLIST
         do
-          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TEST1_FILELIST
         done
       done
     done
@@ -94,6 +89,8 @@ do
 done
 } # gen_tests function
 
+TEST2_FILEBASE="tests_256_512"
+TEST2_FILELIST="$TEST2_FILEBASE.list"
 gen_tests2()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
@@ -131,7 +128,7 @@ do
       do
         for NOEL in $NOELLIST
         do
-          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TEST2_FILELIST
         done
       done
     done
@@ -140,12 +137,21 @@ done
 } # gen_tests function
 
 
-gen_tests
+gen_tests1
+TEST1_RUN="$TEST1_FILEBASE.sh"
+echo "#!/bin/bash" >> $TEST1_RUN
+cat $TEST1_FILELIST >> $TEST1_RUN
+
 gen_tests2
+TEST2_RUN="$TEST2_FILEBASE.sh"
+echo "#!/bin/bash" >> $TEST2_RUN
+cat $TEST2_FILELIST >> $TEST2_RUN
+
+
+
 
 cp ./../$0 .
 
-# Now just run the tests.list
 
 
 
