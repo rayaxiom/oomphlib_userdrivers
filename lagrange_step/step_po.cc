@@ -174,7 +174,7 @@ public:
 
  void actions_after_distribute()
  {
-   create_parall_outflow_lagrange_elements(5,Bulk_mesh_pt,Surface_mesh_P_pt);
+   create_parall_outflow_lagrange_elements(Left_b,Bulk_mesh_pt,Surface_mesh_P_pt);
    rebuild_global_mesh();
  }
 
@@ -193,7 +193,14 @@ public:
                                             Mesh* const &surface_mesh_pt);
 
 private:
- void set_prec_and_solver();
+
+ // Boundaries, these are set in the problem initialiser list.
+ const unsigned Left_b;
+ const unsigned Rightmost_b;
+ const unsigned Right_cutout_b;
+ const unsigned Bottommost_b;
+ const unsigned Bottom_cutout_b;
+ const unsigned Top_b;
 
  /// Pointer to the "bulk" mesh
  SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
@@ -213,22 +220,35 @@ private:
 
 
 //===start_of_constructor=============================================
-/// Problem constructor
-//====================================================================
-template<class ELEMENT> // rrrback - changed here.
-BackwardStepProblem<ELEMENT>::BackwardStepProblem()
+/// Problem constructor.
+///
+/// Boundary IDs:
+///
+///        4 Top_b
+///      --------------------------
+///Left_b|                        | 3 Rightmost_b
+///  5   |                 _______|
+///      |                |    2
+///      |                | 1
+///      ------------------
+///        0 Bottommost_b
+///
+///====================================================================
+template<class ELEMENT>
+BackwardStepProblem<ELEMENT>::BackwardStepProblem() : 
+  Left_b(5), Rightmost_b(3), Right_cutout_b(2),
+  Bottommost_b(0), Bottom_cutout_b(1), Top_b(4)
 {
  // Alias the namespace for convenience
  namespace NSPP = NavierStokesProblemParameters;
  namespace LPH = LagrangianPreconditionerHelpers;
  namespace SL = StepLagrange;
- 
+
  Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 
- // Assign the boundaries:
- const unsigned if_b=3;
+ const unsigned if_b = Rightmost_b;
  //unsigned tf_b=1;
- const unsigned po_b=5;
+ const unsigned po_b = Left_b;
 
  /// Setup the mesh
  
@@ -333,7 +353,7 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem()
 
   } // for(unsigned e=0;e<n_el;e++)
 
- //Assgn equation numbers
+ //Assign equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
 
  Vector<Mesh*> mesh_pt(2,0);
