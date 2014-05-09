@@ -46,52 +46,52 @@ TESTLISTFIN_FILE="tests_done"
 
 gen_tests()
 {
-#PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
-# 0 - W SuperLU, NS SuperLU
-# 1 - W SuperLU, NS LSC: P SuperLU, F SuperLU
-# 2 - W SuperLU, NS LSC: P AMG, F AMG
+  #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
+  # 0 - W SuperLU, NS SuperLU
+  # 1 - W SuperLU, NS LSC: P SuperLU, F SuperLU
+  # 2 - W SuperLU, NS LSC: P AMG, F AMG
 
-PRECLIST="0 1 2"
-# The precs are set according to the PRECLIST above.
-PRECPARAM=""
+  PRECLIST="0 1 2"
+  # The precs are set according to the PRECLIST above.
+  PRECPARAM=""
 
-VISLIST="0 1"
-ANGLIST="0 30 67"
-RELIST="0"
-NOELLIST="2 4 8 16 32"
+  VISLIST="0 1"
+  ANGLIST="0 30 67"
+  RELIST="0"
+  NOELLIST="2 4 8 16 32"
 
-for PREC  in $PRECLIST
-do
-  case "$PREC" in
-    0)
-      PRECPARAM="--w_solver 0 --ns_solver 0"
-      ;;
-    1)
-      PRECPARAM="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
-      ;;
-    2)
-      PRECPARAM="--w_solver 0 --ns_solver 1 --p_solver 1 --f_solver 69"
-      ;;
-  esac
-  for VIS in $VISLIST
+  for PREC  in $PRECLIST
   do
-    for ANG in $ANGLIST
+    case "$PREC" in
+      0)
+        PRECPARAM="--w_solver 0 --ns_solver 0"
+        ;;
+      1)
+        PRECPARAM="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
+        ;;
+      2)
+        PRECPARAM="--w_solver 0 --ns_solver 1 --p_solver 1 --f_solver 69"
+        ;;
+    esac
+    for VIS in $VISLIST
     do
-      for RE in $RELIST
+      for ANG in $ANGLIST
       do
-  case "$RE" in
-    0)
-      REYPARAM="--rey_start 0 --rey_end 200 --rey_incre 50"
-      ;;
-  esac
-        for NOEL in $NOELLIST
+        for RE in $RELIST
         do
-          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          case "$RE" in
+            0)
+              REYPARAM="--rey_start 0 --rey_end 200 --rey_incre 50"
+              ;;
+          esac
+          for NOEL in $NOELLIST
+          do
+            echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          done
         done
       done
     done
   done
-done
 } # gen_tests function
 
 run_tests()
@@ -130,8 +130,8 @@ run_tests()
 }
 
 gen_tests
-mv ./../$PROGRAM .
-run_tests
+#mv ./../$PROGRAM .
+#run_tests
 
 
 
