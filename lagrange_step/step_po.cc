@@ -167,15 +167,21 @@ public:
 
  void actions_before_distribute()
  {
-    delete_flux_elements(Surface_mesh_P_pt);
-    rebuild_global_mesh();
+   if(NavierStokesProblemParameters::Distribute_problem)
+   {
+      delete_flux_elements(Surface_mesh_P_pt);
+      rebuild_global_mesh();
+   }
  }
 
 
  void actions_after_distribute()
  {
-   create_parall_outflow_lagrange_elements(Left_b,Bulk_mesh_pt,Surface_mesh_P_pt);
-   rebuild_global_mesh();
+   if(NavierStokesProblemParameters::Distribute_problem)
+   {
+     create_parall_outflow_lagrange_elements(Left_b,Bulk_mesh_pt,Surface_mesh_P_pt);
+     rebuild_global_mesh();
+   }
  }
 
  /// Doc the solution
@@ -367,18 +373,18 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem() :
 
 
  // Build solve and preconditioner
-#ifdef OOMPH_HAS_TRILINOS
- TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
- trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
- Solver_pt = trilinos_solver_pt;
- NSPP::Using_trilinos_solver = true;
-#else
+//#ifdef OOMPH_HAS_TRILINOS
+// TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+// trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+// Solver_pt = trilinos_solver_pt;
+// NSPP::Using_trilinos_solver = true;
+//#else
  Solver_pt = new GMRES<CRDoubleMatrix>;
  // We use RHS preconditioning. Note that by default,
  // left hand preconditioning is used.
  static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
  NSPP::Using_trilinos_solver = false;
-#endif
+//#endif
  
  Solver_pt->tolerance() = 1.0e-6;
  this->newton_solver_tolerance() = 1.0e-6;
@@ -629,7 +635,11 @@ int main(int argc, char* argv[])
 
   ///////////////////////////////////////////////////////////////////////////////
 
-  problem.distribute();
+  if(NavierStokesProblemParameters::Distribute_problem)
+  {
+    problem.distribute();
+  }
+
   if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
   {
     unsigned rey_increment = 0; // used for output of iters/times
