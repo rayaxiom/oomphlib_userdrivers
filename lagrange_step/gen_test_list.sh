@@ -91,7 +91,7 @@ do
           esac
         for NOEL in $NOELLIST
         do
-          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG -$REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
         done
       done
     done
@@ -141,7 +141,7 @@ do
           esac
         for NOEL in $NOELLIST
         do
-          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG -$REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
+          echo "mpirun -np 1 ./$PROGRAM --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REYPARAM --noel $NOEL --itstimedir $ITSTIMEDIR" >> $TESTLIST_FILE
         done
       done
     done
