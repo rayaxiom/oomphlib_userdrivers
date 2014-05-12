@@ -34,6 +34,7 @@ PROGRAM="sq_lgr"
 #cd $CURRENTDIR && \
 #make $PROGRAM && mpirun -np 1 ./$PROGRAM $RUNARGUMENTS
 
+make clean
 make $PROGRAM
 
 touch $VALIDATEDIR
