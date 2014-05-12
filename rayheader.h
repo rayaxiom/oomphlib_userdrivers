@@ -2373,6 +2373,8 @@ namespace NavierStokesProblemParameters
   double Rey_end = -1.0;
 
 
+  bool Using_trilinos_solver = false;
+
   std::string Soln_dir_str = "";
   std::string Itstime_dir_str = "";
 
@@ -2381,7 +2383,6 @@ namespace NavierStokesProblemParameters
   std::string Label_str = "";
 
   // From code:
-  bool Using_trilinos_solver = false;
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
 
 
@@ -2406,6 +2407,8 @@ namespace NavierStokesProblemParameters
     // Iteration count and times directory.
     CommandLineArgs::specify_command_line_flag("--itstimedir", 
         &Itstime_dir_str);
+
+    CommandLineArgs::specify_command_line_flag("--trilinos_solver");
   }
 
   inline void generic_problem_setup(const unsigned dim)
@@ -2578,6 +2581,26 @@ namespace NavierStokesProblemParameters
             OOMPH_EXCEPTION_LOCATION);
       }
     }
+
+    if(CommandLineArgs::command_line_flag_has_been_set("--trilinos_solver"))
+    {
+#ifdef OOMPH_HAS_TRILINOS
+      Using_trilinos_solver = true;
+#else
+      {
+        std::ostringstream err_msg;
+        err_msg << "The flag --trilinos_solver has been set.\n"
+          << "But OOMPH-LIB does not have trilinos!" << std::endl;
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+#endif
+    }
+    else
+    {
+      Using_trilinos_solver = false;
+    }
   } // NSPP::generic_problem_setup()
 
   inline string create_label()
@@ -2631,6 +2654,64 @@ namespace NavierStokesProblemParameters
   } // create_label()
 } // NavierStokesProblemParameters
 
+
+
+//=============================================================================
+/// Namespace to set up stuff common to all problems.
+//=============================================================================
+namespace GenericProblemSetup
+{
+  inline void setup_solver(const double& solver_tol, const double& newton_tol,
+                           const bool& use_trilinos_solver,
+                           Problem* problem_pt, Preconditioner* prec_pt)
+  {
+    IterativeLinearSolver* solver_pt = 0;
+
+#ifdef OOMPH_HAS_TRILINOS
+    if(use_trilinos_solver)
+    {
+      TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+      trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+      solver_pt = trilinos_solver_pt;
+    }
+    else
+    {
+      solver_pt = new GMRES<CRDoubleMatrix>;
+      // We use RHS preconditioning. Note that by default,
+      // left hand preconditioning is used.
+      static_cast<GMRES<CRDoubleMatrix>*>(solver_pt)->set_preconditioner_RHS();
+    }
+#else
+    if(use_trilinos_solver)
+    {
+      std::ostringstream err_msg;
+      err_msg << "You have set --trilinos_solver\n"
+        << "But OOMPH does not have trilinos" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    else
+    {
+      solver_pt = new GMRES<CRDoubleMatrix>;
+      // We use RHS preconditioning. Note that by default,
+      // left hand preconditioning is used.
+      static_cast<GMRES<CRDoubleMatrix>*>(solver_pt)->set_preconditioner_RHS();
+    }
+#endif
+
+    solver_pt->tolerance() = solver_tol;
+    problem_pt->newton_solver_tolerance() = newton_tol;
+
+    solver_pt->preconditioner_pt() = prec_pt;
+    problem_pt->linear_solver_pt() = solver_pt;
+  }
+} // namespace GenericProblemSetup
+
+
+//=============================================================================
+/// Namespace to format results.
+//=============================================================================
 namespace ResultsFormat
 {
   inline void format_rayits(

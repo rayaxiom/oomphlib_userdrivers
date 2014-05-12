@@ -331,26 +331,10 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
  Prec_pt = LPH::get_preconditioner();
 
- // Build solve and preconditioner
-//#ifdef OOMPH_HAS_TRILINOS
-// TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
-// trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
-// Solver_pt = trilinos_solver_pt;
-// NSPP::Using_trilinos_solver = true;
-//#else
- Solver_pt = new GMRES<CRDoubleMatrix>;
- // We use RHS preconditioning. Note that by default,
- // left hand preconditioning is used.
- static_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
- NSPP::Using_trilinos_solver = false;
-//#endif
- 
- Solver_pt->tolerance() = 1.0e-6;
- this->newton_solver_tolerance() = 1.0e-6;
-
- // Set solver and preconditioner
- Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt; 
+ double solver_tol = 1.0e-6;
+ double newton_tol = 1.0e-6;
+ GenericProblemSetup::setup_solver(solver_sol,newton_tol,
+                                   NSPP::Using_trilinos_solver,this,Prec_pt);
 }
 
 //==start_of_doc_solution=================================================
