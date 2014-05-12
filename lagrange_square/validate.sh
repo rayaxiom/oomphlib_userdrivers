@@ -42,73 +42,79 @@ mkdir $VALIDATEDIR
 cd $VALIDATEDIR
 mkdir $TEMPVALIDATADIR
 
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+COMMONRUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --ang 42 --rey 100 --itstimedir $TEMPVALIDATADIR"
+COMMONRUNARGUMENT_SIM="$COMMONRUNARGUMENTS --visc 0"
+COMMONRUNARGUMENT_STR="$COMMONRUNARGUMENTS --visc 1"
+
+PREC="--w_solver 0 --ns_solver 0"
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 8"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 16"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 32"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 8"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 16"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 32"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+#read -p "Press [Enter] key to start backup..."
+
+
+PREC="--w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0"
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 8"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 16"
+mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
+mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 32"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-
-
-
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 8"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 16"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 0 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
+RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 32"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 8 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 16 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0 --visc 1 --ang 42 --rey 100 --noel 32 --itstimedir $TEMPVALIDATADIR"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+#read -p "Press [Enter] key to start backup..."
 
 # Now I need to compare files... grep for RAYITS
 files=("SqPoSimR100WedNeA42N16NP1R0" \

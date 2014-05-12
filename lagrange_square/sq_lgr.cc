@@ -333,7 +333,7 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
  double solver_tol = 1.0e-6;
  double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(solver_sol,newton_tol,
+ GenericProblemSetup::setup_solver(solver_tol,newton_tol,
                                    NSPP::Using_trilinos_solver,this,Prec_pt);
 }
 
