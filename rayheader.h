@@ -315,6 +315,27 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   ///
   /// Returns a hypre preconditioner where all the settings must be set.
   ///
+  //
+     /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+   /// include:
+   ///  0 = Jacobi 
+   ///  1 = Gauss-Seidel, sequential
+   ///      (very slow in parallel!)
+   ///  2 = Gauss-Seidel, interior points in parallel, boundary sequential
+   ///      (slow in parallel!)
+   ///  3 = hybrid Gauss-Seidel or SOR, forward solve
+   ///  4 = hybrid Gauss-Seidel or SOR, backward solve
+   ///  6 = hybrid symmetric Gauss-Seidel or SSOR
+   /// To use these methods set AMG_using_simple_smoothing to true
+  //
+    /// \short Complex smoothing methods used in BoomerAMG. Relaxation types
+   /// are:
+   ///  6 = Schwarz
+   ///  7 = Pilut
+   ///  8 = ParaSails
+   ///  9 = Euclid
+   /// To use these methods set AMG_using_simple_smoothing to false
+  //
   //===========================================================================
   Preconditioner* set_hypre_ray()
   {
