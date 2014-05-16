@@ -76,22 +76,22 @@ bool check_if_in_set(T myarray[], unsigned nval, T number)
 ///   reset_amg_param()
 ///   set_hypre_for_2D_poison_problem() (might modify str)
 ///   set_hypre_for_navier_stokes_momentum_block() (might modify str and dmp)
-///   set_hypre_ray(...) (might modify everything)
+///   get_custom_hypre_preconditioner(...) (might modify everything)
 ///   
 ///   There are others... might need to clean this up.
 //=============================================================================
-namespace RayGlobalAMGParam
-{
-  double amg_strength = -1.0;
-  double amg_damping = -1.0;
-  int amg_coarsening = -1;
-  int amg_simple_smoother = -1;
-  int amg_complex_smoother = -1;
-
-  int amg_iterations = -1;
-  int amg_smoother_iterations = -1;
-  bool print_hypre = false;
-}
+//namespace RayGlobalAMGParam
+//{
+//  double amg_strength = -1.0;
+//  double amg_damping = -1.0;
+//  int amg_coarsening = -1;
+//  int amg_simple_smoother = -1;
+//  int amg_complex_smoother = -1;
+//
+//  int amg_iterations = -1;
+//  int amg_smoother_iterations = -1;
+//  bool print_hypre = false;
+//}
 
 #ifdef OOMPH_HAS_HYPRE
 //=============================================================================
@@ -100,21 +100,15 @@ namespace RayGlobalAMGParam
 //=============================================================================
 namespace Hypre_Subsidiary_Preconditioner_Helper
 {
-  void check_global_hypre_settings()
+  void check_amg_parameters(
+      const int& amg_iterations, const int& amg_smoother_iterations,
+      const int& amg_simple_smoother, const int& amg_complex_smoother,
+      const double& amg_damping, const double& amg_strength,
+      const int& amg_coarsening)
   {
 
-    // Locally store these for convenience.
-    double amg_strength = RayGlobalAMGParam::amg_strength;
-    double amg_damping = RayGlobalAMGParam::amg_damping;
-    int amg_coarsening = RayGlobalAMGParam::amg_coarsening;
-    int amg_simple_smoother = RayGlobalAMGParam::amg_simple_smoother;
-    int amg_complex_smoother = RayGlobalAMGParam::amg_complex_smoother;
-    int amg_iterations = RayGlobalAMGParam::amg_iterations;
-    int amg_smoother_iterations = RayGlobalAMGParam::amg_smoother_iterations;
-
-
     int coarsening_array[] = {0,1,3,6,8,10,11};
-    unsigned n_coarsening_strateges = 7;
+    unsigned n_coarsening_strategies = 7;
     bool coarsening_ok 
       = check_if_in_set<int>(coarsening_array,n_coarsening_strategies,
           amg_coarsening);
@@ -205,21 +199,21 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     // Only one of the two smoothers have been set. We see if these are
     // valid smoothing IDs.
-    if(amg_sim_smoother >= 0)
+    if(amg_simple_smoother >= 0)
     {
       // check if simple smoother is okay.
       int sim_smoother_array[] = {0,1,2,3,4,6};
       unsigned n_sim_smoothers = 6;
       bool sim_smoother_ok
         = check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
-            amg_sim_smoother);
+            amg_simple_smoother);
       if(!sim_smoother_ok)
       {
         std::ostringstream err_msg;
         err_msg 
           << "Please provide a valid simple smoother \n"
           << "using --x_amg_sim_smoo. You have provided: " 
-          << amg_sim_smoother <<"\n\n"
+          << amg_simple_smoother <<"\n\n"
           << "Valid IDs are:\n"
           << "0 - Jacobi (Need to set damping as well)\n"
           << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
@@ -234,21 +228,21 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
             OOMPH_EXCEPTION_LOCATION);
       }
     }
-    else if(amg_com_smoother >=0)
+    else if(amg_complex_smoother >=0)
     {
       // check if complex smoother is okay.
       int com_smoother_array[] = {6,7,8,9};
       unsigned n_com_smoothers = 4;
       bool com_smoother_ok
         = check_if_in_set<int>(com_smoother_array,n_com_smoothers,
-            amg_com_smoother);
+            amg_complex_smoother);
       if(!com_smoother_ok)
       {
         std::ostringstream err_msg;
         err_msg 
           << "Please provide a valid complex smoother \n"
           << "using --x_amg_com_smoo. You have provided: " 
-          << amg_com_smoother <<"\n\n"
+          << amg_complex_smoother <<"\n\n"
           << "Valid IDs are:\n"
           << "6 - Schwarz (default in documentation)\n"
           << "7 - Pilut\n"
@@ -297,12 +291,24 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     // If Jacobi is set for simple smoother, the damping parameter must be
     // set as well.
-    if((amg_sim_smoother == 0) && (amg_damping < 0))
+    if((amg_simple_smoother == 0) && (amg_damping < 0))
     {
       std::ostringstream err_msg;
       err_msg 
-        << "Have selected Jacobi smoothing (amg_sim smoother is 0),\n" 
+        << "Have selected Jacobi smoothing (amg_simple_smoother is 0),\n" 
         << "but not specified the damping parameter via --x_amg_damp.\n"
+        << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    else if((amg_simple_smoother != 0) && (amg_damping >= 0))
+    {
+      std::ostringstream err_msg;
+      err_msg 
+        << "Have NOT selected Jacobi smoothing,\n" 
+        << "but you HAVE specified --x_amg_damp\n"
         << std::endl;
 
       throw OomphLibError(err_msg.str(),
@@ -389,23 +395,159 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   //===========================================================================
   /// Reset the variables in RayGlobalAMGParam
   //===========================================================================
-  void reset_global_amg_param()
-  {
-    RayGlobalAMGParam::amg_strength = -1.0;
-    RayGlobalAMGParam::amg_damping = -1.0;
-    RayGlobalAMGParam::amg_coarsening = -1;
-    RayGlobalAMGParam::amg_simple_smoother = -1;
-    RayGlobalAMGParam::amg_complex_smoother = -1;
-    RayGlobalAMGParam::amg_iterations = -1;
-    RayGlobalAMGParam::amg_smoother_iterations = -1;
-    RayGlobalAMGParam::print_hypre = false;
-  }
+//  void reset_global_amg_param()
+//  {
+//    RayGlobalAMGParam::amg_strength = -1.0;
+//    RayGlobalAMGParam::amg_damping = -1.0;
+//    RayGlobalAMGParam::amg_coarsening = -1;
+//    RayGlobalAMGParam::amg_simple_smoother = -1;
+//    RayGlobalAMGParam::amg_complex_smoother = -1;
+//    RayGlobalAMGParam::amg_iterations = -1;
+//    RayGlobalAMGParam::amg_smoother_iterations = -1;
+//    RayGlobalAMGParam::print_hypre = false;
+//  }
 
   // This function assumes that the global amg parameters are set
   // correctly and will do minimal error checking.
-  std::string get_label_from_global_amg_param()
+  std::string get_amg_label(
+      const int& amg_iterations, const int& amg_smoother_iterations,
+      const int& amg_simple_smoother, const int& amg_complex_smoother,
+      const double& amg_damping, const double& amg_strength,
+      const int& amg_coarsening)
   {
 
+    std::string strength_str = "";
+    std::string coarsening_str = "";
+    std::string smoother_str = "";
+    std::string cycle_str = "";
+
+    // Set the cycle.
+    std::stringstream cycle_ss;
+    cycle_ss << "It" << amg_iterations
+      << "Sit" << amg_smoother_iterations;
+    cycle_str = cycle_ss.str();
+
+    // Set the smoothers
+    //   0 = Jacobi 
+    //   1 = Gauss-Seidel, sequential
+    //       (very slow in parallel!)
+    //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+    //       (slow in parallel!)
+    //   3 = hybrid Gauss-Seidel or SOR, forward solve
+    //   4 = hybrid Gauss-Seidel or SOR, backward solve
+    //   6 = hybrid symmetric Gauss-Seidel or SSOR 
+    std::stringstream smoother_ss;
+
+    switch (amg_simple_smoother)
+    {
+      case 0:
+        smoother_ss << "Jac";
+        break;
+      case 1:
+        smoother_ss << "GSs";
+        break;
+      case 2:
+        smoother_ss << "GSp";
+        break;
+      case 3:
+        smoother_ss << "SORf";
+        break;
+      case 4:
+        smoother_ss << "SORb";
+        break;
+      case 6:
+        smoother_ss << "SSOR";
+        break;
+    }
+
+    // Set the damping if it's set
+    if(amg_damping >= 0)
+    {
+      smoother_ss << "D" << amg_damping;
+    }
+
+    // Set complex smoother string
+    //   6 = Schwarz
+    //   7 = Pilut
+    //   8 = ParaSails
+    //   9 = Euclid
+    switch (amg_complex_smoother)
+    {
+      case 6:
+        {
+          smoother_ss << "Schwarz";
+        }
+        break;
+      case 7:
+        {
+          smoother_ss << "Pilut";
+        }
+        break;
+      case 8:
+        {
+          smoother_ss << "ParaSails";
+        }
+        break;
+      case 9:
+        {
+          smoother_ss << "Euclid";
+        }
+        break;
+    }
+
+    smoother_str = smoother_ss.str();
+
+    // Now set the coarsening string
+    //    0 = CLJP (parallel coarsening using independent sets)
+    //    1 = classical RS with no boundary treatment (not recommended
+    //        in parallel)
+    //    3 = modified RS with 3rd pass to add C points on the boundaries
+    //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+    //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+    //    8 = PMIS (parallel coarsening using independent sets - lower
+    //        complexities than 0, maybe also slower convergence)
+    //    10= HMIS (one pass RS on each processor then PMIS on interior
+    //        coarse points as first independent set)
+    //    11= One pass RS on each processor (not recommended)
+    std::stringstream coarsening_ss;
+    switch (amg_coarsening)
+    {
+      case 0:
+        coarsening_ss << "CLJP";
+        break;
+      case 1:
+        coarsening_ss << "RS";
+        break;
+      case 3:
+        coarsening_ss << "RSm";
+        break;
+      case 6:
+        coarsening_ss << "Falgout";
+        break;
+      case 8:
+        coarsening_ss << "PMIS";
+        break;
+      case 10:
+        coarsening_ss << "HMIS";
+        break;
+      case 11:
+        coarsening_ss << "RS1p";
+        break;
+    }
+    coarsening_str = coarsening_ss.str();
+
+    // Create the string for strength
+    std::stringstream strength_ss;
+    strength_ss << "Strn" << amg_strength;
+    strength_str = strength_ss.str();
+
+    // Concatenate everything together
+    std::string final_str = cycle_str + "_" + 
+      smoother_str + "_" +
+      coarsening_str + " " +
+      strength_str;
+
+    return final_str;
   }
 
   //===========================================================================
@@ -569,7 +711,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   } // set_hypre_for_navier_stokes_momentum_block()
 
   //===========================================================================
-  /// Preconditioner* set_hypre_ray()
+  /// Preconditioner* get_custom_hypre_preconditioner()
   ///
   /// Returns a hypre preconditioner where all the settings must be set.
   ///
@@ -595,7 +737,11 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
    /// To use these methods set AMG_using_simple_smoothing to false
   //
   //===========================================================================
-  Preconditioner* set_hypre_ray()
+  Preconditioner* get_custom_hypre_preconditioner(
+      const int& amg_iterations, const int& amg_smoother_iterations,
+      const int& amg_simple_smoother, const int& amg_complex_smoother,
+      const double& amg_damping, const double& amg_strength,
+      const int& amg_coarsening)
   {
     // Create a new hypre preconditioner
     Preconditioner* another_preconditioner_pt =  
@@ -606,159 +752,69 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     // Set the hypre_method to BoomerAMG. This is hard coded.
     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
 
-    // Check that all the parameters in RayGlobalAMGParam is set correctly.
-    check_global_hypre_settings();
+    // Check that all the parameters are valid and correct.
+    check_amg_parameters(
+        amg_iterations, amg_smoother_iterations, 
+        amg_simple_smoother, amg_complex_smoother,
+        amg_damping, amg_strength,
+        amg_coarsening);
 
     // Set the amg_iterations, this is usually set to 1, for V(2,2)
     // there is only one of them... I think that's what I means, 
     // the two is the smoother... pre and post smoothing.
     hypre_preconditioner_pt
-      ->set_amg_iterations(RayGlobalAMGParam::amg_iterations);
-
+      ->set_amg_iterations(amg_iterations);
 
     // Set the number of amg smoother iterations. This is usually set to 2
-      hypre_preconditioner_pt
-        ->amg_smoother_iterations() 
-        = RayGlobalAMGParam::amg_smoother_iterations;
+    hypre_preconditioner_pt->amg_smoother_iterations() 
+      = amg_smoother_iterations;
 
-    // Store this information.
-    std::stringstream cyclestream;
-    cyclestream << "its"<<RayGlobalAMGParam::amg_iterations
-      << "smits" << RayGlobalAMGParam::amg_smoother_iterations;
-
-    string cycle_str = cyclestream.str();
-    string smoother_str = "";
-    string damping_str = "";
-    string coarsening_str = "";
-    string strength_str = "";
-
-    ///////////////////////////////////////////////////////////////////////////
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    // Setting the smoother:
-    if(RayGlobalAMGParam::amg_smoother == 1)
+    // Now set the smoother type. Remember to use damping for jacobi.
+    if(amg_simple_smoother >= 0)
     {
-      smoother_str = "GS";
-      // Setting up Gauss-Seidel
+      // Set simple smoothing flag
       hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother() 
-        = RayGlobalAMGParam::amg_smoother;
-    }
-    else if(RayGlobalAMGParam::amg_smoother == 0)
-    {
-      smoother_str = "J";
-      hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
 
-      // Setting up Jacobi with damping.
-      hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother() 
-        = RayGlobalAMGParam::amg_smoother;
-      if(RayGlobalAMGParam::amg_damping >= 0)
-      {
-        std::ostringstream strs;
-        strs << "Dmp" << hypre_preconditioner_pt->amg_damping();
-        damping_str = strs.str(); 
-      }
-      else
-      {
-        std::ostringstream err_msg;
-        err_msg << "Please set the damping parameter for Jacobi" << std::endl;
+      // Set the simple smoother type
+      hypre_preconditioner_pt->amg_simple_smoother() = amg_simple_smoother;
 
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
+      // Set the damping parameter.
+      hypre_preconditioner_pt->amg_damping() = amg_damping;
     }
-    else if(RayGlobalAMGParam::amg_smoother == 2)
+    else if(amg_complex_smoother >= 0)
+      // Otherwise we have complex smoothing
     {
-      smoother_str = "Pilut";
+      // Set the complex smoothing flag.
       hypre_preconditioner_pt->amg_using_complex_smoothing();
-      hypre_preconditioner_pt->amg_complex_smoother() = 7;
+
+      // Set the complex smoother type.
+      hypre_preconditioner_pt->amg_complex_smoother() = amg_complex_smoother;
     }
     else
     {
       std::ostringstream err_msg;
-      err_msg << "You have supplied smoother: " 
-        << RayGlobalAMGParam::amg_smoother << "\n";
-
-      err_msg << "No such smoother. 0 = Jacobi, 1 = GS, 2 = Pilut\n";
-
-      err_msg << "Please set RayGlobalAMGParam::smoother\n";
+      err_msg << "You have not supplied a valid smoother.\n";
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
 
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    if(RayGlobalAMGParam::amg_coarsening == 0)
-    {
-      coarsening_str = "CLJP";
-      hypre_preconditioner_pt->amg_coarsening() 
-        = RayGlobalAMGParam::amg_coarsening;
-    }
-    else if(RayGlobalAMGParam::amg_coarsening == 1)
-    {
-      coarsening_str = "RS";
-      hypre_preconditioner_pt->amg_coarsening() 
-        = RayGlobalAMGParam::amg_coarsening;
-    }
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "There is no such coarsening: " 
-        << RayGlobalAMGParam::amg_coarsening << "\n";
-      err_msg << "0 - CLJP, 1 - RS\n";
-
-      err_msg << "Please set RayGlobalAMGParam::amg_coarsening\n";
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
+    // AMG coarsening strategy.
+    hypre_preconditioner_pt->amg_coarsening() = amg_coarsening;
 
     // Now set the AMG strength parameter.
-    if(RayGlobalAMGParam::amg_strength >= 0)
-    {
-      hypre_preconditioner_pt->amg_strength() 
-        = RayGlobalAMGParam::amg_strength;
-      std::ostringstream strs;
-      strs << "Strn" << hypre_preconditioner_pt->amg_strength();
-      strength_str = strs.str(); 
-    }
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "Please set RayGlobalAMGParam::amg_strength\n"; 
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
+    hypre_preconditioner_pt->amg_strength() = amg_strength;
 
-    // Reset the global AMG parameters
-    reset_amg_param();
+    std::string amg_label_str = get_amg_label(
+        amg_iterations, amg_smoother_iterations, 
+        amg_simple_smoother, amg_complex_smoother,
+        amg_damping, amg_strength,
+        amg_coarsening);
 
-    // Print out the settings? WOW - this will be set to false after the reset.
-    // Idiot ray.
-    if(RayGlobalAMGParam::print_hypre)
-    {
-      print_hypre_settings(another_preconditioner_pt);
-    }
-
-    std::cout << "RAYHYPRE: " << cycle_str
-      << coarsening_str 
-      << smoother_str
-      << damping_str
-      << strength_str
-      << std::endl;
+    std::cout << "RAYHYPRE: " << amg_label_str << std::endl;
 
     return another_preconditioner_pt;
-  } // set_hypre_ray
+  } // get_custom_hypre_preconditioner
 
   ///////////////////////////////////////////////
   ///////////////////////////////////////////////
@@ -767,106 +823,106 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    string smoother_str = "";
-    string damping_str = "";
-    string coarsening_str = "";
-    string strength_str = "";
-    ///////////////////////////////////////////////////////////////////////////
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    // Setting the smoother:
-    if(RayGlobalAMGParam::amg_smoother == 0)
-    {
-      smoother_str = "GS";
-      // Setting up Gauss-Seidel
-      hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother() = 1;
-    }
-    else if(RayGlobalAMGParam::amg_smoother == 1)
-    {
-      smoother_str = "J";
-      hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
-
-      // Setting up Jacobi with damping.
-      hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother() = 0;
-      if(!(RayGlobalAMGParam::amg_damping < 0))
-      {
-        std::ostringstream strs;
-        strs << "Dmp" << hypre_preconditioner_pt->amg_damping();
-        damping_str = strs.str(); 
-      }
-      else
-      {
-        std::cout << "Please set your damping using --amg_damping" << std::endl; 
-        pause("Please do not continue."); 
-      }
-    }
-    else if(RayGlobalAMGParam::amg_smoother == 2)
-    {
-      smoother_str = "Pilut";
-      hypre_preconditioner_pt->amg_using_complex_smoothing();
-      hypre_preconditioner_pt->amg_complex_smoother() = 7;
-    }
-    else
-    {
-      std::cout << "You supplied smoother: " << RayGlobalAMGParam::amg_smoother << std::endl;
-      std::cout << "No such smoother. 0 is GS, 1 is Jacobi, 2 is Pilut" << std::endl;
-      std::cout << "Please set your smoother using --smoother" << std::endl;
-      pause("Please do not continue.");
-    }
-
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    if(RayGlobalAMGParam::amg_coarsening == 0)
-    {
-      coarsening_str = "CLJP";
-      hypre_preconditioner_pt->amg_coarsening() = 0;
-    }
-    else if(RayGlobalAMGParam::amg_coarsening == 1)
-    {
-      coarsening_str = "RS";
-      hypre_preconditioner_pt->amg_coarsening() = 1;
-    }
-    else
-    {
-      std::cout << "There is no such coarsening: " << RayGlobalAMGParam::amg_coarsening << std::endl;
-      std::cout << "0 - CLJP, 1 - RS, use --amg_coarsening" << std::endl;
-      pause("Do not continue"); 
-
-    }
-
-    if(!(RayGlobalAMGParam::amg_strength < 0))
-    {
-      hypre_preconditioner_pt->amg_strength() = RayGlobalAMGParam::amg_strength;
-      std::ostringstream strs;
-      strs << "Strn" << hypre_preconditioner_pt->amg_strength();
-      strength_str = strs.str(); 
-    }
-    else
-    {
-      std::cout << "Please set the amg_strengh using --amg_strength" << std::endl;
-      pause("Do not continue");
-    }
-
-    std::cout << "RAYHYPRE: " << coarsening_str 
-      << smoother_str
-      << damping_str
-      << strength_str
-      << std::endl;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    string smoother_str = "";
+//    string damping_str = "";
+//    string coarsening_str = "";
+//    string strength_str = "";
+//    ///////////////////////////////////////////////////////////////////////////
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    // Setting the smoother:
+//    if(RayGlobalAMGParam::amg_smoother == 0)
+//    {
+//      smoother_str = "GS";
+//      // Setting up Gauss-Seidel
+//      hypre_preconditioner_pt->amg_using_simple_smoothing();
+//      hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//    }
+//    else if(RayGlobalAMGParam::amg_smoother == 1)
+//    {
+//      smoother_str = "J";
+//      hypre_preconditioner_pt->amg_damping() = RayGlobalAMGParam::amg_damping;
+//
+//      // Setting up Jacobi with damping.
+//      hypre_preconditioner_pt->amg_using_simple_smoothing();
+//      hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//      if(!(RayGlobalAMGParam::amg_damping < 0))
+//      {
+//        std::ostringstream strs;
+//        strs << "Dmp" << hypre_preconditioner_pt->amg_damping();
+//        damping_str = strs.str(); 
+//      }
+//      else
+//      {
+//        std::cout << "Please set your damping using --amg_damping" << std::endl; 
+//        pause("Please do not continue."); 
+//      }
+//    }
+//    else if(RayGlobalAMGParam::amg_smoother == 2)
+//    {
+//      smoother_str = "Pilut";
+//      hypre_preconditioner_pt->amg_using_complex_smoothing();
+//      hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//    }
+//    else
+//    {
+//      std::cout << "You supplied smoother: " << RayGlobalAMGParam::amg_smoother << std::endl;
+//      std::cout << "No such smoother. 0 is GS, 1 is Jacobi, 2 is Pilut" << std::endl;
+//      std::cout << "Please set your smoother using --smoother" << std::endl;
+//      pause("Please do not continue.");
+//    }
+//
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    if(RayGlobalAMGParam::amg_coarsening == 0)
+//    {
+//      coarsening_str = "CLJP";
+//      hypre_preconditioner_pt->amg_coarsening() = 0;
+//    }
+//    else if(RayGlobalAMGParam::amg_coarsening == 1)
+//    {
+//      coarsening_str = "RS";
+//      hypre_preconditioner_pt->amg_coarsening() = 1;
+//    }
+//    else
+//    {
+//      std::cout << "There is no such coarsening: " << RayGlobalAMGParam::amg_coarsening << std::endl;
+//      std::cout << "0 - CLJP, 1 - RS, use --amg_coarsening" << std::endl;
+//      pause("Do not continue"); 
+//
+//    }
+//
+//    if(!(RayGlobalAMGParam::amg_strength < 0))
+//    {
+//      hypre_preconditioner_pt->amg_strength() = RayGlobalAMGParam::amg_strength;
+//      std::ostringstream strs;
+//      strs << "Strn" << hypre_preconditioner_pt->amg_strength();
+//      strength_str = strs.str(); 
+//    }
+//    else
+//    {
+//      std::cout << "Please set the amg_strengh using --amg_strength" << std::endl;
+//      pause("Do not continue");
+//    }
+//
+//    std::cout << "RAYHYPRE: " << coarsening_str 
+//      << smoother_str
+//      << damping_str
+//      << strength_str
+//      << std::endl;
 
     return another_preconditioner_pt;
   }
@@ -876,15 +932,15 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_navier_stokes_momentum_block(hypre_preconditioner_pt);
-
-    hypre_preconditioner_pt->amg_strength() = 0.668;
-
-    hypre_preconditioner_pt->amg_damping() = 1.0;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_navier_stokes_momentum_block(hypre_preconditioner_pt);
+//
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
+//
+//    hypre_preconditioner_pt->amg_damping() = 1.0;
 
     return another_preconditioner_pt;
   } 
@@ -893,32 +949,32 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 1;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 0;
-    hypre_preconditioner_pt->amg_strength() = 0.75;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 0;
+//    hypre_preconditioner_pt->amg_strength() = 0.75;
 
     return another_preconditioner_pt;
   } 
@@ -927,32 +983,32 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 1;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 1;
-    hypre_preconditioner_pt->amg_strength() = 0.75;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 1;
+//    hypre_preconditioner_pt->amg_strength() = 0.75;
 
     return another_preconditioner_pt;
   } 
@@ -961,32 +1017,32 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_complex_smoothing();
-    hypre_preconditioner_pt->amg_complex_smoother() = 7;
-    //hypre_preconditioner_pt->amg_using_simple_smoothing();
-    //hypre_preconditioner_pt->amg_simple_smoother() = 1;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 0;
-    hypre_preconditioner_pt->amg_strength() = 0.75;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//    //hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    //hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 0;
+//    hypre_preconditioner_pt->amg_strength() = 0.75;
 
     return another_preconditioner_pt;
   } 
@@ -995,32 +1051,32 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_complex_smoothing();
-    hypre_preconditioner_pt->amg_complex_smoother() = 7;
-    //hypre_preconditioner_pt->amg_using_simple_smoothing();
-    //hypre_preconditioner_pt->amg_simple_smoother() = 1;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 1;
-    hypre_preconditioner_pt->amg_strength() = 0.75;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//    //hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    //hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 1;
+//    hypre_preconditioner_pt->amg_strength() = 0.75;
 
     return another_preconditioner_pt;
   }
@@ -1031,34 +1087,34 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 1;
-    //hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 0;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//    //hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 0;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
 
     return another_preconditioner_pt;
   }
@@ -1066,69 +1122,69 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 0;
-    hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 0;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
-
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//    hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 0;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
+//
     return another_preconditioner_pt;
   }
   Preconditioner* set_hypre_for_CLJPPilutStrn0668()
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    //hypre_preconditioner_pt->amg_using_simple_smoothing();
-    //hypre_preconditioner_pt->amg_simple_smoother() = 0;
-    //hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    hypre_preconditioner_pt->amg_using_complex_smoothing();
-    hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 0;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    //hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    //hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//    //hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 0;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
 
     return another_preconditioner_pt;
   }
@@ -1139,34 +1195,34 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 1;
-    //hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 1;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 1;
+//    //hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 1;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
 
     return another_preconditioner_pt;
   }
@@ -1174,34 +1230,34 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    hypre_preconditioner_pt->amg_using_simple_smoothing();
-    hypre_preconditioner_pt->amg_simple_smoother() = 0;
-    hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    //hypre_preconditioner_pt->amg_using_complex_smoothing();
-    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 1;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//    hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    //hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    //hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 1;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
 
     return another_preconditioner_pt;
   }
@@ -1209,34 +1265,34 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   {
     Preconditioner* another_preconditioner_pt =  
       new HyprePreconditioner;
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    Hypre_default_settings::
-      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Parameters from Milan.
-
-    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
-    /// include:
-    ///  0 = Jacobi 
-    ///  1 = Gauss-Seidel, sequential
-    ///      (very slow in parallel!)
-    /// To use these methods set AMG_using_simple_smoothing to true
-    //hypre_preconditioner_pt->amg_using_simple_smoothing();
-    //hypre_preconditioner_pt->amg_simple_smoother() = 0;
-    //hypre_preconditioner_pt->amg_damping() = 1.0;
-
-    hypre_preconditioner_pt->amg_using_complex_smoothing();
-    hypre_preconditioner_pt->amg_complex_smoother() = 7;
-
-    // AMG coarsening strategy. Coarsening types include:
-    ///  0 = CLJP (parallel coarsening using independent sets)
-    ///  1 = classical RS with no boundary treatment (not recommended
-    ///      in parallel)
-    hypre_preconditioner_pt->amg_coarsening() = 1;
-    hypre_preconditioner_pt->amg_strength() = 0.668;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+//
+//    Hypre_default_settings::
+//      set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//    ///////////////////////////////////////////////////////////////////////////
+//    // Parameters from Milan.
+//
+//    /// \short Simple smoothing methods used in BoomerAMG. Relaxation types
+//    /// include:
+//    ///  0 = Jacobi 
+//    ///  1 = Gauss-Seidel, sequential
+//    ///      (very slow in parallel!)
+//    /// To use these methods set AMG_using_simple_smoothing to true
+//    //hypre_preconditioner_pt->amg_using_simple_smoothing();
+//    //hypre_preconditioner_pt->amg_simple_smoother() = 0;
+//    //hypre_preconditioner_pt->amg_damping() = 1.0;
+//
+//    hypre_preconditioner_pt->amg_using_complex_smoothing();
+//    hypre_preconditioner_pt->amg_complex_smoother() = 7;
+//
+//    // AMG coarsening strategy. Coarsening types include:
+//    ///  0 = CLJP (parallel coarsening using independent sets)
+//    ///  1 = classical RS with no boundary treatment (not recommended
+//    ///      in parallel)
+//    hypre_preconditioner_pt->amg_coarsening() = 1;
+//    hypre_preconditioner_pt->amg_strength() = 0.668;
 
     return another_preconditioner_pt;
   }
@@ -1900,7 +1956,8 @@ namespace LagrangianPreconditionerHelpers
       if(found != std::string::npos)
       {
         std::ostringstream err_msg;
-        err_msg << "Please provide the doc_prec directory "
+        err_msg 
+          << "Please provide the doc_prec directory "
           << "after the argument --doc_prec.\n" 
           << "This must not start with \"--\"." << std::endl;
 
@@ -2227,26 +2284,36 @@ namespace LagrangianPreconditionerHelpers
       else if (F_solver == 69)
       {
 #ifdef OOMPH_HAS_HYPRE
-        // AMG coarsening: Ruge-Stuben
-        RayGlobalAMGParam::amg_coarsening = 1;
+        // This is what set_defaults_for_2D_poisson_problem() does:
+        f_amg_iterations = 1;
+        f_amg_simple_smoother = 1; // GS
+        f_amg_strength = 0.25;
+        f_amg_coarsening = 0; // CLJP
+       
+        // Set this to make sure complex isnt used
+        f_amg_complex_smoother = -1;
+        
 
-        // AMG smoother: Gauss-Seidel
-        RayGlobalAMGParam::amg_smoother=0;
+
+        // Now set my own stuff.
+        f_amg_coarsening = 1; // RSs.
+
+        f_amg_simple_smoother = 1; // GS
 
         // There is no damping with GS, otherwise we set the parameter:
-        // RayGlobalAMGParam::amg_damping
+        f_amg_damping = -1.0;
 
         // Different amg strength for simple/stress divergence for viscuous term.
         const int vis = *Vis_pt;
         if(vis == 0)
         {
           // Simple form
-          RayGlobalAMGParam::amg_strength = 0.25;
+          f_amg_strength = 0.25;
         }
         else if (vis == 1)
         {
           // Stress divergence form
-          RayGlobalAMGParam::amg_strength = 0.668;
+          f_amg_strength = 0.668;
         }
         else
         {
@@ -2260,7 +2327,11 @@ namespace LagrangianPreconditionerHelpers
 
         // Setup the preconditioner.
         f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_using_2D_poisson_base();
+          get_custom_hypre_preconditioner(
+              f_amg_iterations, f_amg_smoother_iterations, 
+              f_amg_simple_smoother, f_amg_complex_smoother,
+              f_amg_damping, f_amg_strength,
+              f_amg_coarsening);
 
         if(Print_hypre)
         {
@@ -2314,7 +2385,7 @@ namespace LagrangianPreconditionerHelpers
         // using --f_amg_coarse.
         // If the user has, then f_amg_coarsening should no longer be -1.
         int coarsening_array[] = {0,1,3,6,8,10,11};
-        unsigned n_coarsening_strateges = 7;
+        unsigned n_coarsening_strategies = 7;
         bool coarsening_ok 
           = check_if_in_set<int>(coarsening_array,n_coarsening_strategies,
               f_amg_coarsening);
@@ -2405,21 +2476,21 @@ namespace LagrangianPreconditionerHelpers
 
         // Only one of the two smoothers have been set. We see if these are
         // valid smoothing IDs.
-        if(f_amg_sim_smoother >= 0)
+        if(f_amg_simple_smoother >= 0)
         {
           // check if simple smoother is okay.
           int sim_smoother_array[] = {0,1,2,3,4,6};
           unsigned n_sim_smoothers = 6;
           bool sim_smoother_ok
             = check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
-                f_amg_sim_smoother);
+                f_amg_simple_smoother);
           if(!sim_smoother_ok)
           {
             std::ostringstream err_msg;
             err_msg 
               << "Please provide a valid simple smoother \n"
               << "using --f_amg_sim_smoo. You have provided: " 
-              << f_amg_sim_smoother <<"\n\n"
+              << f_amg_simple_smoother <<"\n\n"
               << "Valid IDs are:\n"
               << "0 - Jacobi (Need to set damping as well)\n"
               << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
@@ -2434,21 +2505,21 @@ namespace LagrangianPreconditionerHelpers
                 OOMPH_EXCEPTION_LOCATION);
           }
         }
-        else if(f_amg_com_smoother >=0)
+        else if(f_amg_complex_smoother >=0)
         {
           // check if complex smoother is okay.
           int com_smoother_array[] = {6,7,8,9};
           unsigned n_com_smoothers = 4;
           bool com_smoother_ok
             = check_if_in_set<int>(com_smoother_array,n_com_smoothers,
-                f_amg_com_smoother);
+                f_amg_complex_smoother);
           if(!com_smoother_ok)
           {
             std::ostringstream err_msg;
             err_msg 
               << "Please provide a valid complex smoother \n"
               << "using --f_amg_com_smoo. You have provided: " 
-              << f_amg_com_smoother <<"\n\n"
+              << f_amg_complex_smoother <<"\n\n"
               << "Valid IDs are:\n"
               << "6 - Schwarz (default in documentation)\n"
               << "7 - Pilut\n"
@@ -2497,7 +2568,7 @@ namespace LagrangianPreconditionerHelpers
 
         // If Jacobi is set for simple smoother, the damping parameter must be
         // set as well.
-        if((f_amg_sim_smoother == 0) && (f_amg_damping < 0))
+        if((f_amg_simple_smoother == 0) && (f_amg_damping < 0))
         {
             std::ostringstream err_msg;
             err_msg 
@@ -2576,24 +2647,19 @@ namespace LagrangianPreconditionerHelpers
                 OOMPH_EXCEPTION_LOCATION);
         }
 
-
-        RayGlobalAMGParam::amg_strength = f_amg_strength;
-        RayGlobalAMGParam::amg_damping = f_amg_damping;
-        RayGlobalAMGParam::amg_coarsening = f_amg_coarsening;
-        RayGlobalAMGParam::amg_simple_smoother = f_amg_simple_smoother;
-        RayGlobalAMGParam::amg_comple_smoother = f_amg_complex_smoother;
-        RayGlobalAMGParam::amg_iterations = f_amg_iterations;
-        RayGlobalAMGParam::amg_smoother_iterations 
-          = f_amg_smoother_iterations;
-        RayGlobalAMGParam::print_hypre = Print_hypre;
-
         // Setup the preconditioner.
         f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_ray();
+          get_custom_hypre_preconditioner(
+              f_amg_iterations, f_amg_smoother_iterations, 
+              f_amg_simple_smoother, f_amg_complex_smoother,
+              f_amg_damping, f_amg_strength,
+              f_amg_coarsening);
 
-        // Important to reset the parameters. Don't want to use the wrong 
-        // settings for the other preconditioner.
-        Hypre_Subsidiary_Preconditioner_Helper::reset_amg_param();
+        if(Print_hypre)
+        {
+          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+              f_preconditioner_pt);
+        }
 #endif
       }
 
@@ -2627,17 +2693,19 @@ namespace LagrangianPreconditionerHelpers
       else if(P_solver == 96)
       {
 #ifdef OOMPH_HAS_HYPRE
-        RayGlobalAMGParam::amg_strength = p_amg_strength;
-        RayGlobalAMGParam::amg_damping = param_pt->p_amg_damping;
-        RayGlobalAMGParam::amg_coarsening = p_amg_coarsening;
-        RayGlobalAMGParam::amg_simple_smoother = p_amg_simple_smoother;
-        RayGlobalAMGParam::amg_complex_smoother = p_amg_complex_smoother;
-        RayGlobalAMGParam::amg_iterations = p_amg_iterations;
-        RayGlobalAMGParam::amg_smoother_iterations = p_amg_smoother_iterations;
-        RayGlobalAMGParam::print_hypre = Print_hypre;
 
-        p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::set_hypre_ray();
-        Hypre_Subsidiary_Preconditioner_Helper::reset_amg_param();
+        p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+          get_custom_hypre_preconditioner(
+              p_amg_iterations, p_amg_smoother_iterations, 
+              p_amg_simple_smoother, p_amg_complex_smoother,
+              p_amg_damping, p_amg_strength,
+              p_amg_coarsening);
+        
+        if(Print_hypre)
+        {
+          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+              p_preconditioner_pt);
+        }
 #endif
       }
       else if(P_solver == 2)
