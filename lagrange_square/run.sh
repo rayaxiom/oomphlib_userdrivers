@@ -56,7 +56,7 @@ FAMGPARAM="--f_solver 96 $FAMG_ITER $FAMG_SMITER $FAMG_SSMOOTHER $FAMG_CSMOOTHER
 #FAMGPARAM="--f_solver 69"
 
 make sq_lgr && mpirun -np 1 ./sq_lgr --dist_prob --trilinos_solver --prob_id 11 --w_solver 0 \
-  --ns_solver 1 --p_solver 1 $FAMGPARAM --visc 0 --ang 67 --rey 200 --noel 175 \
+  --ns_solver 1 --p_solver 1 $FAMGPARAM --visc 0 --ang 67 --rey 200 --noel 512 \
 	--print_hypre
 
 #  --w_solver 1 --ns_solver 0 --ang 42 --noel 3 --doc_prec tmp_doc_prec_dir

@@ -3306,6 +3306,7 @@ namespace GenericProblemSetup
 #endif
 
     solver_pt->tolerance() = solver_tol;
+    solver_pt->max_iter() = 300;
     problem_pt->newton_solver_tolerance() = newton_tol;
 
     solver_pt->preconditioner_pt() = prec_pt;
