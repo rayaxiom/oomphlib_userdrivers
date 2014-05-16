@@ -158,9 +158,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
         << "0 - Jacobi (Need to set damping as well)\n"
         << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
         << "2 - GS - interior parallel, serial on boundary\n"
-        << "3 - hybrid GS or SOR, forward solve\n"
-        << "4 - hybrid GS or SOR, backwards solve\n"
-        << "6 - hybrid symmetric GS or SSOR.\n\n"
+        << "3 - hybrid GS or SOR, forward solve (damping needed?)\n"
+        << "4 - hybrid GS or SOR, backwards solve (damping needed?)\n"
+        << "6 - hybrid symmetric GS or SSOR (damping needed?).\n\n"
 
         << "Complex smoother IDs, set with --x_amg_com_smoo\n"
         << "6 - Schwarz (default in documentation)\n"
@@ -208,7 +208,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     }
     else if(amg_complex_smoother >=0)
     {
-      // check if complex smoother is okay.
+      // check if complex smoother is valid.
       int com_smoother_array[] = {6,7,8,9};
       unsigned n_com_smoothers = 4;
       bool com_smoother_ok
@@ -267,32 +267,31 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
           OOMPH_EXCEPTION_LOCATION);
     }
 
-    // If Jacobi is set for simple smoother, the damping parameter must be
-    // set as well.
-    if((amg_simple_smoother == 0) && (amg_damping < 0))
+    // Damping is required for Jacobi or hybrid SOR smoothers.
+    // First check if amg_simple_smoother is one of those.
+    int sub_smoother_array[] = {0,3,4,6};
+    unsigned n_sub_smoothers = 4;
+    bool damping_required
+      = check_if_in_set<int>(sub_smoother_array,n_sub_smoothers,
+          amg_simple_smoother);
+    if(damping_required && (amg_damping < 0))
     {
       std::ostringstream err_msg;
       err_msg 
-        << "Have selected Jacobi smoothing (amg_simple_smoother is 0),\n" 
-        << "but not specified the damping parameter via --x_amg_damp.\n"
+        << "Have selected simple smoother: " << amg_simple_smoother << "\n"
+        << "Damping parameter is required for this smoother.\n"
+        << "Please set it via --x_amg_damp.\n"
         << std::endl;
 
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-    else if((amg_simple_smoother != 0) && (amg_damping >= 0))
-    {
-      std::ostringstream err_msg;
-      err_msg 
-        << "Have NOT selected Jacobi smoothing,\n" 
-        << "but you HAVE specified --x_amg_damp\n"
-        << std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
+    // Note that we haven't checked the reverse, i.e. if a smoother
+    // which does not required damping is set, and the damping parameter
+    // is set, we allow this... if implemented properly, the hypre
+    // code should just ignore it. It will also be interesting to find
+    // smoothers which the damping parameter affects the result.
 
     // Now check if the strength parameter is set. 
     if(amg_strength < 0)
@@ -762,9 +761,6 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
       // Set the simple smoother type
       hypre_preconditioner_pt->amg_simple_smoother() = amg_simple_smoother;
-
-      // Set the damping parameter.
-      hypre_preconditioner_pt->amg_damping() = amg_damping;
     }
     else if(amg_complex_smoother >= 0)
       // Otherwise we have complex smoothing
@@ -784,11 +780,14 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
           OOMPH_EXCEPTION_LOCATION);
     }
 
-    // AMG coarsening strategy.
-    hypre_preconditioner_pt->amg_coarsening() = amg_coarsening;
+    // Set the damping parameter.
+    hypre_preconditioner_pt->amg_damping() = amg_damping;
 
     // Now set the AMG strength parameter.
     hypre_preconditioner_pt->amg_strength() = amg_strength;
+
+    // AMG coarsening strategy.
+    hypre_preconditioner_pt->amg_coarsening() = amg_coarsening;
 
     std::string amg_label_str = get_amg_label(hypre_preconditioner_pt);
 
@@ -2267,45 +2266,49 @@ namespace LagrangianPreconditionerHelpers
 #ifdef OOMPH_HAS_HYPRE
         // This is what set_defaults_for_2D_poisson_problem() does:
         f_amg_iterations = 1;
-        f_amg_simple_smoother = 1; // GS
-        f_amg_strength = 0.25;
-        f_amg_coarsening = 0; // CLJP
+        //f_amg_simple_smoother = 1; // GS - commented out since it is reset below
+        //f_amg_strength = 0.25; // commented out since it is reset below, depending on the viscous term.
+        //f_amg_coarsening = 0; // CLJP - commented out since it is reset below.
+        // END OF 2D poisson stuff.
        
-        // Set this to make sure complex isn't used
+        // Set this to -1 to make sure complex isn't used
         f_amg_complex_smoother = -1;
 
         // The default smoother iterations is two.
         f_amg_smoother_iterations = 2;
-        
-
 
         // Now set my own stuff.
-        f_amg_coarsening = 1; // RSs.
         f_amg_simple_smoother = 1; // GS
+        f_amg_coarsening = 1; // RSs.
 
         // There is no damping with GS, otherwise we set the parameter:
         f_amg_damping = -1.0;
 
-        // Different amg strength for simple/stress divergence for viscuous term.
-        const int vis = *Vis_pt;
-        if(vis == 0)
+        // Different amg strength for simple/stress divergence for viscous term.
+        // This is only set to the below defaults if the strength parameter is
+        // not already set.
+        if(f_amg_strength < 0)
         {
-          // Simple form
-          f_amg_strength = 0.25;
-        }
-        else if (vis == 1)
-        {
-          // Stress divergence form
-          f_amg_strength = 0.668;
-        }
-        else
-        {
-          std::ostringstream err_msg;
-          err_msg << "Do not recognise viscuous term: " << vis << std::endl;
+          const int vis = *Vis_pt;
+          if(vis == 0)
+          {
+            // Simple form
+            f_amg_strength = 0.25;
+          }
+          else if (vis == 1)
+          {
+            // Stress divergence form
+            f_amg_strength = 0.668;
+          }
+          else
+          {
+            std::ostringstream err_msg;
+            err_msg << "Do not recognise viscuous term: " << vis << std::endl;
 
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
+            throw OomphLibError(err_msg.str(),
+                OOMPH_CURRENT_FUNCTION,
+                OOMPH_EXCEPTION_LOCATION);
+          }
         }
 
         // Setup the preconditioner.
@@ -2348,21 +2351,16 @@ namespace LagrangianPreconditionerHelpers
         // 3 - hybrid GS or SOR, forward solve
         // 4 - hybrid GS or SOR, backwards solve.
         // 6 - hybrid symmetric GS or SSOR.
-        // REMEMBER TO SET SIMPLE SMOOTHING TO TRUE. THIS IS HANDLED
-        // BY set_ray_hypre()
+        // REMEMBER TO SET SIMPLE SMOOTHING TO TRUE. This should be handled
+        // by your hypre preconditioner creation function.
         //
         // Complex smoothing:
         // 6 - Schwarz
         // 7 - Pilut
         // 8 - ParaSails
-        // 9  - Euclid
-        // REMEMBER TO SET SIMPLE SMOOTHING TO FALSE, THIS IS HANDLED 
-        // BY set_ray_hypre();
-        // 
-
-        // There is no damping with GS, otherwise we set the parameter:
-        // RayGlobalAMGParam::amg_damping
-
+        // 9 - Euclid
+        // REMEMBER TO SET SIMPLE SMOOTHING TO FALSE, this should be handled
+        // by the hypre subsidiary helper function.
 
         // First check that the user has selected a coarsening strategy
         // using --f_amg_coarse.
@@ -2490,7 +2488,7 @@ namespace LagrangianPreconditionerHelpers
         }
         else if(f_amg_complex_smoother >=0)
         {
-          // check if complex smoother is okay.
+          // check if complex smoother is valid.
           int com_smoother_array[] = {6,7,8,9};
           unsigned n_com_smoothers = 4;
           bool com_smoother_ok
@@ -2549,20 +2547,33 @@ namespace LagrangianPreconditionerHelpers
               OOMPH_EXCEPTION_LOCATION);
         }
 
-        // If Jacobi is set for simple smoother, the damping parameter must be
-        // set as well.
-        if((f_amg_simple_smoother == 0) && (f_amg_damping < 0))
-        {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Have selected Jacobi for f block (f amg_sim smoother is 0),\n" 
-              << "but not specified the damping parameter via --f_amg_damp.\n"
-              << std::endl;
 
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-        }
+    // Damping is required for Jacobi or hybrid SOR smoothers.
+    // First check if amg_simple_smoother is one of those.
+    int sub_smoother_array[] = {0,3,4,6};
+    unsigned n_sub_smoothers = 4;
+    bool damping_required
+      = check_if_in_set<int>(sub_smoother_array,n_sub_smoothers,
+          f_amg_simple_smoother);
+    if(damping_required && (f_amg_damping < 0))
+    {
+      std::ostringstream err_msg;
+      err_msg 
+        << "Have selected simple smoother: " << f_amg_simple_smoother << "\n"
+        << "Damping parameter is required for this smoother.\n"
+        << "Please set it via --f_amg_damp.\n"
+        << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    // Note that we haven't checked the reverse, i.e. if a smoother
+    // which does not required damping is set, and the damping parameter
+    // is set, we allow this... if implemented properly, the hypre
+    // code should just ignore it. It will also be interesting to find
+    // smoothers which the damping parameter affects the result.
+
 
         // Now check if the strength parameter is set. 
         // But don't throw an error, just a warning.
@@ -2717,8 +2728,6 @@ namespace LagrangianPreconditionerHelpers
         // 0 - CLJP
         // 1 - RS
         hypre_preconditioner_pt->amg_coarsening() = 1;
-
-        //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
 #endif
       }
 
