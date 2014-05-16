@@ -70,28 +70,6 @@ bool check_if_in_set(T myarray[], unsigned nval, T number)
   return (!ret.second);
 } // check_if_in_set(...)
 
-//=============================================================================
-/// Namespace to hold temporary AMG parameters for customised AMG settings
-/// to be used later on. Functions which modifies/uses these variables are:
-///   reset_amg_param()
-///   set_hypre_for_2D_poison_problem() (might modify str)
-///   set_hypre_for_navier_stokes_momentum_block() (might modify str and dmp)
-///   get_custom_hypre_preconditioner(...) (might modify everything)
-///   
-///   There are others... might need to clean this up.
-//=============================================================================
-//namespace RayGlobalAMGParam
-//{
-//  double amg_strength = -1.0;
-//  double amg_damping = -1.0;
-//  int amg_coarsening = -1;
-//  int amg_simple_smoother = -1;
-//  int amg_complex_smoother = -1;
-//
-//  int amg_iterations = -1;
-//  int amg_smoother_iterations = -1;
-//  bool print_hypre = false;
-//}
 
 #ifdef OOMPH_HAS_HYPRE
 //=============================================================================
@@ -392,30 +370,37 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     std::cout << "\n" << std::endl;
   }
 
-  //===========================================================================
-  /// Reset the variables in RayGlobalAMGParam
-  //===========================================================================
-//  void reset_global_amg_param()
-//  {
-//    RayGlobalAMGParam::amg_strength = -1.0;
-//    RayGlobalAMGParam::amg_damping = -1.0;
-//    RayGlobalAMGParam::amg_coarsening = -1;
-//    RayGlobalAMGParam::amg_simple_smoother = -1;
-//    RayGlobalAMGParam::amg_complex_smoother = -1;
-//    RayGlobalAMGParam::amg_iterations = -1;
-//    RayGlobalAMGParam::amg_smoother_iterations = -1;
-//    RayGlobalAMGParam::print_hypre = false;
-//  }
-
   // This function assumes that the global amg parameters are set
   // correctly and will do minimal error checking.
-  std::string get_amg_label(
-      const int& amg_iterations, const int& amg_smoother_iterations,
-      const int& amg_simple_smoother, const int& amg_complex_smoother,
-      const double& amg_damping, const double& amg_strength,
-      const int& amg_coarsening)
+  std::string get_amg_label(Preconditioner* preconditioner_pt)
   {
+    // Cast to Hypre preconditioner.
+    HyprePreconditioner* h_prec_pt 
+      = checked_dynamic_cast<HyprePreconditioner*>(preconditioner_pt);
 
+    // Start extracting the parameters.
+    const int amg_iterations = h_prec_pt->amg_iterations();
+    const int amg_smoother_iterations = h_prec_pt->amg_smoother_iterations();
+
+    // One of these have to remain -1, for logic tests below.
+    int amg_simple_smoother = -1;
+    int amg_complex_smoother = -1;
+
+    if(h_prec_pt->amg_using_simple_smoothing_flag())
+    {
+      amg_simple_smoother = h_prec_pt->amg_simple_smoother();
+    }
+    else
+    {
+      amg_complex_smoother = h_prec_pt->amg_complex_smoother();
+    }
+
+    // Continue getting the rest of the parameters.
+    const double amg_damping = h_prec_pt->amg_damping();
+    const double amg_strength = h_prec_pt->amg_strength();
+    const int amg_coarsening = h_prec_pt->amg_coarsening();
+
+    // String to glue together at the end.
     std::string strength_str = "";
     std::string coarsening_str = "";
     std::string smoother_str = "";
@@ -460,7 +445,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
         break;
     }
 
-    // Set the damping if it's set
+    // Set the damping if it's set (greater than 0)
     if(amg_damping >= 0)
     {
       smoother_ss << "D" << amg_damping;
@@ -516,7 +501,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
         coarsening_ss << "CLJP";
         break;
       case 1:
-        coarsening_ss << "RS";
+        coarsening_ss << "RSc";
         break;
       case 3:
         coarsening_ss << "RSm";
@@ -544,7 +529,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     // Concatenate everything together
     std::string final_str = cycle_str + "_" + 
       smoother_str + "_" +
-      coarsening_str + " " +
+      coarsening_str + "_" +
       strength_str;
 
     return final_str;
@@ -769,7 +754,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     hypre_preconditioner_pt->amg_smoother_iterations() 
       = amg_smoother_iterations;
 
-    // Now set the smoother type. Remember to use damping for jacobi.
+    // Now set the smoother type. Remember to use damping for Jacobi.
     if(amg_simple_smoother >= 0)
     {
       // Set simple smoothing flag
@@ -805,11 +790,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     // Now set the AMG strength parameter.
     hypre_preconditioner_pt->amg_strength() = amg_strength;
 
-    std::string amg_label_str = get_amg_label(
-        amg_iterations, amg_smoother_iterations, 
-        amg_simple_smoother, amg_complex_smoother,
-        amg_damping, amg_strength,
-        amg_coarsening);
+    std::string amg_label_str = get_amg_label(hypre_preconditioner_pt);
 
     std::cout << "RAYHYPRE: " << amg_label_str << std::endl;
 
@@ -2290,14 +2271,16 @@ namespace LagrangianPreconditionerHelpers
         f_amg_strength = 0.25;
         f_amg_coarsening = 0; // CLJP
        
-        // Set this to make sure complex isnt used
+        // Set this to make sure complex isn't used
         f_amg_complex_smoother = -1;
+
+        // The default smoother iterations is two.
+        f_amg_smoother_iterations = 2;
         
 
 
         // Now set my own stuff.
         f_amg_coarsening = 1; // RSs.
-
         f_amg_simple_smoother = 1; // GS
 
         // There is no damping with GS, otherwise we set the parameter:
