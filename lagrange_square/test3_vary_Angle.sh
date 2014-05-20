@@ -32,7 +32,6 @@ git log -1 > $CURRENT_DIR/$FILEBASE/user_driver_revision
 cd $CURRENT_DIR
 
 # make the program and move it into the test folder.
-cd $CURRENT_DIR
 make $PROGRAM
 mv $PROGRAM ./$FILEBASE
 cd $FILEBASE
@@ -78,72 +77,7 @@ Prec_WLu_NSLscPamgFamgstr="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_str"
 
 
 ## Creates test lists for all prec combinations for noel = 4 to 128
-function gen_tests4_128()
-{
-#PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
-# 0 - W SuperLU, NS SuperLU
-# 1 - W SuperLU, NS LSC: P SuperLU, F SuperLU
-# 2 - W SuperLU, NS LSC: P AMG, F LU
-# 3 - W SuperLU, NS LSC: P Lu, F AMG
-# 4 - W Super LU, NS LSC: P AMG F AMG
-
-PRECLIST="0 1 2 3 4"
-# The precs are set according to the PRECLIST above.
-PRECPARAM=""
-
-VISLIST="0 1"
-ANGLIST="0 30 67"
-RELIST="0 100 200"
-NOELLIST="4 8 16 32 64 128"
-
-for PREC  in $PRECLIST
-do
-
-  for VIS in $VISLIST
-  do
-    for ANG in $ANGLIST
-    do
-      for RE in $RELIST
-      do
-        for NOEL in $NOELLIST
-        do
-case "$PREC" in
-  0)
-    PRECPARAM="$Prec_WLu_NSLu"
-    ;;
-  1)
-    PRECPARAM="$Prec_WLu_NSLscLu"
-    ;;
-  2)
-    PRECPARAM="$Prec_WLu_NSLscPamgFlu"
-    ;;
-  3)
-    if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgsim"
-    else
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgstr"
-    fi
-    ;;
-  4)
-    if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgsim"
-    else
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgstr"
-    fi
-    ;;
-esac
-
-echo "mpirun -np 1 ./$PROGRAM --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
-
-        done
-      done
-    done
-  done
-done
-} # gen_tests function
-
-# Creates test list for AMG only, noel = 256, 512
-function gen_tests256_512()
+function gen_tests256()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -156,10 +90,10 @@ PRECLIST="4"
 # The precs are set according to the PRECLIST above.
 PRECPARAM=""
 
-VISLIST="0 1"
-ANGLIST="0 30 67"
-RELIST="0 100 200"
-NOELLIST="256 512"
+VISLIST="1"
+ANGLIST="0 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150 155 160 165 170 175 180 185 190 195 200 205 210 215 220 225 230 235 240 245 250 255 260 265 270 275 280 285 290 295 300 305 310 315 320 325 330 335 340 345 350 355 360"
+RELIST="200"
+NOELLIST="256"
 
 for PREC  in $PRECLIST
 do
@@ -208,16 +142,9 @@ done
 } # gen_tests function
 
 
-TEST_FILEBASE="tests_4_128"
+TEST_FILEBASE="tests_256_varyAng"
 TEST_LIST="$TEST_FILEBASE.list"
-gen_tests4_128
-TEST_RUN="$TEST_FILEBASE.sh"
-echo "#!/bin/bash" >> $TEST_RUN
-cat $TEST_LIST >> $TEST_RUN
-
-TEST_FILEBASE="tests_256_512"
-TEST_LIST="$TEST_FILEBASE.list"
-gen_tests256_512
+gen_tests256
 TEST_RUN="$TEST_FILEBASE.sh"
 echo "#!/bin/bash" >> $TEST_RUN
 cat $TEST_LIST >> $TEST_RUN
