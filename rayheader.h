@@ -3266,7 +3266,8 @@ namespace NavierStokesProblemParameters
 //=============================================================================
 namespace GenericProblemSetup
 {
-  inline void setup_solver(const double& solver_tol, const double& newton_tol,
+  inline void setup_solver(const unsigned& max_solver_iter,
+                           const double& solver_tol, const double& newton_tol,
                            const bool& use_trilinos_solver,
                            Problem* problem_pt, Preconditioner* prec_pt)
   {
@@ -3306,7 +3307,7 @@ namespace GenericProblemSetup
 #endif
 
     solver_pt->tolerance() = solver_tol;
-    solver_pt->max_iter() = 300;
+    solver_pt->max_iter() = max_solver_iter;
     problem_pt->newton_solver_tolerance() = newton_tol;
 
     solver_pt->preconditioner_pt() = prec_pt;

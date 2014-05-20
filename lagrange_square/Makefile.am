@@ -23,4 +23,4 @@ clean-local:
 
 # Print top_builddir
 print-top_builddir: 
-	echo $(top_builddir)
+	echo $(abs_top_builddir)
