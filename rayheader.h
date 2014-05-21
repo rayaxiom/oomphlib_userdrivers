@@ -1285,6 +1285,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
 namespace StepLagrange
 {
+
   // Prob id, set by main method
   int* Prob_id_pt = 0;
 
@@ -1355,7 +1356,7 @@ namespace StepLagrange
     CommandLineArgs::specify_command_line_flag("--noel", &Noel);
   }
 
-  inline void generic_setup()
+  inline void set_prob_str()
   {
     // Set a problem id to identify the problem.
     // This is used for book keeping purposes.
@@ -1391,10 +1392,10 @@ namespace StepLagrange
         err_msg << "Please provide a problem id to identify the problem after "
           << "after the argument --prob_id.\n" 
           << "Acceptable IDs are:\n"
-          << "10 = (SqTmp) Square, custom stuff...\n"
-          << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-          << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-          << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+          << "10 = (StTmp) Square, custom stuff...\n"
+          << "11 = (StPo) Square, Parallel outflow (para inflow)\n"
+          << "12 = (StTf) Square, Tangential flow (Semi para inflow)\n"
+          << "13 = (StTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
           << std::endl;
 
         throw OomphLibError(err_msg.str(),
@@ -1442,7 +1443,10 @@ namespace StepLagrange
               OOMPH_EXCEPTION_LOCATION);
         } // Default case
     } // switch Prob_id
+  }
 
+  inline void set_ang_str()
+  {
     // Check that Ang has been set.
     if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
     {
@@ -1453,30 +1457,20 @@ namespace StepLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
+
     // Now we need to convert Ang into radians.
     Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
-
     // Now we set the Ang_deg_str.
-    // this exists for only the Sq problems, not Aw.
     {
-      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-      {
-        std::ostringstream strs;
-        strs << "A" << Ang_deg;
-        Ang_deg_str = strs.str();
-      }
-      else
-      {
-        std::ostringstream err_msg;
-        err_msg << "You have selected an Sq problem."
-          << "Please supply the tilting angle with --ang.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
+      std::ostringstream strs;
+      strs << "A" << Ang_deg;
+      Ang_deg_str = strs.str();
     }
+  }
 
+
+    inline void set_noel_str()
+  {
     // Set Noel_str, used for book keeping.
     if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
     {
@@ -1495,14 +1489,41 @@ namespace StepLagrange
     }
   }
 
+
+  inline void generic_setup()
+  {
+    set_prob_str();
+    set_ang_str();
+    set_noel_str();
+  }
+
+  inline string prob_str()
+  {
+    set_prob_str();
+    return Prob_str;
+  }
+
+  inline string ang_deg_str()
+  {
+    set_ang_str();
+    return Ang_deg_str;
+  }
+
+  inline string noel_str()
+  {
+    set_noel_str();
+    return Noel_str;
+  }
+
   inline string create_label()
   {
-    std::string label = Prob_str + Ang_deg_str + Noel_str;
-
+    std::string label = prob_str() + ang_deg_str() + noel_str();
     return label; 
   } // inlined function create_label
 
-} // Namespace SquareLagrange
+
+
+} // Namespace StepLagrange
 
 
 

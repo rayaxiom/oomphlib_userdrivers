@@ -371,9 +371,11 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem() :
 
  Prec_pt = LPH::get_preconditioner();
 
- double solver_tol = 1.0e-6;
- double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(solver_tol, newton_tol,
+ const double solver_tol = 1.0e-6;
+ const double newton_tol = 1.0e-6;
+ const unsigned max_solver_iter = 110;
+ GenericProblemSetup::setup_solver(max_solver_iter,
+                                   solver_tol, newton_tol,
                                    NSPP::Using_trilinos_solver,this,Prec_pt);
 
 }
@@ -552,10 +554,10 @@ std::string create_label()
   namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = StepLagrange;
 
-  std::string label = SL::Prob_str 
+  std::string label = SL::prob_str()
                       + NSPP::create_label() 
                       + LPH::create_label() 
-                      + SL::Ang_deg_str + SL::Noel_str;
+                      + SL::ang_deg_str() + SL::noel_str();
   return label;
 }
 
@@ -574,15 +576,8 @@ int main(int argc, char* argv[])
   namespace LPH = LagrangianPreconditionerHelpers;
   namespace SL = StepLagrange;
 
-  // Get the global oomph-lib communicator 
-  //  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
-
-  // my rank and number of processors. This is used later for putting the data.
-  //  unsigned my_rank = comm_pt->my_rank();
-  //unsigned nproc = comm_pt->nproc();
-
+  // Problem dimension
   const unsigned dim = 2;
-
 
   // Set up doc info
   DocLinearSolverInfo doc_linear_solver_info;
@@ -599,8 +594,7 @@ int main(int argc, char* argv[])
 
   NSPP::setup_commandline_flags();
   LPH::setup_commandline_flags();
-  SL::setup_commandline_flags(); 
-
+  SL::setup_commandline_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
@@ -616,17 +610,19 @@ int main(int argc, char* argv[])
 
   BackwardStepProblem< QTaylorHoodElement<dim> > problem;
 
-
-  ///////////////////////////////////////////////////////////////////////////////
-
   if(NavierStokesProblemParameters::Distribute_problem)
   {
     problem.distribute();
   }
 
+  ///////////////////////////////////////////////////////////////////////////////
+
+
+
   if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
   {
     unsigned rey_increment = 0; // used for output of iters/times
+
     for (NSPP::Rey = NSPP::Rey_start; 
         NSPP::Rey <= NSPP::Rey_end; NSPP::Rey += NSPP::Rey_incre) 
     {
@@ -711,8 +707,6 @@ int main(int argc, char* argv[])
         outfile.close();
       }
 
-
-
       rey_increment++;
     }
   }
@@ -727,14 +721,13 @@ int main(int argc, char* argv[])
     std::cout << "RAYDOING: "
       << NSPP::Label_str
       << " on " << ctime(&rawtime) << std::endl;
-
-//    problem.distribute();
-
+    
     // Solve the problem
     problem.newton_solve();
 
     //Output solution
-    if(NSPP::Doc_soln){problem.doc_solution();}
+    if(NSPP::Doc_soln)
+    {problem.doc_solution();}
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -746,8 +739,8 @@ int main(int argc, char* argv[])
 
     // my rank and number of processors. 
     // This is used later for putting the data.
-    unsigned my_rank = comm_pt->my_rank();
-    unsigned nproc = comm_pt->nproc();
+    const unsigned my_rank = comm_pt->my_rank();
+    const unsigned nproc = comm_pt->nproc();
 
     // Variable to indicate if we want to output to a file or not.
     bool output_to_file = false;
@@ -820,9 +813,7 @@ int main(int argc, char* argv[])
       outfile << "\n" << results_stream.str();
       outfile.close();
     }
-
-
-  } // else do not loop over reynolds
+  } // else do not loop reynolds
 
 
 #ifdef OOMPH_HAS_MPI
