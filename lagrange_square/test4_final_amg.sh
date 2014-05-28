@@ -212,6 +212,36 @@ CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
 echo $CLEANUPLINE >> $QSUBFILE
 
 
+################### Now check if I'm on csf, if so, delete the related scratch
+# and copy the current stuff there.
+if [[ $HOME == *mbax5ml3* ]]
+then
+  CURRENT_DIR=`pwd`
+  cd ..
+  PROGRAM_DIR=${PWD##*/}
+  cd $CURRENT_DIR
+  OOMPH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
+  SCRATCH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
+
+  OOMPH_TEST_DIR="$OOMPH_PROGRAM_DIR/$FILEBASE"
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE"
+
+  echo "OOMPH_TEST_DIR: $OOMPH_TEST_DIR"
+  echo "SCRATCH_TEST_DIR: $SCRATCH_TEST_DIR"
+
+  # Remove the scratch stuff.
+  rm -rf $SCRATCH_TEST_DIR
+
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR/
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR/
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR/
+
+  ## Create the res_its and qsub output directories in scratch.
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
+fi
+
+
 
 
 
