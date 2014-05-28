@@ -154,6 +154,7 @@ cat $TEST_LIST >> $TEST_RUN
 cp ./../$0 .
 
 
+##########################################
 ### Now create the qsub file.
 QSUBFILE="$FILEBASE.qsub"
 NUMTESTS=$(cat $TEST_LIST | wc -l)
@@ -168,6 +169,23 @@ echo "#$ -t 1-$NUMTESTS" >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
+echo "# This should be ran in the scratch file system." >> $QSUBFILE
+echo "# Thus results directory '$RESITS_DIR' may not exist." >> $QSUBFILE
+echo -e "# We create it if it does not exist.\n" >> $QSUBFILE
+echo "if [ ! -d \"$RESITS_DIR\" ]; then" >> $QSUBFILE
+echo "  mkdir $RESITS_DIR" >> $QSUBFILE
+echo "fi" >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
+
+# Do the same thing with the output directory for qsub
+QSUBOUTPUT_DIR="qsub_output"
+echo "if [ ! -d \"$QSUBOUTPUT_DIR\" ]; then" >> $QSUBFILE
+echo "  mkdir $QSUBOUTPUT_DIR" >> $QSUBFILE
+echo "fi" >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
+
 echo "# Task id 1 will read line 1 from $TEST_LIST" >> $QSUBFILE
 echo "# Task id 2 will read line 2 from $TEST_LIST" >> $QSUBFILE
 echo "# and so on..." >> $QSUBFILE
@@ -179,7 +197,15 @@ RUNLINE='FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" '
 RUNLINE+="$TEST_LIST"
 RUNLINE+='`'
 echo $RUNLINE >> $QSUBFILE
+
+# Now run the command!
 echo '$FULL_RUNCOMMAND' >> $QSUBFILE
+
+# Clean up, move the qsub output and error files into QSUBOUTPUT_DIR
+CLEANUPLINE="mv $QSUBFILE"
+CLEANUPLINE+='.*.$SGE_TASK_ID '
+CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
+echo $CLEANUPLINE >> $QSUBFILE
 
 
 
