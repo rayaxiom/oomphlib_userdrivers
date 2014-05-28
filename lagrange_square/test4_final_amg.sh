@@ -141,6 +141,9 @@ done
 } # gen_tests function
 
 
+
+
+
 TEST_FILEBASE="tests_euclid_amg_only"
 TEST_LIST="$TEST_FILEBASE.list"
 gen_tests
@@ -149,4 +152,36 @@ echo "#!/bin/bash" >> $TEST_RUN
 cat $TEST_LIST >> $TEST_RUN
 
 cp ./../$0 .
+
+
+### Now create the qsub file.
+QSUBFILE="$FILEBASE.qsub"
+NUMTESTS=$(cat $TEST_LIST | wc -l)
+echo '#!/bin/bash' >> $QSUBFILE
+echo '#$ -S /bin/bash' >> $QSUBFILE
+echo '#$ -cwd' >> $QSUBFILE
+echo '#$ -V' >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
+
+echo "#$ -t 1-$NUMTESTS" >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
+
+echo "# Task id 1 will read line 1 from $TEST_LIST" >> $QSUBFILE
+echo "# Task id 2 will read line 2 from $TEST_LIST" >> $QSUBFILE
+echo "# and so on..." >> $QSUBFILE
+echo "# Each line contains the run command with a different set of parameters" >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
+
+RUNLINE='FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" '
+RUNLINE+="$TEST_LIST"
+RUNLINE+='`'
+echo $RUNLINE >> $QSUBFILE
+echo '$FULL_RUNCOMMAND' >> $QSUBFILE
+
+
+
+
 

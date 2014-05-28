@@ -1,3 +1,6 @@
-lagrange_square/sq_lgr
-lagrange_square/sq_lgr_amg_test.qsub
+lagrange_square/test4_final_amg/sq_lgr
+lagrange_square/test4_final_amg/tests_euclid_amg_only.list
+lagrange_square/test4_final_amg/test4_final_amg.qsub
+
+
 
