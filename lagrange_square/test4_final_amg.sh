@@ -131,7 +131,7 @@ case "$PREC" in
     ;;
 esac
 
-echo "mpirun -np 1 ./$PROGRAM --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 120 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
 
         done
       done
@@ -186,6 +186,7 @@ echo "fi" >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
+## Some comments for the script.
 echo "# Task id 1 will read line 1 from $TEST_LIST" >> $QSUBFILE
 echo "# Task id 2 will read line 2 from $TEST_LIST" >> $QSUBFILE
 echo "# and so on..." >> $QSUBFILE
@@ -193,6 +194,7 @@ echo "# Each line contains the run command with a different set of parameters" >
 
 echo -e "\n" >> $QSUBFILE
 
+## Get the run command from TEST_LIST
 RUNLINE='FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" '
 RUNLINE+="$TEST_LIST"
 RUNLINE+='`'
@@ -200,6 +202,8 @@ echo $RUNLINE >> $QSUBFILE
 
 # Now run the command!
 echo '$FULL_RUNCOMMAND' >> $QSUBFILE
+
+echo -e "\n" >> $QSUBFILE
 
 # Clean up, move the qsub output and error files into QSUBOUTPUT_DIR
 CLEANUPLINE="mv $QSUBFILE"

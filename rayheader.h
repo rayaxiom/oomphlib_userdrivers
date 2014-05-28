@@ -1497,25 +1497,25 @@ namespace StepLagrange
     set_noel_str();
   }
 
-  inline string prob_str()
+  inline std::string prob_str()
   {
     set_prob_str();
     return Prob_str;
   }
 
-  inline string ang_deg_str()
+  inline std::string ang_deg_str()
   {
     set_ang_str();
     return Ang_deg_str;
   }
 
-  inline string noel_str()
+  inline std::string noel_str()
   {
     set_noel_str();
     return Noel_str;
   }
 
-  inline string create_label()
+  inline std::string create_label()
   {
     std::string label = prob_str() + ang_deg_str() + noel_str();
     return label; 
@@ -1775,25 +1775,25 @@ namespace SquareLagrange
     set_noel_str();
   }
 
-  inline string prob_str()
+  inline std::string prob_str()
   {
     set_prob_str();
     return Prob_str;
   }
 
-  inline string ang_deg_str()
+  inline std::string ang_deg_str()
   {
     set_ang_str();
     return Ang_deg_str;
   }
 
-  inline string noel_str()
+  inline std::string noel_str()
   {
     set_noel_str();
     return Noel_str;
   }
 
-  inline string create_label()
+  inline std::string create_label()
   {
     std::string label = prob_str() + ang_deg_str() + noel_str();
     return label; 
@@ -2805,7 +2805,7 @@ namespace LagrangianPreconditionerHelpers
   } // LPH::setup_preconditioner
 
 
-  inline string create_label()
+  inline std::string create_label()
   {
     std::string w_str = "";
     std::string ns_str = "";
@@ -2998,6 +2998,8 @@ namespace NavierStokesProblemParameters
   double Rey_incre = -1.0;
   double Rey_end = -1.0;
 
+  int Max_solver_iteration = -1;
+
 
   bool Using_trilinos_solver = false;
 
@@ -3029,7 +3031,8 @@ namespace NavierStokesProblemParameters
     CommandLineArgs::specify_command_line_flag("--rey_start", &Rey_start);
     CommandLineArgs::specify_command_line_flag("--rey_incre", &Rey_incre);
     CommandLineArgs::specify_command_line_flag("--rey_end", &Rey_end);
-
+    CommandLineArgs::specify_command_line_flag("--max_solver_iter", 
+                                               &Max_solver_iteration);
     // Iteration count and times directory.
     CommandLineArgs::specify_command_line_flag("--itstimedir", 
         &Itstime_dir_str);
@@ -3037,7 +3040,7 @@ namespace NavierStokesProblemParameters
     CommandLineArgs::specify_command_line_flag("--trilinos_solver");
   }
 
-  inline void generic_problem_setup(const unsigned dim)
+  inline void generic_problem_setup(const unsigned& dim)
   {
     // Do we have to distribute the problem?
     if(CommandLineArgs::command_line_flag_has_been_set("--dist_prob"))
@@ -3089,55 +3092,50 @@ namespace NavierStokesProblemParameters
     // Default: 0, Sim
     if(CommandLineArgs::command_line_flag_has_been_set("--visc"))
     {
-      if(dim == 2)
+      if (Vis == 0)
       {
-        if (Vis == 0)
+        if(dim == 2)
         {
-          NavierStokesEquations<2>::Gamma[0]=0.0;
-          NavierStokesEquations<2>::Gamma[1]=0.0;
+          for (unsigned d = 0; d < 2; d++) 
+          {
+            NavierStokesEquations<2>::Gamma[d] = 0.0;
+          }
         }
-        else if (Vis == 1)
-        {
-          NavierStokesEquations<2>::Gamma[0]=1.0;
-          NavierStokesEquations<2>::Gamma[1]=1.0;
-        } // else - setting viscuous term.
         else
         {
-          std::ostringstream err_msg;
-          err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
-            << "Vis = 0 for simple form\n"
-            << "Vis = 1 for stress divergence form\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
+          for (unsigned d = 0; d < 3; d++) 
+          {
+            NavierStokesEquations<3>::Gamma[d] = 0.0;
+          }
+        }
+      }
+      else if (Vis == 1)
+      {
+        if(dim == 2)
+        {
+          for (unsigned d = 0; d < 2; d++) 
+          {
+            NavierStokesEquations<2>::Gamma[d] = 1.0;
+          }
+        }
+        else
+        {
+          for (unsigned d = 0; d < 3; d++) 
+          {
+            NavierStokesEquations<3>::Gamma[d] = 1.0;
+          }
         }
       }
       else
       {
-        if (Vis == 0)
-        {
-          NavierStokesEquations<3>::Gamma[0]=0.0;
-          NavierStokesEquations<3>::Gamma[1]=0.0;
-          NavierStokesEquations<3>::Gamma[2]=0.0;
-        }
-        else if (Vis == 1)
-        {
-          NavierStokesEquations<3>::Gamma[0]=1.0;
-          NavierStokesEquations<3>::Gamma[1]=1.0;
-          NavierStokesEquations<3>::Gamma[2]=1.0;
-        } // else - setting viscuous term.
-        else
-        {
-          std::ostringstream err_msg;
-          err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
-            << "Vis = 0 for simple form\n"
-            << "Vis = 1 for stress divergence form\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
+        std::ostringstream err_msg;
+        err_msg << "Do not recognise viscuous term: " << Vis << ".\n"
+          << "Vis = 0 for simple form\n"
+          << "Vis = 1 for stress divergence form\n"
+          << std::endl;
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
       }
     }
     else
@@ -3227,9 +3225,19 @@ namespace NavierStokesProblemParameters
     {
       Using_trilinos_solver = false;
     }
+
+    if(!CommandLineArgs::command_line_flag_has_been_set("--max_solver_iter"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set --max_solver_iter." << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
   } // NSPP::generic_problem_setup()
 
-  inline string create_label()
+  inline std::string create_label()
   {
     std::string vis_str = "";
     std::string rey_str = "";
@@ -3287,7 +3295,7 @@ namespace NavierStokesProblemParameters
 //=============================================================================
 namespace GenericProblemSetup
 {
-  inline void setup_solver(const unsigned& max_solver_iter,
+  inline void setup_solver(const int& max_solver_iter,
                            const double& solver_tol, const double& newton_tol,
                            const bool& use_trilinos_solver,
                            Problem* problem_pt, Preconditioner* prec_pt)
@@ -3326,6 +3334,17 @@ namespace GenericProblemSetup
       static_cast<GMRES<CRDoubleMatrix>*>(solver_pt)->set_preconditioner_RHS();
     }
 #endif
+
+    if(max_solver_iter < 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Max solver iteration is " << max_solver_iter << ".\n"
+              << "Something has gone wrong. Have you set the flag\n"
+              << "--max_solver_iter ?" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    } 
 
     solver_pt->tolerance() = solver_tol;
     solver_pt->max_iter() = max_solver_iter;

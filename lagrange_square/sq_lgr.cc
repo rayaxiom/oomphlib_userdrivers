@@ -333,8 +333,7 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
  const double solver_tol = 1.0e-6;
  const double newton_tol = 1.0e-6;
- const unsigned max_solver_iter = 110;
- GenericProblemSetup::setup_solver(max_solver_iter,
+ GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
                                    solver_tol,newton_tol,
                                    NSPP::Using_trilinos_solver,this,Prec_pt);
 }

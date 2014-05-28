@@ -43,7 +43,7 @@ mkdir $VALIDATEDIR
 cd $VALIDATEDIR
 mkdir $TEMPVALIDATADIR
 
-COMMONRUNARGUMENTS="--dist_prob --trilinos_solver --prob_id 11 --ang 42 --rey 100 --itstimedir $TEMPVALIDATADIR"
+COMMONRUNARGUMENTS="--max_solver_iter 110 --dist_prob --trilinos_solver --prob_id 11 --ang 42 --rey 100 --itstimedir $TEMPVALIDATADIR"
 COMMONRUNARGUMENT_SIM="$COMMONRUNARGUMENTS --visc 0"
 COMMONRUNARGUMENT_STR="$COMMONRUNARGUMENTS --visc 1"
 
@@ -79,7 +79,7 @@ mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-#read -p "Press [Enter] key to start backup..."
+
 
 
 PREC="--w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0"
@@ -115,7 +115,6 @@ mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-#read -p "Press [Enter] key to start backup..."
 
 # Now I need to compare files... grep for RAYITS
 files=("SqPoSimR100WedNeA42N16NP1R0" \
