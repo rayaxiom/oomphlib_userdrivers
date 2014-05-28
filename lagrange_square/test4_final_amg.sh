@@ -131,7 +131,7 @@ case "$PREC" in
     ;;
 esac
 
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 120 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 115 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
 
         done
       done
