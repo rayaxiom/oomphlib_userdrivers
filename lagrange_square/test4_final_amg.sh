@@ -131,7 +131,7 @@ case "$PREC" in
     ;;
 esac
 
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 115 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 110 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
 
         done
       done
@@ -154,7 +154,10 @@ cat $TEST_LIST >> $TEST_RUN
 cp ./../$0 .
 
 
-##########################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 ### Now create the qsub file.
 QSUBFILE="$FILEBASE.qsub"
 NUMTESTS=$(cat $TEST_LIST | wc -l)
@@ -212,6 +215,11 @@ CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
 echo $CLEANUPLINE >> $QSUBFILE
 
 
+
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 ################### Now check if I'm on csf, if so, delete the related scratch
 # and copy the current stuff there.
 if [[ $HOME == *mbax5ml3* ]]
@@ -242,6 +250,58 @@ then
 fi
 
 
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+########################################################
+## Generate script to format results!
+echo '#!/bin/bash
 
+ITSTIMEDIR="res_iterations"
 
+cd $ITSTIMEDIR
+
+TAG="RAYITS"
+#TAG="RAYPRECSETUP"
+#TAG="RAYLINSOLVER"
+
+LINE=""
+
+Prob_str="SqPo"
+PRECLIST="WedNe WedNlFrayPe WedNlFrayPa"
+VISLIST="Sim Str"
+ANGLIST="A0 A30 A67"
+RELIST="R0 R100 R200"
+NOELLIST="N4 N8 N16 N32 N64 N128 N256 N512"
+
+for PREC in $PRECLIST
+do
+  for VIS in $VISLIST
+  do
+    for ANG in $ANGLIST
+    do
+      for RE in $RELIST
+      do
+        LINE=""
+        for NOEL in $NOELLIST
+        do
+
+          RESFILE="${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
+          TOKEN=""
+
+          if [ -f $RESFILE ]
+          then
+            TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+          else
+            TOKEN="x"
+          fi
+          
+          LINE="$LINE $TOKEN"
+        done
+        echo $LINE
+      done
+    done
+  done
+done' > format_results.sh
 
