@@ -2676,6 +2676,12 @@ namespace LagrangianPreconditionerHelpers
         Hypre_default_settings::
           set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
 
+        if(Print_hypre)
+        {
+          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+              p_preconditioner_pt);
+        }
+
         // Set it as the p preconditioner for LSC
         //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
 #endif
