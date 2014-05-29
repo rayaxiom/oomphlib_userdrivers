@@ -163,19 +163,25 @@ public:
 
  void actions_before_distribute()
  {
+   if(NavierStokesProblemParameters::Prob_id != 88)
+   {
    if(NavierStokesProblemParameters::Distribute_problem)
    {
     delete_flux_elements(Surface_mesh_P_pt);
     rebuild_global_mesh();
    }
+   }
  }
 
  void actions_after_distribute()
  {
+   if(NavierStokesProblemParameters::Prob_id != 88)
+   {
    if(NavierStokesProblemParameters::Distribute_problem)
    {
      create_parall_outflow_lagrange_elements(1,Bulk_mesh_pt,Surface_mesh_P_pt);
      rebuild_global_mesh();
+   }
    }
  }
 
@@ -209,8 +215,11 @@ private:
  void set_bc_for_AwTf();
  void set_bc_for_AwTfPo();
 
+ void set_mesh_bc_for_SqVa();
+
  /// Pointer to the "bulk" mesh
- SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
+ //SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
+ Mesh* Bulk_mesh_pt;
 
  /// Pointer to the "surface" mesh
  Mesh* Surface_mesh_T_pt;
@@ -250,12 +259,8 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
   Left_bound = 3;
   
   Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
-  
-  // First we set the mesh.
-  if((NSPP::Prob_id >= 10) && (NSPP::Prob_id < 19) )
-  {
-    // This is the tilted cavity mesh.
-    /// Setup the mesh
+
+      /// Setup the mesh
     // # of elements in x-direction
     unsigned nx=SL::Noel;
     
@@ -267,9 +272,18 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
     // Domain length in y-direction
     double ly=SL::Ly;
+  // First we set the mesh.
+  if((NSPP::Prob_id >= 10) && (NSPP::Prob_id < 19) )
+  {
+    // This is the tilted cavity mesh.
+
     
     Bulk_mesh_pt =
       new SlopingQuadMesh<ELEMENT>(nx,ny,lx,ly,SL::Ang);
+  }
+  else if (NSPP::Prob_id == 88)
+  {
+    Bulk_mesh_pt = new RectangularQuadMesh<ELEMENT>(nx,ny,lx,ly);
   }
   else
   {
@@ -277,7 +291,19 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
     
   }
 
+  if(NSPP::Prob_id == 11)
+  {
   set_mesh_bc_for_SqPo();
+  }
+  else if(NSPP::Prob_id == 88)
+  {
+set_mesh_bc_for_SqVa();
+  }
+  else
+  {
+    pause("not done yet!");
+  }
+
 
 
 
@@ -321,14 +347,23 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
  //Assign equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
  
- Vector<Mesh*> mesh_pt(2,0);
+
+ Vector<Mesh*> mesh_pt;
+
+ if(NSPP::Prob_id == 11)
+ {
+ mesh_pt.resize(2,0);
  mesh_pt[0] = Bulk_mesh_pt;
  mesh_pt[1] = Surface_mesh_P_pt;
+ }
+ else if(NSPP::Prob_id == 88)
+ {
+   mesh_pt.resize(1,0);
+   mesh_pt[0] = Bulk_mesh_pt;
+ }
 
  LPH::Mesh_pt = mesh_pt;
  LPH::Problem_pt = this;
-
-
  Prec_pt = LPH::get_preconditioner();
 
  const double solver_tol = 1.0e-6;
@@ -461,7 +496,111 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
  }
 } // set_mesh_bc_for_SqPo
 
+template<class ELEMENT>
+void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqVa()
+{
+  // Alias the namespace for convenience
+  namespace SL = SquareLagrange;
 
+  // Assign the boundaries:
+  //             2 non slip
+  //         ----------
+  //         |        |
+  // 3 Inflow|        |1 P.O.
+  //         |        |
+  //         ----------
+  //             0 non slip
+//  unsigned if_b = 3; // inflow
+  unsigned po_b = 1; // parallel outflow
+
+  // Create a "surface mesh" that will contain only
+  // ImposeParallelOutflowElements in boundary 1
+  // The constructor just creates the mesh without
+  // giving it any elements, nodes, etc.
+//  Surface_mesh_P_pt = new Mesh;
+
+  // Create ImposeParallelOutflowElement from all elements that are
+  // adjacent to the Neumann boundary.
+//  create_parall_outflow_lagrange_elements(po_b,
+//                                          Bulk_mesh_pt,Surface_mesh_P_pt);
+
+  // Add the two meshes to the problem.
+  add_sub_mesh(Bulk_mesh_pt);
+//  add_sub_mesh(Surface_mesh_P_pt);
+  
+  // combine all sub-meshes into a single mesh.
+  build_global_mesh();
+  unsigned num_bound = mesh_pt()->nboundary();
+
+  // Leave the x velocity on po_b to unpinned.
+  {
+    unsigned num_nod = mesh_pt()->nboundary_node(po_b);
+    for (unsigned inod = 0; inod < num_nod; inod++) 
+    {
+      Node* nod_pt = mesh_pt()->boundary_node_pt(po_b,inod);
+      // Unpin x
+      nod_pt->unpin(0);
+
+      // Pin y
+      nod_pt->pin(1);
+      // Set y value to zero.
+      nod_pt->set_value(1,0);
+    }
+  }
+
+
+  // Set the boundary conditions for this problem: All nodes are
+  // free by default -- just pin the ones that have Dirichlet conditions
+  // here.
+  for(unsigned ibound=0;ibound<num_bound;ibound++)
+  { 
+    if(ibound != po_b)
+    {
+      unsigned num_nod=mesh_pt()->nboundary_node(ibound);
+      for (unsigned inod=0;inod<num_nod;inod++)
+      {
+        // Get node
+        Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
+ 
+        nod_pt->pin(0);
+        nod_pt->pin(1);
+        
+        nod_pt->set_value(0,0);
+        nod_pt->set_value(1,0);
+ 
+      }
+    }
+  }
+
+ // Which boundary are we dealing with?
+ unsigned current_bound = -1;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = -1;
+
+ // Inflow is at boundary 3
+ current_bound = 3;
+ num_nod=mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   // Get the y cartesian coordinates
+   double x1=nod_pt->x(1);
+
+   // Now calculate the parabolic inflow at this point.
+   double u0 = (x1 - SL::Y_min)*(SL::Y_max - x1);
+   
+   double u1=0.0;
+
+   nod_pt->set_value(0,u0);
+   nod_pt->set_value(1,u1);
+ }
+} // set_mesh_bc_for_SqPo
 
 //============RAYRAY===========
 /// RAYRAY

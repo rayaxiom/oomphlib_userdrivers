@@ -37,38 +37,72 @@
 
 using namespace oomph;
 
-//=============================================================================
-/// Check if a number is in a set.
-/// Input: myarray = The set of numbers
-///        nval = The number of values in the set
-///        number = The number to check
-///
-/// Example: Checking if the number 91 is in the set 
-///          10, 11, 12, 13, 20, 21, 22, 23
-///   int prob_id_array[]= {10,11,12,13,
-///                         20,21,22,23};
-///
-///   bool inset = check_if_in_set<int>(prob_id_array,8,91);
-///
-//=============================================================================
-  template <typename T>
-bool check_if_in_set(T myarray[], unsigned nval, T number)
+namespace RayGen
 {
-  // Convert the array of numbers into a set.
-  std::set<T> myset(myarray,myarray+nval);
+  //=============================================================================
+  /// Check if a number is in a set.
+  /// Input: myarray = The set of numbers
+  ///        nval = The number of values in the set
+  ///        number = The number to check
+  ///
+  /// Example: Checking if the number 91 is in the set 
+  ///          10, 11, 12, 13, 20, 21, 22, 23
+  ///   int prob_id_array[]= {10,11,12,13,
+  ///                         20,21,22,23};
+  ///
+  ///   bool inset = check_if_in_set<int>(prob_id_array,8,91);
+  ///
+  //=============================================================================
+  template <typename T>
+    bool check_if_in_set(const T myarray[], const unsigned& nval, const T number)
+    {
+      // Convert the array of numbers into a set.
+      std::set<T> myset(myarray,myarray+nval);
 
-  // Create a pair of iterator and boolean. Must declare std::set<T>::iterator
-  // as a typename because the compiler gets confused. It is not templated at 
-  // compile time... so the compiler thinks it's a static field and will
-  // complain.
-  std::pair<typename std::set<T>::iterator,bool> ret;
+      // Create a pair of iterator and boolean. Must declare std::set<T>::iterator
+      // as a typename because the compiler gets confused. It is not templated at 
+      // compile time... so the compiler thinks it's a static field and will
+      // complain.
+      std::pair<typename std::set<T>::iterator,bool> ret;
 
-  // The second in the pair is false if not added. 
-  // This means it is in the set, so we negate this to make it true.
-  ret = myset.insert(number);
+      // The second in the pair is false if not added. 
+      // This means it is in the set, so we negate this to make it true.
+      ret = myset.insert(number);
 
-  return (!ret.second);
-} // check_if_in_set(...)
+      return (!ret.second);
+    } // check_if_in_set(...)
+
+  bool check_amg_coarsener(const int &amg_coarsener)
+  {
+    static const unsigned n_coarseners = 7;
+    static const int coarsener_array[] = {0,1,3,6,8,10,11};
+    return check_if_in_set<int>(coarsener_array,n_coarseners,amg_coarsener);
+  }
+  
+  bool check_amg_sim_smoother(const int &amg_sim_smoother)
+  {
+    static const unsigned n_sim_smoothers = 6;
+    static const int sim_smoother_array[] = {0,1,2,3,4,6};
+    return check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
+                                amg_sim_smoother);
+  }
+
+  bool check_amg_com_smoother(const int &amg_com_smoother)
+  {
+    static const unsigned n_com_smoothers = 4;
+    static const int com_smoother_array[] = {6,7,8,9};
+    return check_if_in_set<int>(com_smoother_array,n_com_smoothers,
+                                amg_com_smoother);
+  }
+
+  bool check_amg_sim_smoother_damping_required(const int &amg_sim_smoother)
+  {
+    static const unsigned n_sim_smoothers = 4;
+    static const int sim_smoother_array[] = {0,3,4,6};
+    return check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
+                                amg_sim_smoother);
+  }
+}
 
 
 #ifdef OOMPH_HAS_HYPRE
@@ -84,12 +118,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       const double& amg_damping, const double& amg_strength,
       const int& amg_coarsening)
   {
-
-    int coarsening_array[] = {0,1,3,6,8,10,11};
-    unsigned n_coarsening_strategies = 7;
-    bool coarsening_ok 
-      = check_if_in_set<int>(coarsening_array,n_coarsening_strategies,
-          amg_coarsening);
+    bool coarsening_ok = RayGen::check_amg_coarsener(amg_coarsening);
     if((amg_coarsening < 0) || (!coarsening_ok))
     {
       std::ostringstream err_msg;
@@ -180,11 +209,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     if(amg_simple_smoother >= 0)
     {
       // check if simple smoother is okay.
-      int sim_smoother_array[] = {0,1,2,3,4,6};
-      unsigned n_sim_smoothers = 6;
-      bool sim_smoother_ok
-        = check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
-            amg_simple_smoother);
+      bool sim_smoother_ok 
+        = RayGen::check_amg_sim_smoother(amg_simple_smoother);
+
       if(!sim_smoother_ok)
       {
         std::ostringstream err_msg;
@@ -209,11 +236,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
     else if(amg_complex_smoother >=0)
     {
       // check if complex smoother is valid.
-      int com_smoother_array[] = {6,7,8,9};
-      unsigned n_com_smoothers = 4;
       bool com_smoother_ok
-        = check_if_in_set<int>(com_smoother_array,n_com_smoothers,
-            amg_complex_smoother);
+        = RayGen::check_amg_com_smoother(amg_complex_smoother);
+
       if(!com_smoother_ok)
       {
         std::ostringstream err_msg;
@@ -269,11 +294,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     // Damping is required for Jacobi or hybrid SOR smoothers.
     // First check if amg_simple_smoother is one of those.
-    int sub_smoother_array[] = {0,3,4,6};
-    unsigned n_sub_smoothers = 4;
     bool damping_required
-      = check_if_in_set<int>(sub_smoother_array,n_sub_smoothers,
-          amg_simple_smoother);
+      = RayGen::check_amg_sim_smoother_damping_required(amg_simple_smoother);
+
     if(damping_required && (amg_damping < 0))
     {
       std::ostringstream err_msg;
@@ -1287,11 +1310,13 @@ namespace StepLagrange
 {
 
   // Prob id, set by main method
-  int* Prob_id_pt = 0;
+  const int* Prob_id_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
   std::string Noel_str = "";
+
+  std::map<int, std::string> valid_prob_id_map;
 
 
   ///////////////////////
@@ -1349,6 +1374,7 @@ namespace StepLagrange
   unsigned Noel = 4; //CL, Number of elements in 1D
   // the default is the norm of the momentum block.
 
+
   inline void setup_commandline_flags()
   {
     CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
@@ -1358,6 +1384,9 @@ namespace StepLagrange
 
   inline void set_prob_str()
   {
+
+    std::map<int,std::string>::iterator prob_id_it;
+
     // Set a problem id to identify the problem.
     // This is used for book keeping purposes.
     if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
@@ -1372,6 +1401,9 @@ namespace StepLagrange
             OOMPH_EXCEPTION_LOCATION);
       }
 
+      // Locally cache the problem id for convenience.
+      const int prob_id = *Prob_id_pt;
+
       // The argument immediately after --prob_id is put into SL::Prob_id.
       // If this begins with "--", then no problem id has been provided.
 
@@ -1379,14 +1411,11 @@ namespace StepLagrange
 
       // We only accept problem IDs as defined below.
       // Creating a set of acceptable IDs
-      int prob_id_array[]= {10,11,12,13};
-
-      bool inset = check_if_in_set<int>(prob_id_array,4,(*Prob_id_pt));
+      // 10,11,12,13
+      prob_id_it = valid_prob_id_map.find(prob_id);
 
       // Check if they have provided an acceptable ID.
-      // If a new element has been inserted, it means the user has provided an
-      // ID not in the set.
-      if(inset == false)
+      if(prob_id_it == valid_prob_id_map.end())
       {
         std::ostringstream err_msg;
         err_msg << "Please provide a problem id to identify the problem after "
@@ -1402,6 +1431,10 @@ namespace StepLagrange
             OOMPH_CURRENT_FUNCTION,
             OOMPH_EXCEPTION_LOCATION);
       }
+      else
+      {
+        Prob_str = prob_id_it->second;
+      }
     }
     else
     {
@@ -1412,37 +1445,6 @@ namespace StepLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-    // We know that --prob_id is set and is set up properly. We now set the
-    // Prob_str.
-    const int prob_id = *Prob_id_pt;
-    switch(prob_id)
-    {
-      case 10:
-        Prob_str = "StTmp";
-        break;
-      case 11:
-        Prob_str = "StPo";
-        break;
-      case 12:
-        Prob_str = "StTf";
-        break;
-      case 13:
-        Prob_str = "StTfPo";
-        break;
-      default:
-        {
-          std::ostringstream err_msg;
-          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-            << "10 = (StTmp) Step, custom stuff...\n"
-            << "11 = (StPo) Step, Parallel outflow (para inflow)\n"
-            << "12 = (StTf) Step, Tangential flow (Semi para inflow)\n"
-            << "13 = (StTfPo) Step, Tangential flow, Parallel outflow (semi para inflow)\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        } // Default case
-    } // switch Prob_id
   }
 
   inline void set_ang_str()
@@ -1492,6 +1494,12 @@ namespace StepLagrange
 
   inline void generic_setup()
   {
+    // Insert the prob id and string pairs.
+    valid_prob_id_map.insert(std::pair<int,std::string>(10,"StTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(11,"StPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(12,"StTf"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(13,"StTfPo"));
+
     set_prob_str();
     set_ang_str();
     set_noel_str();
@@ -1529,10 +1537,10 @@ namespace StepLagrange
 
 namespace SquareLagrange
 {
-
-
+  std::map<int,std::string> valid_prob_id_map;
+  
   // Prob id, set by main method
-  int* Prob_id_pt = 0;
+  const int* Prob_id_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
@@ -1547,16 +1555,16 @@ namespace SquareLagrange
   //
 
   // Min and max x value respectively.
-  double X_min = 0.0;
-  double X_max = 1.0;
+  static const double X_min = 0.0;
+  static const double X_max = 1.0;
 
   // Min and max y value respectively.
-  double Y_min = 0.0;
-  double Y_max = 1.0;
+  static const double Y_min = 0.0;
+  static const double Y_max = 1.0;
 
   // The length in the x and y direction respectively.
-  double Lx = X_max - X_min;
-  double Ly = Y_max - Y_min;
+  static const double Lx = X_max - X_min;
+  static const double Ly = Y_max - Y_min;
 
   /////////////////////////////////////////////////////////////////////////////
 
@@ -1615,6 +1623,8 @@ namespace SquareLagrange
 
   inline void set_prob_str()
   {
+    std::map<int,std::string>::iterator prob_id_it;
+
     // Set a problem id to identify the problem.
     // This is used for book keeping purposes.
     if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
@@ -1636,18 +1646,13 @@ namespace SquareLagrange
 
       // We only accept problem IDs as defined below.
       // Creating a set of acceptable IDs
-      const unsigned n_prob_id = 9;
-      int prob_id_array[]= {10,11,12,13,
-                            20,21,22,23,
-                            88};
-
-      const bool inset = check_if_in_set<int>(prob_id_array,n_prob_id,
-                                              (*Prob_id_pt));
+      const int prob_id = *Prob_id_pt;
+      prob_id_it = valid_prob_id_map.find(prob_id);
 
       // Check if they have provided an acceptable ID.
       // If a new element has been inserted, it means the user has provided an
       // ID not in the set.
-      if(inset == false)
+      if(prob_id_it == valid_prob_id_map.end())
       {
         std::ostringstream err_msg;
         err_msg << "Please provide a problem id to identify the problem after "
@@ -1670,6 +1675,10 @@ namespace SquareLagrange
             OOMPH_CURRENT_FUNCTION,
             OOMPH_EXCEPTION_LOCATION);
       }
+      else
+      {
+        Prob_str = prob_id_it->second;
+      }
     }
     else
     {
@@ -1680,59 +1689,6 @@ namespace SquareLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-    // We know that --prob_id is set and is set up properly. We now set the
-    // Prob_str.
-    const int prob_id = *Prob_id_pt;
-    switch(prob_id)
-    {
-      case 10:
-        Prob_str = "SqTmp";
-        break;
-      case 11:
-        Prob_str = "SqPo";
-        break;
-      case 12:
-        Prob_str = "SqTf";
-        break;
-      case 13:
-        Prob_str = "SqTfPo";
-        break;
-      case 20:
-        Prob_str = "AwTmp";
-        break;
-      case 21:
-        Prob_str = "AwPo";
-        break;
-      case 22:
-        Prob_str = "AwTf";
-        break;
-      case 23:
-        Prob_str = "AwTfPo";
-        break;
-      case 88:
-        Prob_str = "SqVa";
-        break;
-      default:
-        {
-          std::ostringstream err_msg;
-          err_msg << "There is an unrecognised Prob_id, recognised Prob_id:\n"
-            << "10 = (SqTmp) Square, custom stuff...\n"
-            << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-            << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-            << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-            << "\n"
-            << "88 = (SqVa) Square, vanilla LSC\n"
-            << "\n"
-            << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-            << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-            << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-            << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        } // Default case
-    } // switch Prob_id
   } // set_prob_str
 
   inline void set_ang_str()
@@ -1748,14 +1704,10 @@ namespace SquareLagrange
           OOMPH_EXCEPTION_LOCATION);
     }
 
-
-    // Cache the prob_id so it's easier to work with.
-    const int prob_id = *Prob_id_pt;
-    
     // If this is the vanilla problem, we set the angle as -1 and set the
     // string as "A_". This would indicate that no angle is used.
     // Furthermore, we ensure that no --ang is set.
-    if(prob_id == 88)
+    if(Prob_str.compare("SqVa") == 0)
     {
       if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
       {
@@ -1819,6 +1771,19 @@ namespace SquareLagrange
 
   inline void generic_setup()
   {
+    // Insert the prob id and string pairs.
+    valid_prob_id_map.insert(std::pair<int,std::string>(10,"SqTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(11,"SqPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(12,"SqTf"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(13,"SqTfPo"));
+
+    valid_prob_id_map.insert(std::pair<int,std::string>(20,"AwTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(21,"AwPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(22,"AwTf"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(23,"AwTfPo"));
+
+    valid_prob_id_map.insert(std::pair<int,std::string>(88,"SqVa"));
+
     set_prob_str();
     set_ang_str();
     set_noel_str();
@@ -1853,6 +1818,11 @@ namespace SquareLagrange
 
 namespace LagrangianPreconditionerHelpers
 {
+  //////////////////////////////////////////////////////////////////////
+
+
+  //////////////////////////////////////////////////////////////////////
+
   // Set my problem constructor.
   Vector<Mesh*> Mesh_pt;
 
@@ -2090,9 +2060,18 @@ namespace LagrangianPreconditionerHelpers
 
   inline Preconditioner* get_lsc_preconditioner()
   {
-// Check if Mesh_pt size is not 0
+   if(Lsc_only && (Mesh_pt.size() != 1))
+   {
+        std::ostringstream err_msg;
+        err_msg << "You have chosen to use only the LSC preconditioner\n"
+          << "Thus the Vector Mesh_pt must contain exactly one mesh,\n"
+          << "the Navier Stokes bulk mesh.\n"
+          << std::endl;
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+   }
 
-// If Lsc_only, check that Mesh_pt size is 1
 
       // If ns_solver is 1, this means we want to use LSC.
       // So the F_solver and P_solver must be set.
@@ -2389,11 +2368,8 @@ namespace LagrangianPreconditionerHelpers
         // First check that the user has selected a coarsening strategy
         // using --f_amg_coarse.
         // If the user has, then f_amg_coarsening should no longer be -1.
-        int coarsening_array[] = {0,1,3,6,8,10,11};
-        const unsigned n_coarsening_strategies = 7;
         bool coarsening_ok 
-          = check_if_in_set<int>(coarsening_array,n_coarsening_strategies,
-              f_amg_coarsening);
+          = RayGen::check_amg_coarsener(f_amg_coarsening);
         if((f_amg_coarsening < 0) || (!coarsening_ok))
         {
           std::ostringstream err_msg;
@@ -2484,11 +2460,9 @@ namespace LagrangianPreconditionerHelpers
         if(f_amg_simple_smoother >= 0)
         {
           // check if simple smoother is okay.
-          int sim_smoother_array[] = {0,1,2,3,4,6};
-          unsigned n_sim_smoothers = 6;
           bool sim_smoother_ok
-            = check_if_in_set<int>(sim_smoother_array,n_sim_smoothers,
-                f_amg_simple_smoother);
+            = RayGen::check_amg_sim_smoother(f_amg_simple_smoother);
+
           if(!sim_smoother_ok)
           {
             std::ostringstream err_msg;
@@ -2513,11 +2487,8 @@ namespace LagrangianPreconditionerHelpers
         else if(f_amg_complex_smoother >=0)
         {
           // check if complex smoother is valid.
-          int com_smoother_array[] = {6,7,8,9};
-          const unsigned n_com_smoothers = 4;
           bool com_smoother_ok
-            = check_if_in_set<int>(com_smoother_array,n_com_smoothers,
-                f_amg_complex_smoother);
+            = RayGen::check_amg_com_smoother(f_amg_complex_smoother);
           if(!com_smoother_ok)
           {
             std::ostringstream err_msg;
@@ -2574,11 +2545,9 @@ namespace LagrangianPreconditionerHelpers
 
     // Damping is required for Jacobi or hybrid SOR smoothers.
     // First check if amg_simple_smoother is one of those.
-    int sub_smoother_array[] = {0,3,4,6};
-    unsigned n_sub_smoothers = 4;
     bool damping_required
-      = check_if_in_set<int>(sub_smoother_array,n_sub_smoothers,
-          f_amg_simple_smoother);
+      = RayGen::check_amg_sim_smoother_damping_required(f_amg_simple_smoother);
+
     if(damping_required && (f_amg_damping < 0))
     {
       std::ostringstream err_msg;
@@ -2774,10 +2743,10 @@ namespace LagrangianPreconditionerHelpers
       = new LagrangeEnforcedflowPreconditioner;
 
    // Set the mesh
-    if(Mesh_pt.size() == 0)
+    if(Mesh_pt.size() < 2)
     {
       std::ostringstream err_msg;
-      err_msg << "There is no Mesh_pt set.\n"
+      err_msg << "There must be at least two meshes\n"
         << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
@@ -2916,7 +2885,7 @@ namespace LagrangianPreconditionerHelpers
     std::string p_str = "";
     // Now we continue with setting the string for the solvers.
     // Only set the f_str if NS_solver > 0
-    if(NS_solver == 1)
+    //if(NS_solver == 1)
     {
       switch(F_solver)
       {
