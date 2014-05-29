@@ -111,7 +111,7 @@ case "$PREC" in
     if [ "$VIS" -eq "0" ]; then
       PRECPARAM="$PREC2_Plu_Famgsim"
     else
-      PRECPARAM="$PREC2_Plu_Famgsim"
+      PRECPARAM="$PREC2_Plu_Famgstr"
     fi
 
     ;;
@@ -119,7 +119,7 @@ case "$PREC" in
     if [ "$VIS" -eq "0" ]; then
       PRECPARAM="$PREC3_Pamg_Famgsim"
     else
-      PRECPARAM="$PREC3_Pamg_Famgsim"
+      PRECPARAM="$PREC3_Pamg_Famgstr"
     fi
     ;;
 esac
