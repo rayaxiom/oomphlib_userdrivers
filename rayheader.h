@@ -1636,10 +1636,13 @@ namespace SquareLagrange
 
       // We only accept problem IDs as defined below.
       // Creating a set of acceptable IDs
+      const unsigned n_prob_id = 9;
       int prob_id_array[]= {10,11,12,13,
-        20,21,22,23};
+                            20,21,22,23,
+                            88};
 
-      bool inset = check_if_in_set<int>(prob_id_array,8,(*Prob_id_pt));
+      const bool inset = check_if_in_set<int>(prob_id_array,n_prob_id,
+                                              (*Prob_id_pt));
 
       // Check if they have provided an acceptable ID.
       // If a new element has been inserted, it means the user has provided an
@@ -1654,6 +1657,8 @@ namespace SquareLagrange
           << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
           << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
           << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+          << "\n"
+          << "88 = (SqVa) Square, Vanilla LSC\n"
           << "\n"
           << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
           << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
@@ -1704,6 +1709,9 @@ namespace SquareLagrange
       case 23:
         Prob_str = "AwTfPo";
         break;
+      case 88:
+        Prob_str = "SqVa";
+        break;
       default:
         {
           std::ostringstream err_msg;
@@ -1712,6 +1720,8 @@ namespace SquareLagrange
             << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
             << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
             << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
+            << "\n"
+            << "88 = (SqVa) Square, vanilla LSC\n"
             << "\n"
             << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
             << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
@@ -1723,30 +1733,69 @@ namespace SquareLagrange
               OOMPH_EXCEPTION_LOCATION);
         } // Default case
     } // switch Prob_id
-  }
+  } // set_prob_str
 
   inline void set_ang_str()
   {
-    // Check that Ang has been set.
-    if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    if(Prob_id_pt == 0)
     {
       std::ostringstream err_msg;
-      err_msg << "Angle has not been set. Set (in degrees) with: \n"
-        << "--ang \n"; 
+      err_msg << "Oh dear, Prob_id_pt is null. Please set this in main().\n"
+        << "This should be stored in NSPP::Prob_id, and set by cmd via\n"
+        << "--prob_id \n"; 
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
 
-    // Now we need to convert Ang into radians.
-    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
-    // Now we set the Ang_deg_str.
+
+    // Cache the prob_id so it's easier to work with.
+    const int prob_id = *Prob_id_pt;
+    
+    // If this is the vanilla problem, we set the angle as -1 and set the
+    // string as "A_". This would indicate that no angle is used.
+    // Furthermore, we ensure that no --ang is set.
+    if(prob_id == 88)
     {
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream err_msg;
+        err_msg << "prob_id is 88, doing vanilla LSC with no tilt.\n"
+          << "But you have set --ang, please do not set this."; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      Ang = -1;
+      // Now we set the Ang_deg_str.
+      std::ostringstream strs;
+      strs << "A_";
+      Ang_deg_str = strs.str();
+    }
+    else
+    // This problem requires tilting, thus we set the Ang and Ang_deg_str.
+    {
+      // But first we check that --ang has been set.
+      // Check that Ang has been set.
+      if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream err_msg;
+        err_msg << "Angle has not been set. Set (in degrees) with: \n"
+          << "--ang \n"; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // Now we need to convert Ang_deg into radians.
+      Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+      // Now we set the Ang_deg_str.
       std::ostringstream strs;
       strs << "A" << Ang_deg;
       Ang_deg_str = strs.str();
     }
-  }
+  } // set_ang_str
 
   inline void set_noel_str()
   {
@@ -1858,6 +1907,9 @@ namespace LagrangianPreconditionerHelpers
   // Set to true if --bdw is set.
   bool Use_block_diagonal_w = false;
 
+  // Set to true if --lsc_only is set.
+  bool Lsc_only = false;
+
 
   inline void setup_commandline_flags()
   {
@@ -1865,6 +1917,10 @@ namespace LagrangianPreconditionerHelpers
     // string
     CommandLineArgs::specify_command_line_flag(
         "--doc_prec",&Doc_prec_dir_str);
+
+    // No parameter after.
+    CommandLineArgs::specify_command_line_flag(
+        "--lsc_only");
 
     // double
     CommandLineArgs::specify_command_line_flag(
@@ -1946,6 +2002,15 @@ namespace LagrangianPreconditionerHelpers
 
   inline void generic_setup()
   {
+    if(CommandLineArgs::command_line_flag_has_been_set("--lsc_only"))
+    {
+      Lsc_only = true;
+    }
+    else
+    {
+      Lsc_only = false;
+    }
+
     // Document the preconditioner? Default is false.
     if(CommandLineArgs::command_line_flag_has_been_set("--doc_prec"))
     {
@@ -2022,78 +2087,13 @@ namespace LagrangianPreconditionerHelpers
     }
   } // LPH::generic_setup()
 
-  inline Preconditioner* get_preconditioner()
+
+  inline Preconditioner* get_lsc_preconditioner()
   {
-    LagrangeEnforcedflowPreconditioner* prec_pt
-      = new LagrangeEnforcedflowPreconditioner;
+// Check if Mesh_pt size is not 0
 
-    // Set the mesh
-    if(Mesh_pt.size() == 0)
-    {
-      std::ostringstream err_msg;
-      err_msg << "There is no Mesh_pt set.\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
+// If Lsc_only, check that Mesh_pt size is 1
 
-    prec_pt->set_meshes(Mesh_pt);
-
-    // Set W solver.
-    if(W_solver == -1)
-    {
-      std::ostringstream err_msg;
-      err_msg << "There W_solver has not been set.\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else if(W_solver == 0)
-    {
-      // Using SuperLU, this is the default, do nothing.
-    }
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "There is no other W solver set.\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-
-    // The preconditioner for the fluid block:
-    if(NS_solver == -1)
-    {
-      std::ostringstream err_msg;
-      err_msg << "The NS solver has not been set.\n"
-        << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-    else if(NS_solver == 0) // Exact solve.
-    {
-      // This is the default, do nothing.
-      // But the param's F_solver and P_solver should not have been set,
-      // i.e. it should stay as -1.
-
-      if((F_solver != -1) || (P_solver != -1))
-      {
-        std::ostringstream err_msg;
-        err_msg << "Doing exact NS solve. (NS_solver is 0)\n"
-          << "but you have set F_solver and P_solver as well."
-          << "Please leave these as -1.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-    }
-    else if(NS_solver == 1) // LSC
-    {
       // If ns_solver is 1, this means we want to use LSC.
       // So the F_solver and P_solver must be set.
       if((F_solver == -1) || (P_solver == -1))
@@ -2125,14 +2125,13 @@ namespace LagrangianPreconditionerHelpers
       NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
         new NavierStokesSchurComplementPreconditioner(Problem_pt);
 
-      // Set the NS preconditioner as LSC.
-      prec_pt->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
 
       // Give LSC the bulk mesh (Navier-Stokes mesh).
       ns_preconditioner_pt->set_navier_stokes_mesh(Mesh_pt[0]);
 
 
-      //// Setting the F solver within the NS block
+
+     //// Setting the F solver within the NS block
       /////////////////////////////////////////////
 
       // Preconditioner for the F block:
@@ -2164,6 +2163,10 @@ namespace LagrangianPreconditionerHelpers
             OOMPH_EXCEPTION_LOCATION);
       }
 
+
+      ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
+
+ 
       if(F_solver == 11)
       {
 #ifdef OOMPH_HAS_HYPRE
@@ -2387,7 +2390,7 @@ namespace LagrangianPreconditionerHelpers
         // using --f_amg_coarse.
         // If the user has, then f_amg_coarsening should no longer be -1.
         int coarsening_array[] = {0,1,3,6,8,10,11};
-        unsigned n_coarsening_strategies = 7;
+        const unsigned n_coarsening_strategies = 7;
         bool coarsening_ok 
           = check_if_in_set<int>(coarsening_array,n_coarsening_strategies,
               f_amg_coarsening);
@@ -2511,7 +2514,7 @@ namespace LagrangianPreconditionerHelpers
         {
           // check if complex smoother is valid.
           int com_smoother_array[] = {6,7,8,9};
-          unsigned n_com_smoothers = 4;
+          const unsigned n_com_smoothers = 4;
           bool com_smoother_ok
             = check_if_in_set<int>(com_smoother_array,n_com_smoothers,
                 f_amg_complex_smoother);
@@ -2681,7 +2684,10 @@ namespace LagrangianPreconditionerHelpers
       // Set the preconditioner in the LSC preconditioner.
       ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
 
-      // P block solve.
+      ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
+
+
+     // P block solve.
       ///////////////////////////////////////////
 
       // Pointer to the preconditioner.
@@ -2753,7 +2759,94 @@ namespace LagrangianPreconditionerHelpers
       }
 
       ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-    } // if for using LSC as NS prec.
+
+
+    return ns_preconditioner_pt;
+
+
+
+  } // EoFunc
+
+  inline Preconditioner* get_lgr_preconditioner()
+  {
+
+    LagrangeEnforcedflowPreconditioner* prec_pt
+      = new LagrangeEnforcedflowPreconditioner;
+
+   // Set the mesh
+    if(Mesh_pt.size() == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "There is no Mesh_pt set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    prec_pt->set_meshes(Mesh_pt);
+
+    // Set W solver.
+    if(W_solver == -1)
+    {
+      std::ostringstream err_msg;
+      err_msg << "There W_solver has not been set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    else if(W_solver == 0)
+    {
+      // Using SuperLU, this is the default, do nothing.
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "There is no other W solver set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    // The preconditioner for the fluid block:
+    if(NS_solver == -1)
+    {
+      std::ostringstream err_msg;
+      err_msg << "The NS solver has not been set.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    else if(NS_solver == 0) // Exact solve.
+    {
+      // This is the default, do nothing.
+      // But the param's F_solver and P_solver should not have been set,
+      // i.e. it should stay as -1.
+
+      if((F_solver != -1) || (P_solver != -1))
+      {
+        std::ostringstream err_msg;
+        err_msg << "Doing exact NS solve. (NS_solver is 0)\n"
+          << "but you have set F_solver and P_solver as well."
+          << "Please leave these as -1.\n"
+          << std::endl;
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+    }
+    else if(NS_solver == 1) // LSC
+    {
+
+
+      // Set the NS preconditioner as LSC.
+      prec_pt->set_navier_stokes_lsc_preconditioner(get_lsc_preconditioner());
+
+
+     } // if for using LSC as NS prec.
     else
     {
       pause("There is no solver for NS.");
@@ -2802,75 +2895,28 @@ namespace LagrangianPreconditionerHelpers
     prec_pt->set_label_pt(Label_str_pt);
     prec_pt->set_doc_prec_directory_pt(&Doc_prec_dir_str);
     return prec_pt;
-  } // LPH::setup_preconditioner
+  }
 
-
-  inline std::string create_label()
+  inline Preconditioner* get_preconditioner()
   {
-    std::string w_str = "";
-    std::string ns_str = "";
-    std::string f_str = "";
-    std::string p_str = "";
-    std::string sigma_str = "";
-
-    // Set the string for W_solver.
-    switch(W_solver)
+    if(Lsc_only)
     {
-      case 0:
-        w_str = "We";
-        break;
-      default:
-        {
-          std::ostringstream err_msg;
-          err_msg << "There is an unrecognised W_solver,\n"
-            << "recognised W_solver:\n"
-            << "0 = (We) SuperLU solve\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-    } // switch
-
-    if(Use_block_diagonal_w)
-    {
-      w_str += "bd";
+      return get_lsc_preconditioner();
     }
     else
     {
-      w_str += "d";
+      return get_lgr_preconditioner();
     }
+  } // LPH::setup_preconditioner
 
-    // Set the string for NS_solver
-    switch(NS_solver)
-    {
-      case 0:
-        {
-          ns_str = "Ne";
-          p_str = "";
-          f_str = "";
-        }
-        break;
-      case 1:
-        ns_str = "Nl";
-        break;
-      default:
-        {
-          std::ostringstream err_msg;
-          err_msg << "There is an unrecognised NS_solver.\n"
-            << "Recognised NS_solver:\n"
-            << "0 = (Ne) SuperLU\n"
-            << "1 = (Nl) LSC preconditioner\n"
-            << std::endl;
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-    } // switch NS_solver
 
+  inline std::string create_lsc_label()
+  {
+    std::string f_str = "";
+    std::string p_str = "";
     // Now we continue with setting the string for the solvers.
     // Only set the f_str if NS_solver > 0
-    if(NS_solver > 0)
+    if(NS_solver == 1)
     {
       switch(F_solver)
       {
@@ -2964,6 +3010,72 @@ namespace LagrangianPreconditionerHelpers
       } // switch for p_solver
     } // if ns_solve > 0
 
+
+    std::string prec_str = f_str + p_str;
+    return prec_str;
+  }
+
+  inline std::string create_lgr_label()
+  {
+    std::string w_str = "";
+
+    std::string ns_str = "";
+
+    std::string sigma_str = "";
+
+    // Set the string for W_solver.
+    switch(W_solver)
+    {
+      case 0:
+        w_str = "We";
+        break;
+      default:
+        {
+          std::ostringstream err_msg;
+          err_msg << "There is an unrecognised W_solver,\n"
+            << "recognised W_solver:\n"
+            << "0 = (We) SuperLU solve\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+    } // switch
+
+    if(Use_block_diagonal_w)
+    {
+      w_str += "bd";
+    }
+    else
+    {
+      w_str += "d";
+    }
+
+    // Set the string for NS_solver
+    switch(NS_solver)
+    {
+      case 0:
+        {
+          ns_str = "Ne";
+        }
+        break;
+      case 1:
+        ns_str = "Nl";
+        break;
+      default:
+        {
+          std::ostringstream err_msg;
+          err_msg << "There is an unrecognised NS_solver.\n"
+            << "Recognised NS_solver:\n"
+            << "0 = (Ne) SuperLU\n"
+            << "1 = (Nl) LSC preconditioner\n"
+            << std::endl;
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+    } // switch NS_solver
+
     if(CommandLineArgs::command_line_flag_has_been_set("--sigma"))
     {
       std::ostringstream strs;
@@ -2971,10 +3083,23 @@ namespace LagrangianPreconditionerHelpers
       sigma_str = strs.str();
     }
 
-    std::string prec_str = w_str + ns_str + f_str + p_str + sigma_str;
+    std::string prec_str = w_str + ns_str + create_lsc_label() + sigma_str;
+    return prec_str;
+  }
+
+  inline std::string create_label()
+  {
+    std::string prec_str;
+    if(Lsc_only)
+    {
+      prec_str = create_lsc_label();
+    }
+    else
+    {
+      prec_str = create_lgr_label();
+    }
 
     return prec_str;
-
   } // LPH::create_label()
 
 } // end of namespace LagrangianPreconditionerHelpers
