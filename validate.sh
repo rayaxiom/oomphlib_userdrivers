@@ -14,6 +14,15 @@ do
   cd $i
   ./validate.sh 2>&1 | tee validate.output
   cat ./Validate/validation.log >> $CURRENTDIR/validation.log
+
+  ## Now, if the ./Validate/validation.log file is empty, we know that
+  ## all the tests pass, thus we can safely delete all the associated files
+  ## of this self test.
+  if [ ! -s ./Validate/validation.log ]
+  then
+    rm -rf Validate validate.output
+  fi
+
   cd $CURRENTDIR
 done
 
