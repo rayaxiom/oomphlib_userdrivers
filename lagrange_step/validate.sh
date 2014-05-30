@@ -121,6 +121,7 @@ do
   then
     echo "File not the same: $i" >> validation.log
   fi
+  rm -rf RAYITS_new RAYITS_old
 done
 
 cd $CURRENTDIR
