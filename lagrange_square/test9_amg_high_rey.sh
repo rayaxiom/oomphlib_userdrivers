@@ -213,7 +213,8 @@ TEST_LIST="$TEST_FILEBASE.list"
 gen_po_tests
 gen_va_tests
 
-genqsub_script $TEST_LIST
+# Do this bit in a sub shell
+(genqsub_script $TEST_LIST)
 
 TEST_RUN="$TEST_FILEBASE.sh"
 echo "#!/bin/bash" >> $TEST_RUN
@@ -296,6 +297,8 @@ then
   cd ..
   PROGRAM_DIR=${PWD##*/}
   cd $CURRENT_DIR
+
+  ## NOTE: the qsub script is now... 
   OOMPH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
   SCRATCH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
 
