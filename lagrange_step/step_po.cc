@@ -167,20 +167,26 @@ public:
 
  void actions_before_distribute()
  {
+   if(NavierStokesProblemParameters::Prob_id != 88)
+   {
    if(NavierStokesProblemParameters::Distribute_problem)
    {
       delete_flux_elements(Surface_mesh_P_pt);
       rebuild_global_mesh();
+   }
    }
  }
 
 
  void actions_after_distribute()
  {
+   if(NavierStokesProblemParameters::Prob_id != 88)
+   {
    if(NavierStokesProblemParameters::Distribute_problem)
    {
      create_parall_outflow_lagrange_elements(Left_b,Bulk_mesh_pt,Surface_mesh_P_pt);
      rebuild_global_mesh();
+   }
    }
  }
 
@@ -200,6 +206,9 @@ public:
 
 private:
 
+ void set_mesh_bc_for_StPo();
+ void set_mesh_bc_for_StVa();
+
  // Boundaries, these are set in the problem initialiser list.
  const unsigned Left_b;
  const unsigned Rightmost_b;
@@ -209,7 +218,8 @@ private:
  const unsigned Top_b;
 
  /// Pointer to the "bulk" mesh
- SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
+// SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
+ Mesh* Bulk_mesh_pt;
 
  /// Pointer to the "surface" mesh
  Mesh* Surface_mesh_T_pt;
@@ -242,8 +252,8 @@ private:
 ///====================================================================
 template<class ELEMENT>
 BackwardStepProblem<ELEMENT>::BackwardStepProblem() : 
-  Left_b(5), Rightmost_b(3), Right_cutout_b(2),
-  Bottommost_b(0), Bottom_cutout_b(1), Top_b(4)
+  Left_b(5), Rightmost_b(3), Right_cutout_b(1),
+  Bottommost_b(0), Bottom_cutout_b(2), Top_b(4)
 {
  // Alias the namespace for convenience
  namespace NSPP = NavierStokesProblemParameters;
@@ -274,76 +284,35 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem() :
  const unsigned nx_cut_out = 5 * SL::Noel;
  const unsigned ny_cut_out = 1 * SL::Noel;
 
+ if(NSPP::Prob_id == 11)
+ {
  Bulk_mesh_pt =
   new SlopingQuadMesh<ELEMENT>(nx,ny,nx_cut_out,ny_cut_out,lx,ly,SL::Ang);
-
- // Create a "surface mesh" that will contain only
- // ImposeParallelOutflowElements in boundary 1
- // The constructor just creates the mesh without
- // giving it any elements, nodes, etc.
- Surface_mesh_P_pt = new Mesh;
- //Surface_mesh_T_pt = new Mesh;
-
- // Create ImposeParallelOutflowElement from all elements that are
- // adjacent to the Neumann boundary.
- create_parall_outflow_lagrange_elements(po_b,
-                                         Bulk_mesh_pt,Surface_mesh_P_pt);
- //create_impenetrable_lagrange_elements(po_b,
- //                                        Bulk_mesh_pt,Surface_mesh_P_pt);
-
- // Add the two sub meshes to the problem
- add_sub_mesh(Bulk_mesh_pt);
- add_sub_mesh(Surface_mesh_P_pt);
- //add_sub_mesh(Surface_mesh_T_pt);
- // Combine all submeshes into a single Mesh
- build_global_mesh();
-
- unsigned num_bound=Bulk_mesh_pt->nboundary();
-
- // Set the boundary conditions for this problem: All nodes are
- // free by default -- just pin the ones that have Dirichlet conditions
- // here.
- for(unsigned ibound=0;ibound<num_bound;ibound++)
+ }
+ else if(NSPP::Prob_id)
  {
-   //if((ibound != po_b)&&(ibound != tf_b))
-   if(ibound != po_b)
-   {
-     unsigned num_nod=Bulk_mesh_pt->nboundary_node(ibound);
-     for (unsigned inod=0;inod<num_nod;inod++)
-     {
-       // Get node
-       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-
-       nod_pt->pin(0);
-       nod_pt->pin(1);
-
-     }
-   }
+   Bulk_mesh_pt = 
+     new BackwardStepQuadMesh<ELEMENT>(nx,ny,nx_cut_out,ny_cut_out,lx,ly);
+ }
+ else
+ {
+   pause("Not done yet"); 
  }
 
- unsigned num_nod= mesh_pt()->nboundary_node(if_b);
- for(unsigned inod=0;inod<num_nod;inod++)
- {
-   Node* nod_pt=mesh_pt()->boundary_node_pt(if_b,inod);
-   double x=nod_pt->x(0);
-   double y=nod_pt->x(1);
 
-   // Tilt it back
-   double ytiltedback = x*sin(-SL::Ang)
-                        +y*cos(-SL::Ang);
-   double u=0.0;
-   u=-4.0*(ytiltedback-1.0)*(2.0-ytiltedback);
+  if(NSPP::Prob_id == 11)
+  {
+    set_mesh_bc_for_StPo();
+  }
+  else if(NSPP::Prob_id == 88)
+  {
+    set_mesh_bc_for_StVa();
+  }
+  else
+  {
+    pause("not done yet!");
+  }
 
-   // Now apply the rotation to u, using rotation matrices.
-   // with x = u and y = 0, i.e. R*[u;0] since we have the
-   // velocity in the x direction only. There is no velocity
-   // in the y direction.
-   double ux=u*cos(SL::Ang);
-   double uy=u*sin(SL::Ang);
-
-   nod_pt->set_value(0,ux);
-   nod_pt->set_value(1,uy);
- }
 
  //Complete the problem setup to make the elements fully functional
 
@@ -362,13 +331,21 @@ BackwardStepProblem<ELEMENT>::BackwardStepProblem() :
  //Assign equation numbers
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
 
- Vector<Mesh*> mesh_pt(2,0);
- mesh_pt[0] = Bulk_mesh_pt;
- mesh_pt[1] = Surface_mesh_P_pt;
+ Vector<Mesh*> mesh_pt;
+ if(NSPP::Prob_id == 11)
+ {
+   mesh_pt.resize(2,0);
+   mesh_pt[0] = Bulk_mesh_pt;
+   mesh_pt[1] = Surface_mesh_P_pt;
+ }
+ else if(NSPP::Prob_id == 88)
+ {
+   mesh_pt.resize(1,0);
+   mesh_pt[0] = Bulk_mesh_pt;
+ }
 
  LPH::Mesh_pt = mesh_pt;
  LPH::Problem_pt = this;
-
  Prec_pt = LPH::get_preconditioner();
 
  const double solver_tol = 1.0e-6;
@@ -401,6 +378,204 @@ void BackwardStepProblem<ELEMENT>::doc_solution()
   Bulk_mesh_pt->output(some_file,npts);
   some_file.close();
 }
+
+template<class ELEMENT>
+void BackwardStepProblem<ELEMENT>::set_mesh_bc_for_StPo()
+{
+  namespace SL = StepLagrange;
+
+ // Create a "surface mesh" that will contain only
+ // ImposeParallelOutflowElements in boundary 1
+ // The constructor just creates the mesh without
+ // giving it any elements, nodes, etc.
+ Surface_mesh_P_pt = new Mesh;
+ //Surface_mesh_T_pt = new Mesh;
+ //
+ // Create ImposeParallelOutflowElement from all elements that are
+ // adjacent to the Neumann boundary.
+ create_parall_outflow_lagrange_elements(Left_b,
+                                         Bulk_mesh_pt,Surface_mesh_P_pt);
+ //create_impenetrable_lagrange_elements(po_b,
+ //                                        Bulk_mesh_pt,Surface_mesh_P_pt);
+
+ // Add the two sub meshes to the problem
+ add_sub_mesh(Bulk_mesh_pt);
+ add_sub_mesh(Surface_mesh_P_pt);
+ //add_sub_mesh(Surface_mesh_T_pt);
+ // Combine all submeshes into a single Mesh
+ build_global_mesh();
+
+
+
+ const unsigned num_bound=Bulk_mesh_pt->nboundary();
+
+ // Set the boundary conditions for this problem: All nodes are
+ // free by default -- just pin the ones that have Dirichlet conditions
+ // here.
+ for(unsigned ibound=0;ibound<num_bound;ibound++)
+ {
+   //if((ibound != po_b)&&(ibound != tf_b))
+   if(ibound != Left_b)
+   {
+     unsigned num_nod=Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
+     {
+       // Get node
+       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+
+       nod_pt->pin(0);
+       nod_pt->pin(1);
+
+       nod_pt->set_value(0,0);
+       nod_pt->set_value(1,0);
+
+     }
+   }
+ }
+
+ // Which boundary are we dealing with?
+ unsigned current_bound;
+
+ // The number of nodes on the current boundary.
+ unsigned num_nod;
+
+ // PARABOLIC INFLOW!
+ // Inflow is at the Rightmost_b.
+ current_bound = Rightmost_b;
+ num_nod= mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components (just to be safe!)
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   // Get the current Cartesian coordinates
+   const double x0 = nod_pt->x(0);
+   const double x1 = nod_pt->x(1);
+
+   // When applying the parabolic inflow on a zero degrees tilt, it only
+   // depends on the y coordinate. We tilt the y coordinate back, create
+   // the velocity profile, them tilt this according to the angle.
+   const double x1_old = x0*sin(-SL::Ang) + x1*cos(-SL::Ang);
+
+   // Now calculate the parabolic inflow at this point.
+   const double u0_old = -4.0*(x1_old - 1.0) * (2.0 - x1_old);
+
+   // Now apply the rotation to u, using rotation matrices.
+   // with x = u and y = 0, i.e. R*[u;0] since we have the
+   // velocity in the x direction only. There is no velocity
+   // in the y direction.
+   const double u0 = u0_old*cos(SL::Ang);
+   const double u1 = u0_old*sin(SL::Ang);
+
+   nod_pt->set_value(0,u0);
+   nod_pt->set_value(1,u1);
+ } // Setting the inflow
+} // set_mesh_bc_for_StPo
+
+template<class ELEMENT>
+void BackwardStepProblem<ELEMENT>::set_mesh_bc_for_StVa()
+{
+  namespace SL = StepLagrange;
+
+ // Create a "surface mesh" that will contain only
+ // ImposeParallelOutflowElements in boundary 1
+ // The constructor just creates the mesh without
+ // giving it any elements, nodes, etc.
+// Surface_mesh_P_pt = new Mesh;
+ //Surface_mesh_T_pt = new Mesh;
+ //
+ // Create ImposeParallelOutflowElement from all elements that are
+ // adjacent to the Neumann boundary.
+// create_parall_outflow_lagrange_elements(Left_b,
+//                                         Bulk_mesh_pt,Surface_mesh_P_pt);
+ //create_impenetrable_lagrange_elements(po_b,
+ //                                        Bulk_mesh_pt,Surface_mesh_P_pt);
+
+ // Add the two sub meshes to the problem
+ add_sub_mesh(Bulk_mesh_pt);
+// add_sub_mesh(Surface_mesh_P_pt);
+ //add_sub_mesh(Surface_mesh_T_pt);
+ // Combine all submeshes into a single Mesh
+ build_global_mesh();
+
+ // For the outflow boundary, we pin the y velocity to 0 and leave x.
+ {
+   const unsigned num_nod = mesh_pt()->nboundary_node(Left_b);
+   for (unsigned inod = 0; inod < num_nod; inod++) 
+   {
+     Node* nod_pt = mesh_pt()->boundary_node_pt(Left_b,inod);
+     
+     // Unpin x
+     nod_pt->unpin(0);
+
+     // pin y
+     nod_pt->pin(1);
+
+     // Set y velocity to zero.
+     nod_pt->set_value(1,0);
+   }
+ }
+
+ const unsigned num_bound=Bulk_mesh_pt->nboundary();
+
+ // Set the boundary conditions for this problem: All nodes are
+ // free by default -- just pin the ones that have Dirichlet conditions
+ // here.
+ for(unsigned ibound=0;ibound<num_bound;ibound++)
+ {
+   //if((ibound != po_b)&&(ibound != tf_b))
+   if(ibound != Left_b)
+   {
+     unsigned num_nod=Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
+     {
+       // Get node
+       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+
+       nod_pt->pin(0);
+       nod_pt->pin(1);
+
+       nod_pt->set_value(0,0);
+       nod_pt->set_value(1,0);
+
+     }
+   }
+ }
+
+ // Which boundary are we dealing with?
+ unsigned current_bound;
+
+ // The number of nodes on the current boundary.
+ unsigned num_nod;
+
+ // PARABOLIC INFLOW!
+ // Inflow is at the Rightmost_b.
+ current_bound = Rightmost_b;
+ num_nod= mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components (just to be safe!)
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   // Get the y Cartesian coordinates
+   const double x1 = nod_pt->x(1);
+
+   // Now calculate the parabolic inflow at this point.
+   const double u0 = -4.0*(x1 - 1.0) * (2.0 - x1);
+
+   const double u1 = 0.0;
+
+   nod_pt->set_value(0,u0);
+   nod_pt->set_value(1,u1);
+ } // Setting the inflow
+} // set_mesh_bc_for_StVa
+
 
 template<class ELEMENT>
 void BackwardStepProblem<ELEMENT>::

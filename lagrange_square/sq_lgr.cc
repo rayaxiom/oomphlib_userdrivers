@@ -413,7 +413,7 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
   //         ----------
   //             0 non slip
 //  unsigned if_b = 3; // inflow
-  unsigned po_b = 1; // parallel outflow
+  const unsigned po_b = 1; // parallel outflow
 
   // Create a "surface mesh" that will contain only
   // ImposeParallelOutflowElements in boundary 1
@@ -432,7 +432,7 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
   
   // combine all sub-meshes into a single mesh.
   build_global_mesh();
-  unsigned num_bound = mesh_pt()->nboundary();
+  const unsigned num_bound = mesh_pt()->nboundary();
 
   // Set the boundary conditions for this problem: All nodes are
   // free by default -- just pin the ones that have Dirichlet conditions
@@ -458,10 +458,10 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
   }
 
  // Which boundary are we dealing with?
- unsigned current_bound = -1;
+ unsigned current_bound;
  
  // The number of nodes on a boundary.
- unsigned num_nod = -1;
+ unsigned num_nod;
 
  // Inflow is at boundary 3
  current_bound = 3;
@@ -530,7 +530,7 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqVa()
   
   // combine all sub-meshes into a single mesh.
   build_global_mesh();
-  unsigned num_bound = mesh_pt()->nboundary();
+  const unsigned num_bound = mesh_pt()->nboundary();
 
   // Leave the x velocity on po_b to unpinned.
   {
@@ -573,10 +573,10 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqVa()
   }
 
  // Which boundary are we dealing with?
- unsigned current_bound = -1;
+ unsigned current_bound;
  
  // The number of nodes on a boundary.
- unsigned num_nod = -1;
+ unsigned num_nod;
 
  // Inflow is at boundary 3
  current_bound = 3;

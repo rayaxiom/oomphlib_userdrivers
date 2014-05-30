@@ -1309,14 +1309,14 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 namespace StepLagrange
 {
 
+  std::map<int,std::string> valid_prob_id_map;
+
   // Prob id, set by main method
   const int* Prob_id_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
   std::string Noel_str = "";
-
-  std::map<int, std::string> valid_prob_id_map;
 
 
   ///////////////////////
@@ -1445,25 +1445,62 @@ namespace StepLagrange
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-  }
+  } // set_prob_str
 
   inline void set_ang_str()
   {
-    // Check that Ang has been set.
-    if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    // Check if the problem id has been set. This will be used to see
+    // if we must or must not supply the angle.
+    if(Prob_id_pt == 0)
     {
       std::ostringstream err_msg;
-      err_msg << "Angle has not been set. Set (in degrees) with: \n"
-        << "--ang \n"; 
+      err_msg << "Oh dear, Prob_id_pt is null. Please set this in main().\n"
+        << "This should be stored in NSPP::Prob_id, and set by cmd via\n"
+        << "--prob_id \n"; 
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
-    }
+    } 
 
-    // Now we need to convert Ang into radians.
-    Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
-    // Now we set the Ang_deg_str.
+    // If this is the vanilla problem, we set the angle as -1 and set the
+    // string as "A_". This would indicate that no angle is used.
+    // Furthermore, we ensure that no --ang is set.
+    if(Prob_str.compare("StVa") == 0)
     {
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream err_msg;
+        err_msg << "prob_id is 88, doing vanilla LSC with no tilt.\n"
+          << "But you have set --ang, please do not set this."; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      Ang = -1;
+      // Now we set the Ang_deg_str.
+      std::ostringstream strs;
+      strs << "A_";
+      Ang_deg_str = strs.str();
+    }
+    else
+    // This problem requires tilting, thus we set the Ang and Ang_deg_str.
+    {
+      // But first we check that --ang has been set.
+      // Check that Ang has been set.
+      if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream err_msg;
+        err_msg << "Angle has not been set. Set (in degrees) with: \n"
+          << "--ang \n"; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // Now we need to convert Ang_deg into radians.
+      Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+      // Now we set the Ang_deg_str.
       std::ostringstream strs;
       strs << "A" << Ang_deg;
       Ang_deg_str = strs.str();
@@ -1499,6 +1536,7 @@ namespace StepLagrange
     valid_prob_id_map.insert(std::pair<int,std::string>(11,"StPo"));
     valid_prob_id_map.insert(std::pair<int,std::string>(12,"StTf"));
     valid_prob_id_map.insert(std::pair<int,std::string>(13,"StTfPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(88,"StVa"));
 
     set_prob_str();
     set_ang_str();
@@ -1528,9 +1566,6 @@ namespace StepLagrange
     std::string label = prob_str() + ang_deg_str() + noel_str();
     return label; 
   } // inlined function create_label
-
-
-
 } // Namespace StepLagrange
 
 
