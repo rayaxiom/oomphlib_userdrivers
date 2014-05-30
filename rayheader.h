@@ -2891,7 +2891,7 @@ namespace LagrangianPreconditionerHelpers
     std::string p_str = "";
     // Now we continue with setting the string for the solvers.
     // Only set the f_str if NS_solver > 0
-    //if(NS_solver == 1)
+    if(NS_solver == 1 || Lsc_only)
     {
       switch(F_solver)
       {
