@@ -362,6 +362,22 @@ set_mesh_bc_for_SqVa();
    mesh_pt[0] = Bulk_mesh_pt;
  }
 
+ // Quick check that the correct preconditioner is chosen.
+ if((NSPP::Prob_id == 88) && 
+     !CommandLineArgs::command_line_flag_has_been_set("--lsc_only"))
+ {
+   std::ostringstream err_msg;
+   err_msg << "You have requested Vanilla Navier-Stokes problem,\n"
+           << "NSPP::Prob_id is " << NSPP::Prob_id << "\n"
+           << "But you have not set the flag --lsc_only.\n" 
+           << "Please choose you preconditioner parameters again.\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+ }
+
  LPH::Mesh_pt = mesh_pt;
  LPH::Problem_pt = this;
  Prec_pt = LPH::get_preconditioner();

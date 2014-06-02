@@ -10,36 +10,44 @@ THISFILE=$0 # This contains "./", which we do not want.
 THISFILE=${THISFILE:2} # Gets rid of "./"
 FILEBASE=${THISFILE%%.*} # Get rid of the extension (in this case, ".sh")
 
+## The test folder is the same as the file base.
+TEST_DIR=$FILEBASE
+
+
 # Create the new folder (remove old one)
-touch $FILEBASE
-rm -rf $FILEBASE
-mkdir $FILEBASE
+touch $TEST_DIR
+rm -rf $TEST_DIR
+mkdir $TEST_DIR
 
 # Get the current directory and the oomph-base
-CURRENT_DIR=`pwd`
+PROGRAM_DIR=`pwd`
 OOMPHROOT_DIR=$(make -s --no-print-directory print-top_builddir)
 
 # folder of where the iteration counts will be.
 RESITS_DIR="res_iterations"
 
 # Get version of oomph-lib
-cd $CURRENT_DIR
+# The OOMPHROOT_DIR is relative to the PROGRAM_DIR
+# So we have to go into PROGRAM_DIR first (to be safe).
+cd $PROGRAM_DIR
 cd $OOMPHROOT_DIR
-git log -1 > $CURRENT_DIR/$FILEBASE/oomphlib_revision
-cd $CURRENT_DIR
+git log -1 > $PROGRAM_DIR/$TEST_DIR/oomphlib_revision
+cd $PROGRAM_DIR
 
 # Get version of user drivers
-cd $OOMPHROOT_DIR/user_drivers
-git log -1 > $CURRENT_DIR/$FILEBASE/user_driver_revision
-cd $CURRENT_DIR
+cd $PROGRAM_DIR/..
+git log -1 > $PROGRAM_DIR/$TEST_DIR/user_driver_revision
+cd $PROGRAM_DIR
 
 # make the program and move it into the test folder.
 make $PROGRAM
-mv $PROGRAM ./$FILEBASE
-cd $FILEBASE
+mv $PROGRAM ./$TEST_DIR
+cd $TEST_DIR
+
 
 ###############################################################################
-# Now we are inside the test folder (FILEBASE)
+####### WE ARE NOW INSIDE THE TEST DIRECTORY ##################################
+###############################################################################
 
 # Make the results directory. I have it in an if statement...
 # Because some times when it exists, we wish to reuse it... of course not this 
@@ -175,24 +183,24 @@ do
         do
 case "$PREC" in
   0)
-    PRECPARAM="$PREC0_Plu_Flu"
+    PRECPARAM="$VaPREC0_Plu_Flu"
     ;;
   1)
-    PRECPARAM="$PREC1_Pamg_Flu"
+    PRECPARAM="$VaPREC1_Pamg_Flu"
     ;;
   2)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$PREC2_Plu_Famgsim"
+      PRECPARAM="$VaPREC2_Plu_Famgsim"
     else
-      PRECPARAM="$PREC2_Plu_Famgstr"
+      PRECPARAM="$VaPREC2_Plu_Famgstr"
     fi
 
     ;;
   3)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$PREC3_Pamg_Famgsim"
+      PRECPARAM="$VaPREC3_Pamg_Famgsim"
     else
-      PRECPARAM="$PREC3_Pamg_Famgstr"
+      PRECPARAM="$VaPREC3_Pamg_Famgstr"
     fi
     ;;
 esac
@@ -213,8 +221,11 @@ TEST_LIST="$TEST_FILEBASE.list"
 gen_po_tests
 gen_va_tests
 
+echo -e "\n"
+
+. $PROGRAM_DIR/../generate_qsub_script.sh
 # Do this bit in a sub shell
-(genqsub_script $TEST_LIST)
+(generate_qsub_script $TEST_LIST)
 
 TEST_RUN="$TEST_FILEBASE.sh"
 echo "#!/bin/bash" >> $TEST_RUN
@@ -222,67 +233,7 @@ cat $TEST_LIST >> $TEST_RUN
 
 cp ./../$0 .
 
-
-################################################################################
-################################################################################
-################################################################################
-################################################################################
-#### Now create the qsub file.
-#QSUBFILE="$FILEBASE.qsub"
-#NUMTESTS=$(cat $TEST_LIST | wc -l)
-#echo '#!/bin/bash' >> $QSUBFILE
-#echo '#$ -S /bin/bash' >> $QSUBFILE
-#echo '#$ -cwd' >> $QSUBFILE
-#echo '#$ -V' >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-#echo "#$ -t 1-$NUMTESTS" >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-#echo "# This should be ran in the scratch file system." >> $QSUBFILE
-#echo "# Thus results directory '$RESITS_DIR' may not exist." >> $QSUBFILE
-#echo -e "# We create it if it does not exist.\n" >> $QSUBFILE
-#echo "if [ ! -d \"$RESITS_DIR\" ]; then" >> $QSUBFILE
-#echo "  mkdir $RESITS_DIR" >> $QSUBFILE
-#echo "fi" >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-## Do the same thing with the output directory for qsub
-#QSUBOUTPUT_DIR="qsub_output"
-#echo "if [ ! -d \"$QSUBOUTPUT_DIR\" ]; then" >> $QSUBFILE
-#echo "  mkdir $QSUBOUTPUT_DIR" >> $QSUBFILE
-#echo "fi" >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-### Some comments for the script.
-#echo "# Task id 1 will read line 1 from $TEST_LIST" >> $QSUBFILE
-#echo "# Task id 2 will read line 2 from $TEST_LIST" >> $QSUBFILE
-#echo "# and so on..." >> $QSUBFILE
-#echo "# Each line contains the run command with a different set of parameters" >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-### Get the run command from TEST_LIST
-#RUNLINE='FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" '
-#RUNLINE+="$TEST_LIST"
-#RUNLINE+='`'
-#echo $RUNLINE >> $QSUBFILE
-#
-## Now run the command!
-#echo '$FULL_RUNCOMMAND' >> $QSUBFILE
-#
-#echo -e "\n" >> $QSUBFILE
-#
-## Clean up, move the qsub output and error files into QSUBOUTPUT_DIR
-#CLEANUPLINE="mv $QSUBFILE"
-#CLEANUPLINE+='.*.$SGE_TASK_ID '
-#CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
-#echo $CLEANUPLINE >> $QSUBFILE
-
+QSUBFILE="$TEST_FILEBASE.qsub"
 
 
 ###############################################################################
@@ -291,25 +242,55 @@ cp ./../$0 .
 ###############################################################################
 ################### Now check if I'm on csf, if so, delete the related scratch
 # and copy the current stuff there.
+echo -e "\n"
+OOMPH_ABS_ROOT_DIR=""
+SCRATCH_ABS_ROOT_DIR=""
+COPY_TO_SCRATCH=0
+
 if [[ $HOME == *mbax5ml3* ]]
 then
-  CURRENT_DIR=`pwd`
-  cd ..
-  PROGRAM_DIR=${PWD##*/}
-  cd $CURRENT_DIR
+  OOMPH_ABS_ROOT_DIR="/mnt/iusers01/mh01/mbax5ml3/oomphlib_optimized"
+  SCRATCH_ABS_ROOT_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/oomphlib_optimized"
+  echo "This is csf, copying files into:"
+  echo "$SCRATCH_ABS_ROOT_DIR"
+  COPY_TO_SCRATCH=1
+elif [[ $HOSTNAME == *onigiri* ]]
+then
+  OOMPH_ABS_ROOT_DIR="/home/ray/oomphlib/matthias_bpf_rewrite"
+  SCRATCH_ABS_ROOT_DIR="/home/ray/oomphlib/scratch/oomphlib_optimized"
+  echo "This is onigiri, testing of files into:"
+  echo "$SCRATCH_ABS_ROOT_DIR"
+  COPY_TO_SCRATCH=1
+else
+  echo "Unrecognised machine, not doing copy into scratch."
+  COPY_TO_SCRATCH=0
+fi
 
-  ## NOTE: the qsub script is now... 
-  OOMPH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
-  SCRATCH_PROGRAM_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/oomphlib_optimized/user_drivers/$PROGRAM_DIR"
+echo -e "\n"
+
+# NOTE, we are still in TEST_DIR
+if [ "$COPY_TO_SCRATCH" -eq "1" ]
+then
+  echo "Doing copy to scratch!"
+
+  cd $PROGRAM_DIR
+  LOCAL_PROGRAM_DIR=${PWD##*/}
+  cd $TEST_DIR
+
+  OOMPH_PROGRAM_DIR="$OOMPH_ABS_ROOT_DIR/user_drivers/$LOCAL_PROGRAM_DIR"
+  SCRATCH_PROGRAM_DIR="$SCRATCH_ABS_ROOT_DIR/user_drivers/$LOCAL_PROGRAM_DIR"
 
   OOMPH_TEST_DIR="$OOMPH_PROGRAM_DIR/$FILEBASE"
   SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE"
 
+  echo -e "\n"
   echo "OOMPH_TEST_DIR: $OOMPH_TEST_DIR"
   echo "SCRATCH_TEST_DIR: $SCRATCH_TEST_DIR"
+  echo "Removing SCRATCH_TEST_DIR and recopying"
 
   # Remove the scratch stuff.
   rm -rf $SCRATCH_TEST_DIR
+  mkdir -p $SCRATCH_TEST_DIR
 
   rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR/
   rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR/
@@ -317,7 +298,16 @@ then
 
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  QSUBOUTPUT_DIR="qsub_output_$TEST_FILEBASE"
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
+  echo -e "\n"
+  echo "I have moved the files:"
+  echo "$PROGRAM"
+  echo "$QSUBFILE"
+  echo "$TEST_LIST"
+  echo "and created directories:"
+  echo "$RESITS_DIR"
+  echo "$QSUBOUTPUT_DIR"
 fi
 
 

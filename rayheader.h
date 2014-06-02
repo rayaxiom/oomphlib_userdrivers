@@ -2113,9 +2113,9 @@ namespace LagrangianPreconditionerHelpers
       if((F_solver == -1) || (P_solver == -1))
       {
         std::ostringstream err_msg;
-        err_msg << "Doing LSC NS solve. (NS_solver is 1)\n"
-          << "but F_solver and P_solver have not been set.\n"
-          << "0 - Exact (SuperLU)"
+        err_msg << "Getting LSC preconditioner for NS block.\n"
+          << "But --f_solver and --p_solver have not been set.\n"
+          << "0 - Exact (SuperLU)\n"
           << "xy - please check the code for more details.\n"
           << std::endl;
         throw OomphLibError(err_msg.str(),
@@ -2787,7 +2787,9 @@ namespace LagrangianPreconditionerHelpers
     if(Mesh_pt.size() < 2)
     {
       std::ostringstream err_msg;
-      err_msg << "There must be at least two meshes\n"
+      err_msg << "There must be at least two meshes.\n"
+        << "Since the mesh size is 1, did you mean to use lsc only?\n"
+        << "If so, set --lsc_only and --f_solver --p_solver\n"
         << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
