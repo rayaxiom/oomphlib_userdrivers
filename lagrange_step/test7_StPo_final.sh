@@ -14,17 +14,14 @@ OOMPHROOT_DIR=""
 setup_initial
 
 # folder of where the iteration counts will be.
-OOMPH_RESITS_DIR="oomph_res_iterations"
-TRILINOS_RESITS_DIR="trilinos_res_iterations"
+RESITS_DIR="res_iterations"
 
 
 cd $TEST_DIR
 ###############################################################################
 ####### WE ARE NOW INSIDE THE TEST DIRECTORY ##################################
 ###############################################################################
-
-mkdir $OOMPH_RESITS_DIR
-mkdir $TRILINOS_RESITS_DIR
+mkdir $RESITS_DIR
 
 # There may be two test lists, so we declare the strings up here.
 # Then we change this right before we call the gen_testxy functions.
@@ -34,29 +31,27 @@ TEST_LIST=""
 # NOTE: The F amg settings are the same as --f_solver 69
 
 ## Preconditioner parameters.
-Famg_BASE="--f_solver 96"
-Famg_ITER="--f_amg_iter 1"
-Famg_SMITER="--f_amg_smiter 2"
-Famg_SMOOTHER="--f_amg_com_smoo 9" #Euclid
-Famg_DAMP="--f_amg_damp -1"
-Famg_STRN_SIM="--f_amg_str 0.25"
-Famg_STRN_STR="--f_amg_str 0.668"
-Famg_COARSE="--f_amg_coarse 1" #RS
+LPREC0_LU_LU=""
+LPREC1_LU_LSClulu=""
+LPREC2_LU_LSCamglu=""
+LPREC3_LU_LSCluamgsim=""
+LPREC3_LU_LSCluamgstr=""
+LPREC4_LU_LSCamgamgsim=""
+LPREC4_LU_LSCamgamgstr=""
 
-Prec_WLu_NSLu="--w_solver 0 --ns_solver 0"
-Prec_WLu_NSLscLu="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
-Prec_WLu_NSLscPamgFlu="--w_solver 0 --ns_solver 1 --p_solver 1 --f_solver 0"
+###### Vanilla LSC
+VPREC0_lulu=""
+VPREC1_amglu=""
+VPREC2_luamg_sim=""
+VPREC2_luamg_str=""
+VPREC3_amgamg_sim=""
+VPREC3_amgamg_str=""
 
-Famg_sim="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_SIM $Famg_COARSE"
-Famg_str="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_STR $Famg_COARSE"
-Prec_WLu_NSLscPLuFamgsim="--w_solver 0 --ns_solver 1 --p_solver 0 $Famg_sim"
-Prec_WLu_NSLscPLuFamgstr="--w_solver 0 --ns_solver 1 --p_solver 0 $Famg_str"
-Prec_WLu_NSLscPamgFamgsim="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_sim"
-Prec_WLu_NSLscPamgFamgstr="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_str"
+load_prec_param
 
 
 ## Creates test lists for all prec combinations for noel = 4 to 128
-function gen_tests_exact_trilinos()
+function gen_tests_StPo_exacts()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -65,14 +60,14 @@ function gen_tests_exact_trilinos()
 # 3 - W SuperLU, NS LSC: P Lu, F AMG
 # 4 - W Super LU, NS LSC: P AMG F AMG
 
-PRECLIST="0"
+PRECLIST="0 1 2 3"
 # The precs are set according to the PRECLIST above.
 PRECPARAM=""
 
 VISLIST="0 1"
-ANGLIST="67"
+ANGLIST="0 30 67"
 RELIST="0"
-REPARAM=""
+REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
 NOELLIST="2 4 8 16 32 64"
 
 for PREC  in $PRECLIST
@@ -83,37 +78,35 @@ do
     do
       for RE in $RELIST
       do
-        REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
         for NOEL in $NOELLIST
         do
 case "$PREC" in
   0)
-    PRECPARAM="$Prec_WLu_NSLu"
+    PRECPARAM="$LPREC0_LU_LU"
     ;;
   1)
-    PRECPARAM="$Prec_WLu_NSLscLu"
+    PRECPARAM="$LPREC1_LU_LSClulu"
     ;;
   2)
-    PRECPARAM="$Prec_WLu_NSLscPamgFlu"
+    PRECPARAM="$LPREC2_LU_LSCamglu"
     ;;
   3)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgsim"
+      PRECPARAM="$LPREC3_LU_LSCluamgsim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgstr"
+      PRECPARAM="$LPREC3_LU_LSCluamgstr"
     fi
     ;;
   4)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgsim"
+      PRECPARAM="$LPREC3_LU_LSCluamgsim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgstr"
+      PRECPARAM="$LPREC3_LU_LSCluamgstr"
     fi
     ;;
 esac
-
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 100 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $TRILINOS_RESITS_DIR" >> $TEST_LIST
-
+# Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
       done
     done
@@ -121,8 +114,7 @@ echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 100 --dist_prob --trilinos_solve
 done
 } # gen_tests function
 
-## Creates test lists for all prec combinations for noel = 4 to 128
-function gen_tests_amg_trilinos()
+function gen_tests_StPo_amg()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -136,7 +128,7 @@ PRECLIST="4"
 PRECPARAM=""
 
 VISLIST="0 1"
-ANGLIST="67"
+ANGLIST="0 30 67"
 RELIST="0"
 REPARAM=""
 NOELLIST="2 4 8 16 32 64 128"
@@ -149,37 +141,43 @@ do
     do
       for RE in $RELIST
       do
-        REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
+
+if [ "$ANG" -eq "0" ]
+then
+  REPARAM="--rey_start 0 --rey_end 500 --rey_incre 25"
+else
+  REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
+fi
+
         for NOEL in $NOELLIST
         do
 case "$PREC" in
   0)
-    PRECPARAM="$Prec_WLu_NSLu"
+    PRECPARAM="$LPREC0_LU_LU"
     ;;
   1)
-    PRECPARAM="$Prec_WLu_NSLscLu"
+    PRECPARAM="$LPREC1_LU_LSClulu"
     ;;
   2)
-    PRECPARAM="$Prec_WLu_NSLscPamgFlu"
+    PRECPARAM="$LPREC2_LU_LSCamglu"
     ;;
   3)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgsim"
+      PRECPARAM="$LPREC3_LU_LSCluamgsim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgstr"
+      PRECPARAM="$LPREC3_LU_LSCluamgstr"
     fi
     ;;
   4)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgsim"
+      PRECPARAM="$LPREC3_LU_LSCluamgsim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgstr"
+      PRECPARAM="$LPREC3_LU_LSCluamgstr"
     fi
     ;;
 esac
-
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 100 --dist_prob --trilinos_solver --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $TRILINOS_RESITS_DIR" >> $TEST_LIST
-
+# Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
       done
     done
@@ -188,7 +186,7 @@ done
 } # gen_tests function
 
 ## Creates test lists for all prec combinations for noel = 4 to 128
-function gen_tests_exact_oomph()
+function gen_tests_StVa_exacts()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -197,14 +195,14 @@ function gen_tests_exact_oomph()
 # 3 - W SuperLU, NS LSC: P Lu, F AMG
 # 4 - W Super LU, NS LSC: P AMG F AMG
 
-PRECLIST="0"
+PRECLIST="0 1 2"
 # The precs are set according to the PRECLIST above.
 PRECPARAM=""
 
 VISLIST="0 1"
-ANGLIST="67"
+ANGLIST="0"
 RELIST="0"
-REPARAM=""
+REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
 NOELLIST="2 4 8 16 32 64"
 
 for PREC  in $PRECLIST
@@ -215,37 +213,33 @@ do
     do
       for RE in $RELIST
       do
-        REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
         for NOEL in $NOELLIST
         do
 case "$PREC" in
   0)
-    PRECPARAM="$Prec_WLu_NSLu"
+    PRECPARAM="$VPREC0_lulu"
     ;;
   1)
-    PRECPARAM="$Prec_WLu_NSLscLu"
+    PRECPARAM="$VPREC1_amglu"
     ;;
   2)
-    PRECPARAM="$Prec_WLu_NSLscPamgFlu"
+    if [ "$VIS" -eq "0"  ]; then
+      PRECPARAM="$VPREC2_luamg_sim"
+    else
+      PRECPARAM="$VPREC2_luamg_str"
+    fi
     ;;
   3)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgsim"
+      PRECPARAM="$VPREC3_amgamg_sim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgstr"
-    fi
-    ;;
-  4)
-    if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgsim"
-    else
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgstr"
+      PRECPARAM="$VPREC3_amgamg_str"
     fi
     ;;
 esac
 
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $OOMPH_RESITS_DIR" >> $TEST_LIST
-
+# Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 88 $PRECPARAM --visc $VIS $REPARAM --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
       done
     done
@@ -253,8 +247,7 @@ echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --v
 done
 } # gen_tests function
 
-## Creates test lists for all prec combinations for noel = 4 to 128
-function gen_tests_amg_oomph()
+function gen_tests_StVa_amg()
 {
 #PRECLIST="0 1 2" # Doing either full exact or Exact Navier Stokes
 # 0 - W SuperLU, NS SuperLU
@@ -263,14 +256,14 @@ function gen_tests_amg_oomph()
 # 3 - W SuperLU, NS LSC: P Lu, F AMG
 # 4 - W Super LU, NS LSC: P AMG F AMG
 
-PRECLIST="4"
+PRECLIST="3"
 # The precs are set according to the PRECLIST above.
 PRECPARAM=""
 
 VISLIST="0 1"
-ANGLIST="67"
+ANGLIST="0"
 RELIST="0"
-REPARAM=""
+REPARAM="--rey_start 0 --rey_end 500 --rey_incre 25"
 NOELLIST="2 4 8 16 32 64 128"
 
 for PREC  in $PRECLIST
@@ -281,37 +274,34 @@ do
     do
       for RE in $RELIST
       do
-        REPARAM="--rey_start 0 --rey_end 200 --rey_incre 25"
         for NOEL in $NOELLIST
         do
+
 case "$PREC" in
   0)
-    PRECPARAM="$Prec_WLu_NSLu"
+    PRECPARAM="$VPREC0_lulu"
     ;;
   1)
-    PRECPARAM="$Prec_WLu_NSLscLu"
+    PRECPARAM="$VPREC1_amglu"
     ;;
   2)
-    PRECPARAM="$Prec_WLu_NSLscPamgFlu"
+    if [ "$VIS" -eq "0"  ]; then
+      PRECPARAM="$VPREC2_luamg_sim"
+    else
+      PRECPARAM="$VPREC2_luamg_str"
+    fi
     ;;
   3)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgsim"
+      PRECPARAM="$VPREC3_amgamg_sim"
     else
-      PRECPARAM="$Prec_WLu_NSLscPLuFamgstr"
-    fi
-    ;;
-  4)
-    if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgsim"
-    else
-      PRECPARAM="$Prec_WLu_NSLscPamgFamgstr"
+      PRECPARAM="$VPREC3_amgamg_str"
     fi
     ;;
 esac
 
-echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --visc $VIS --ang $ANG $REPARAM --noel $NOEL --itstimedir $OOMPH_RESITS_DIR" >> $TEST_LIST
-
+# Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
+echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 88 $PRECPARAM --visc $VIS $REPARAM --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
       done
     done
@@ -319,15 +309,14 @@ echo "mpirun -np 1 ./$PROGRAM --max_solver_iter 1000 --prob_id 11 $PRECPARAM --v
 done
 } # gen_tests function
 
-TESTLIST_FILEBASE="tests_StPo_oomph_v_trilinos"
+
+TESTLIST_FILEBASE="tests_StPo_Va"
 TEST_LIST="$TESTLIST_FILEBASE.list"
 
-gen_tests_exact_trilinos
-gen_tests_amg_trilinos
-gen_tests_exact_oomph
-gen_tests_amg_oomph
-
-echo -e "\n"
+gen_tests_StPo_exacts
+gen_tests_StPo_amg
+gen_tests_StVa_exacts
+gen_tests_StVa_amg
 
 . $PROGRAM_DIR/../generate_qsub_script.sh
 # Do this bit in a sub shell
@@ -340,6 +329,7 @@ cat $TEST_LIST >> $TEST_RUN
 cp ./../$0 .
 
 QSUBFILE="$TESTLIST_FILEBASE.qsub"
+
 
 ###############################################################################
 ###############################################################################
@@ -402,8 +392,7 @@ then
   rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR/
 
   ## Create the res_its and qsub output directories in scratch.
-  mkdir -p $SCRATCH_TEST_DIR/$OOMPH_RESITS_DIR
-  mkdir -p $SCRATCH_TEST_DIR/$TRILINOS_RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   QSUBOUTPUT_DIR="qsub_output_$TESTLIST_FILEBASE"
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
   echo -e "\n"
@@ -412,8 +401,14 @@ then
   echo "$QSUBFILE"
   echo "$TEST_LIST"
   echo "and created directories:"
-  echo "$OOMPH_RESITS_DIR"
-  echo "$TRILINOS_RESITS_DIR"
+  echo "$RESITS_DIR"
   echo "$QSUBOUTPUT_DIR"
 fi
+
+
+
+
+
+
+
 
