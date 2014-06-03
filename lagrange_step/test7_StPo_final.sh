@@ -332,6 +332,135 @@ QSUBFILE="$TESTLIST_FILEBASE.qsub"
 
 
 ###############################################################################
+## Produce the script to format results. 
+function local_format_results()
+{
+CURRENT_DIR=`pwd`
+
+function format_StPo_exacts()
+{
+ITSTIMEDIR="res_iterations"
+
+cd $ITSTIMEDIR
+
+TAG="RAYITS"
+#TAG="RAYPRECSETUP"
+#TAG="RAYLINSOLVER"
+
+LINE=""
+
+Prob_str="StPo"
+PRECLIST="WedNe WedNlFePe WedNlFrayPe WedNlFePa"
+VISLIST="Sim Str"
+ANGLIST="A0 A30 A67"
+RELIST="R0 R25 R50 R75 R100 R125 R150 R175 R200"
+NOELLIST="N2 N4 N8 N16 N32 N64"
+
+for PREC in $PRECLIST
+do
+  for VIS in $VISLIST
+  do
+    for ANG in $ANGLIST
+    do
+      for RE in $RELIST
+      do
+        LINE=""
+        for NOEL in $NOELLIST
+        do
+
+          RESFILE="${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
+          TOKEN=""
+
+          if [ -f $RESFILE ]
+          then
+            TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+          else
+            TOKEN="x"
+          fi
+          
+          LINE="$LINE $TOKEN"
+        done
+        echo $LINE
+      done
+    done
+  done
+done
+}
+
+function format_StPo_amg()
+{
+ITSTIMEDIR="res_iterations"
+
+cd $ITSTIMEDIR
+
+TAG="RAYITS"
+#TAG="RAYPRECSETUP"
+#TAG="RAYLINSOLVER"
+
+LINE=""
+
+Prob_str="StPo"
+PRECLIST="WedNlFrayPa"
+VISLIST="Sim Str"
+ANGLIST="A0 A30 A67"
+RELIST=""
+NOELLIST="N2 N4 N8 N16 N32 N64 N128"
+
+for PREC in $PRECLIST
+do
+  for VIS in $VISLIST
+  do
+    for ANG in $ANGLIST
+    do
+if [ "$ANG" == "A0" ]; then
+RELIST="R0 R25 R50 R75 R100 R125 R150 R175 R200 R225 R250 R275 R300 R325 R350 R375 R400 R425 R450 R475 R500"
+else
+RELIST="R0 R25 R50 R75 R100 R125 R150 R175 R200"
+fi
+      for RE in $RELIST
+      do
+        LINE=""
+        for NOEL in $NOELLIST
+        do
+
+          RESFILE="${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
+          TOKEN=""
+
+          if [ -f $RESFILE ]
+          then
+            TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+          else
+            TOKEN="x"
+          fi
+          
+          LINE="$LINE $TOKEN"
+        done
+        echo $LINE
+      done
+    done
+  done
+done
+}
+
+
+cd $CURRENT_DIR
+echo -e "\n"
+echo -e "Formatting EXACTS results"
+format_StPo_exacts
+
+cd $CURRENT_DIR
+echo -e "\n"
+echo -e "Formatting pure AMG results"
+format_StPo_amg
+}
+FORMAT_RESULTS_SCRIPT="format_results.sh"
+echo '#!/bin/bash' >> $FORMAT_RESULTS_SCRIPT
+declare -f local_format_results >> $FORMAT_RESULTS_SCRIPT
+echo 'local_format_results' >> $FORMAT_RESULTS_SCRIPT
+echo -e "\n I have created the format results script: $FORMAT_RESULTS_SCRIPT"
+echo -e "\n"
+
+###############################################################################
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -390,6 +519,7 @@ then
   rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR/
   rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR/
   rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR/
+  rsync -av $OOMPH_TEST_DIR/$FORMAT_RESULTS_SCRIPT $SCRATCH_TEST_DIR/
 
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
@@ -400,14 +530,11 @@ then
   echo "$PROGRAM"
   echo "$QSUBFILE"
   echo "$TEST_LIST"
+  echo "$FORMAT_RESULTS_SCRIPT"
   echo "and created directories:"
   echo "$RESITS_DIR"
   echo "$QSUBOUTPUT_DIR"
 fi
-
-
-
-
 
 
 
