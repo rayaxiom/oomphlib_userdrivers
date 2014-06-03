@@ -166,14 +166,18 @@ done
 
 cd $CURRENT_DIR
 echo -e "\n"
-echo -e "Formatting EXACTS results"
+echo -e "Formatting StPo EXACTS results"
 format_StPo_exacts
 
 cd $CURRENT_DIR
 echo -e "\n"
-echo -e "Formatting pure AMG results"
+echo -e "Formatting StPo pure AMG results"
 format_StPo_amg
 
+cd $CURRENT_DIR
+echo -e "\n"
+echo -e "Formatting StVa EXACTS results"
+format_StVa_exacts
 
 
 
