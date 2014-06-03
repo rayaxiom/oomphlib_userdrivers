@@ -170,9 +170,9 @@ case "$PREC" in
     ;;
   4)
     if [ "$VIS" -eq "0" ]; then
-      PRECPARAM="$LPREC3_LU_LSCluamgsim"
+      PRECPARAM="$LPREC4_LU_LSCamgamgsim"
     else
-      PRECPARAM="$LPREC3_LU_LSCluamgstr"
+      PRECPARAM="$LPREC4_LU_LSCamgamgstr"
     fi
     ;;
 esac
