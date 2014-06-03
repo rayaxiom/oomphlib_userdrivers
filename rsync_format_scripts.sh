@@ -31,7 +31,7 @@ declare -a SCRATCH_DEST=(\
 "lagrange_step/test7_StPo_final")
 
 for ((i=0;i<${#OOMPH_SOURCE[@]};++i)); do
-  rsync -av $OOMPHOPTUDRI/${OOMPH_SOURCE[i]} $SCRATCHUDRI/${SCRATCH_DEST[i]}
+  cp $OOMPHOPTUDRI/${OOMPH_SOURCE[i]} $SCRATCHUDRI/${SCRATCH_DEST[i]}/format_results.sh
 done
 
 
