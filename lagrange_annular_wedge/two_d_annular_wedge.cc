@@ -220,8 +220,17 @@ public:
 
 private:
 
+ double get_radial_v(const double& radial_distance);
+ std::pair<double,double> get_radial_v(const Node* nod_pt);
 
  void set_mesh_bc_for_AwPo();
+ void set_mesh_bc_for_AwPo_left_partial();
+ void set_mesh_bc_for_AwPo_left_dirichlet();
+ void set_mesh_bc_for_AwPo_left_neumann();
+ void set_mesh_bc_for_AwPo_bottom_partial();
+ void set_mesh_bc_for_AwPo_bottom_dirichlet();
+ void set_mesh_bc_for_AwPo_bottom_neumann();
+ void set_mesh_bc_for_AwPo_inflow();
 
  /// Pointer to the "bulk" mesh
  //SlopingQuadMesh<ELEMENT>* Bulk_mesh_pt;
@@ -251,7 +260,7 @@ private:
 //===start_of_constructor=============================================
 /// Problem constructor
 //====================================================================
-template<class ELEMENT> // rrrback - changed here.
+  template<class ELEMENT> // rrrback - changed here.
 PartialAnnulusProblem<ELEMENT>::PartialAnnulusProblem()
 {
   // Alias the namespace for convenience
@@ -263,137 +272,95 @@ PartialAnnulusProblem<ELEMENT>::PartialAnnulusProblem()
   Right_bound = 1;
   Top_bound = 2;
   Left_bound = 3;
-  
+
   Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 
-      /// Setup the mesh
-    // # of elements in x-direction
-    unsigned nx=AWL::Noel;
-    
-    // # of elements in y-direction
-    unsigned ny=AWL::Noel;
-    
-    // Domain length in x-direction
-    double lx=AWL::Lx;
+  /// Setup the mesh
+  // # of elements in x-direction
+  unsigned nx=AWL::Noel;
 
-    // Domain length in y-direction
-    double ly=AWL::Ly;
-  // First we set the mesh.
-//  if((NSPP::Prob_id >= 10) && (NSPP::Prob_id < 19) )
-//  {
-    // This is the tilted cavity mesh.
+  // # of elements in y-direction
+  unsigned ny=AWL::Noel;
 
-    
-    Bulk_mesh_pt =
-      new PartialAnnulusMesh<ELEMENT>(nx,ny,lx,ly);
-//  }
-//  else if (NSPP::Prob_id == 88)
-//  {
-//    Bulk_mesh_pt = new RectangularQuadMesh<ELEMENT>(nx,ny,lx,ly);
-//  }
-//  else
-//  {
-//    pause("Not done yet."); 
-//    
-//  }
+  // Domain length in x-direction
+  double lx=AWL::Lx;
 
-    set_mesh_bc_for_AwPo();
-//  if(NSPP::Prob_id == 11)
-//  {
-//  set_mesh_bc_for_SqPo();
-//  }
-//  else if(NSPP::Prob_id == 88)
-//  {
-//set_mesh_bc_for_SqVa();
-//  }
-//  else
-//  {
-//    pause("not done yet!");
-//  }
+  // Domain length in y-direction
+  double ly=AWL::Ly;
+
+  Bulk_mesh_pt =
+    new PartialAnnulusMesh<ELEMENT>(nx,ny,lx,ly);
+
+  set_mesh_bc_for_AwPo();
 
 
+  // Add the two meshes to the problem.
+  add_sub_mesh(Bulk_mesh_pt);
+  add_sub_mesh(Surface_mesh_P_pt);
+  // combine all sub-meshes into a single mesh.
+  build_global_mesh();
 
-
-// // Top boundary is slip.
-// current_bound = 2;
-// num_nod= mesh_pt()->nboundary_node(current_bound);
-// for(unsigned inod=0;inod<num_nod;inod++)
-// {
-//   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
-//
-//   if(!nod_pt->is_on_boundary(3))
-//   {
-//     nod_pt->unpin(0);
-//     nod_pt->pin(1);
-//
-//     nod_pt->set_value(1,0.0);
-//   }
-// }
-
-
- 
- //set_nonslip_BC(0,Bulk_mesh_pt);
-// set_nonslip_BC(2,Bulk_mesh_pt);
-
-// set_inflow_BC(if_b,Bulk_mesh_pt);
- 
- //Complete the problem setup to make the elements fully functional
-
- //Loop over the elements
- unsigned n_el = Bulk_mesh_pt->nelement();
- for(unsigned e=0;e<n_el;e++)
+  if(AWL::BC_setting == 0)
   {
-   //Cast to a fluid element
-   ELEMENT *el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
+    set_mesh_bc_for_AwPo_bottom_partial();
+    set_mesh_bc_for_AwPo_left_partial();
+  }
+  else if(AWL::BC_setting == 1)
+  {
+    set_mesh_bc_for_AwPo_bottom_partial();
+    set_mesh_bc_for_AwPo_left_dirichlet();
+  }
+  else if(AWL::BC_setting == 2)
+  {
+    set_mesh_bc_for_AwPo_bottom_dirichlet();
+    set_mesh_bc_for_AwPo_left_partial();
+  }
+  else if(AWL::BC_setting == 3)
+  {
+    set_mesh_bc_for_AwPo_bottom_dirichlet();
+    set_mesh_bc_for_AwPo_left_dirichlet();
+  }
+  else if(AWL::BC_setting == 4)
+  {
+    set_mesh_bc_for_AwPo_bottom_neumann();
+    set_mesh_bc_for_AwPo_left_neumann();
+  }
 
-   //Set the Reynolds number, etc
-   el_pt->re_pt() = &NSPP::Rey;
+  set_mesh_bc_for_AwPo_inflow();
+
+  //Complete the problem setup to make the elements fully functional
+
+  //Loop over the elements
+  unsigned n_el = Bulk_mesh_pt->nelement();
+  for(unsigned e=0;e<n_el;e++)
+  {
+    //Cast to a fluid element
+    ELEMENT *el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
+
+    //Set the Reynolds number, etc
+    el_pt->re_pt() = &NSPP::Rey;
 
   } // for(unsigned e=0;e<n_el;e++)
 
- //Assign equation numbers
- std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
- 
+  //Assign equation numbers
+  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
 
- Vector<Mesh*> mesh_pt;
 
-// if(NSPP::Prob_id == 11)
-// {
- mesh_pt.resize(2,0);
- mesh_pt[0] = Bulk_mesh_pt;
- mesh_pt[1] = Surface_mesh_P_pt;
-// }
-// else if(NSPP::Prob_id == 88)
-// {
-//   mesh_pt.resize(1,0);
-//   mesh_pt[0] = Bulk_mesh_pt;
-// }
+  Vector<Mesh*> mesh_pt;
 
-// // Quick check that the correct preconditioner is chosen.
-// if((NSPP::Prob_id == 88) && 
-//     !CommandLineArgs::command_line_flag_has_been_set("--lsc_only"))
-// {
-//   std::ostringstream err_msg;
-//   err_msg << "You have requested Vanilla Navier-Stokes problem,\n"
-//           << "NSPP::Prob_id is " << NSPP::Prob_id << "\n"
-//           << "But you have not set the flag --lsc_only.\n" 
-//           << "Please choose you preconditioner parameters again.\n"
-//           << std::endl;
-//
-//   throw OomphLibError(err_msg.str(),
-//       OOMPH_CURRENT_FUNCTION,
-//       OOMPH_EXCEPTION_LOCATION);
-// }
+  mesh_pt.resize(2,0);
+  mesh_pt[0] = Bulk_mesh_pt;
+  mesh_pt[1] = Surface_mesh_P_pt;
 
- LPH::Mesh_pt = mesh_pt;
- LPH::Problem_pt = this;
- Prec_pt = LPH::get_preconditioner();
+  LPH::Mesh_pt = mesh_pt;
+  LPH::Problem_pt = this;
+  Prec_pt = LPH::get_preconditioner();
 
- const double solver_tol = 1.0e-6;
- const double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
-                                   solver_tol,newton_tol,
-                                   NSPP::Using_trilinos_solver,this,Prec_pt);
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+  GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
+      solver_tol,newton_tol,
+      NSPP::Using_trilinos_solver,this,Prec_pt);
 }
 
 //==start_of_doc_solution=================================================
@@ -418,12 +385,34 @@ void PartialAnnulusProblem<ELEMENT>::doc_solution()
   some_file.close();
 }
 
+template<class ELEMENT>
+double PartialAnnulusProblem<ELEMENT>::get_radial_v(const double& radial_distance)
+{
+  namespace AWL = AnnularWedgeLagrange;
+
+  return AWL::V_loR_lo * (1.0/radial_distance);
+} // set_mesh_bc_for_AwPo
+
+template<class ELEMENT>
+std::pair<double, double> PartialAnnulusProblem<ELEMENT>::get_radial_v(const Node* nod_pt)
+{
+  const double x0 = nod_pt->x(0);
+  const double x1 = nod_pt->x(1);
+  const double radial_dist = sqrt(x0*x0 + x1*x1);
+
+  const double phi = atan2(x1,x0);
+
+  const double radial_v = (radial_dist);
+
+  std::pair <double,double> u_pair(radial_v*cos(phi),radial_v*sin(phi));
+
+  return u_pair;
+} // set_mesh_bc_for_AwPo
+
 
 template<class ELEMENT>
 void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo()
 {
-  // Alias the namespace for convenience
-  namespace AWL = AnnularWedgeLagrange;
 
   // Assign the boundaries:
   //             2 non slip
@@ -447,57 +436,11 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo()
   create_parall_outflow_lagrange_elements(po_b,
                                           Bulk_mesh_pt,Surface_mesh_P_pt);
 
-  // Add the two meshes to the problem.
-  add_sub_mesh(Bulk_mesh_pt);
-  add_sub_mesh(Surface_mesh_P_pt);
-  
-  // combine all sub-meshes into a single mesh.
-  build_global_mesh();
-  const unsigned num_bound = mesh_pt()->nboundary();
+} // set_mesh_bc_for_AwPo
 
-
- // Now we assign the boudnary conditions.
- // The boundary enumeration is:
- //
- //    .
- //   |  .
- // 2 |    .   1 
- //   |      .   
- //   .        .  
- //    .        . 
- // 3   .        . 
- //      --------
- //          0
- // 
- // b0: pin y, leave x free
- // b1: Parallel Outflow
- // b2: Pin x, leave y free.
- // b3: uniform radial inflow.
-
-
-
-  // Set the boundary conditions for this problem: All nodes are
-  // free by default -- just pin the ones that have Dirichlet conditions
-  // here.
-  for(unsigned ibound=0;ibound<num_bound;ibound++)
-  { 
-    if(ibound != po_b)
-    {
-      unsigned num_nod=mesh_pt()->nboundary_node(ibound);
-      for (unsigned inod=0;inod<num_nod;inod++)
-      {
-        // Get node
-        Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
- 
-        nod_pt->pin(0);
-        nod_pt->pin(1);
-        
-        nod_pt->set_value(0,0);
-        nod_pt->set_value(1,0);
- 
-      }
-    }
-  }
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_bottom_partial()
+{
 
  // Which boundary are we dealing with?
  unsigned current_bound = 1337;
@@ -523,6 +466,70 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo()
    nod_pt->set_value(1,0);
  }
 
+} // set_mesh_bc_for_AwPo
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_bottom_dirichlet()
+{
+
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
+
+ // bottom boundary: pin y, leave x free.
+ current_bound = 0;
+ num_nod = mesh_pt()->nboundary_node(current_bound);
+ for (unsigned inod = 0; inod < num_nod; inod++) 
+ {
+   Node* nod_pt = mesh_pt()->boundary_node_pt(current_bound,inod);
+   
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   const double x0 = nod_pt->x(0);
+
+   const double u = 1.0/x0;
+
+   nod_pt->set_value(0,u);
+   nod_pt->set_value(1,0);
+ }
+} // set_mesh_bc_for_AwPo
+
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_bottom_neumann()
+{
+
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
+
+ // bottom boundary: pin y, leave x free.
+ current_bound = 0;
+ num_nod = mesh_pt()->nboundary_node(current_bound);
+ for (unsigned inod = 0; inod < num_nod; inod++) 
+ {
+   Node* nod_pt = mesh_pt()->boundary_node_pt(current_bound,inod);
+   
+   nod_pt->unpin(0);
+   nod_pt->unpin(1);
+ }
+} // set_mesh_bc_for_AwPo
+
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_left_partial()
+{
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
+
  // left boundary: pin x, leave y free.
  current_bound = 2;
  num_nod=Bulk_mesh_pt->nboundary_node(current_bound);
@@ -545,6 +552,76 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo()
 //   nod_pt->set_value(1,u);
  }
 
+} // set_mesh_bc_for_AwPo
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_left_dirichlet()
+{
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
+
+ // left boundary: pin x, leave y free.
+ current_bound = 2;
+ num_nod=Bulk_mesh_pt->nboundary_node(current_bound);
+ for (unsigned inod=0;inod<num_nod;inod++)
+ {
+   // Get node
+   //Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(0);
+
+   // Get node
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+   
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   double y=nod_pt->x(1);
+
+   double u = 1.0/y;
+
+   nod_pt->set_value(0,0);
+   nod_pt->set_value(1,u);
+ }
+
+} // set_mesh_bc_for_AwPo
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_left_neumann()
+{
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
+
+ // left boundary: pin x, leave y free.
+ current_bound = 2;
+ num_nod=Bulk_mesh_pt->nboundary_node(current_bound);
+ for (unsigned inod=0;inod<num_nod;inod++)
+ {
+   // Get node
+   //Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(0);
+
+   // Get node
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+   
+   nod_pt->unpin(0);
+   nod_pt->unpin(1);
+ }
+
+} // set_mesh_bc_for_AwPo
+
+template<class ELEMENT>
+void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_inflow()
+{
+
+ // Which boundary are we dealing with?
+ unsigned current_bound = 1337;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod = 1337;
 
  // Inflow is at boundary 3
  current_bound = 3;
@@ -558,17 +635,18 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo()
    nod_pt->pin(1);
 
    // Get the x and y cartesian coordinates
-   const double x0=nod_pt->x(0);
-   const double x1=nod_pt->x(1);
-   const double phi = atan2(x1,x0);
+//   const double x0=nod_pt->x(0);
+//   const double x1=nod_pt->x(1);
+//   const double phi = atan2(x1,x0);
 
-   const double u = 1.0;
+//   const double u = 1.0;
 
-   nod_pt->set_value(0,u*cos(phi));
-   nod_pt->set_value(1,u*sin(phi));
+   std::pair<double,double> u_pair = get_radial_v(nod_pt);
+
+   nod_pt->set_value(0,u_pair.first);
+   nod_pt->set_value(1,u_pair.second);
  }
 } // set_mesh_bc_for_AwPo
-
 
 template<class ELEMENT>
 void PartialAnnulusProblem<ELEMENT>::

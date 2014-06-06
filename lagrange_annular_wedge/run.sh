@@ -14,20 +14,20 @@ PROB_ID="--prob_id 11"
 #ANG="--ang 42"
 REY="--rey 200"
 VIS="--visc 0"
-NOEL="--noel 128"
+NOEL="--noel 16"
 
 W_SOLVER="--w_solver 0"
 NS_SOLVER="--ns_solver 1"
-#F_SOLVER="--f_solver 0"
-F_SOLVER="--f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.25 --f_amg_coarse 1"
+F_SOLVER="--f_solver 0"
+#F_SOLVER="--f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.25 --f_amg_coarse 1"
 
-P_SOLVER="--p_solver 1"
+P_SOLVER="--p_solver 0"
 
 PREC="$W_SOLVER $NS_SOLVER $F_SOLVER $P_SOLVER"
 
 PARAM="$MAX_ITER $DIST_PROB $TRILINOS_SOLVER $PROB_ID $PHI_LO $PHI_HI $R_LO $R_HI $REY $VIS $NOEL $PREC"
 
 
-make $PROGRAM && mpirun -np 1 ./$PROGRAM $PARAM
+make $PROGRAM && mpirun -np 1 ./$PROGRAM $PARAM --bc 0
 
 

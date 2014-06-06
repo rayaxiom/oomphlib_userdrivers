@@ -1387,6 +1387,11 @@ namespace AnnularWedgeLagrange
   double Phi_hi = 90.0; // CL, Upper angle of annulus
   double R_lo = 1.0; // CL, lower radius from the origin
   double R_hi = 3.0; // CL, higher radius from the origin
+  double V_lo = 1.0; // CL, higher radius from the origin
+  unsigned BC_setting = 0; // CL, higher radius from the origin
+
+
+  double V_loR_lo = -1.0;
 
   inline void setup_commandline_flags()
   {
@@ -1396,6 +1401,8 @@ namespace AnnularWedgeLagrange
     CommandLineArgs::specify_command_line_flag("--phi_hi", &Phi_hi);
     CommandLineArgs::specify_command_line_flag("--r_lo", &R_lo);
     CommandLineArgs::specify_command_line_flag("--r_hi", &R_hi);
+
+    CommandLineArgs::specify_command_line_flag("--bc", &BC_setting);
 
     CommandLineArgs::specify_command_line_flag("--noel", &Noel);
   }
@@ -1533,6 +1540,8 @@ namespace AnnularWedgeLagrange
     // Insert the prob id and string pairs.
     valid_prob_id_map.insert(std::pair<int,std::string>(10,"AwTmp"));
     valid_prob_id_map.insert(std::pair<int,std::string>(11,"AwPo"));
+
+    V_loR_lo = V_lo*R_lo;
 
     set_prob_str();
     set_ang_str();
