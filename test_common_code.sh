@@ -86,6 +86,33 @@ VPREC3_amgamg_sim="$LSConly $Pamg $Famg_sim"
 VPREC3_amgamg_str="$LSConly $Pamg $Famg_str"
 }
 
-
+function load_LPREC_case()
+{
+case "$PREC" in
+  0)
+    PRECPARAM="$LPREC0_LU_LU"
+    ;;
+  1)
+    PRECPARAM="$LPREC1_LU_LSClulu"
+    ;;
+  2)
+    PRECPARAM="$LPREC2_LU_LSCamglu"
+    ;;
+  3)
+    if [ "$VIS" -eq "0" ]; then
+      PRECPARAM="$LPREC3_LU_LSCluamgsim"
+    else
+      PRECPARAM="$LPREC3_LU_LSCluamgstr"
+    fi
+    ;;
+  4)
+    if [ "$VIS" -eq "0" ]; then
+      PRECPARAM="$LPREC4_LU_LSCamgamgsim"
+    else
+      PRECPARAM="$LPREC4_LU_LSCamgamgstr"
+    fi
+    ;;
+esac
+}
 
 
