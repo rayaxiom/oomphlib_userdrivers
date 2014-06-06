@@ -458,12 +458,9 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_bottom_partial()
    nod_pt->unpin(0);
    nod_pt->pin(1);
 
-//   const double x0 = nod_pt->x(0);
+   std::pair<double,double>u_pair = get_radial_v(nod_pt);
 
-//   const double u = 1.0/x0;
-
-//   nod_pt->set_value(0,u);
-   nod_pt->set_value(1,0);
+   nod_pt->set_value(1,u_pair.second);
  }
 
 } // set_mesh_bc_for_AwPo
@@ -548,7 +545,9 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_left_partial()
 
 //   double u = 1.0/y;
 
-   nod_pt->set_value(0,0);
+   std::pair<double,double> u_pair = get_radial_v(nod_pt);
+
+   nod_pt->set_value(0,u_pair.first);
 //   nod_pt->set_value(1,u);
  }
 
