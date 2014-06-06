@@ -68,7 +68,7 @@ VISLIST="0 1"
 RELIST="0 100 200 500 1000"
 NOELLIST="4 8 16 32 64 128 256"
 
-COMMONPARAM="--max_solver_iter 110 --dist_prob --trilinos_solver --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --prob 11"
+COMMONPARAM="--max_solver_iter 110 --dist_prob --trilinos_solver --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --prob_id 11"
 
 for PREC  in $PRECLIST
 do
@@ -104,7 +104,7 @@ VISLIST="0 1"
 RELIST="0 100 200 500 1000"
 NOELLIST="4 8 16 32 64 128 256 512"
 
-COMMONPARAM="--max_solver_iter 110 --dist_prob --trilinos_solver --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --prob 11"
+COMMONPARAM="--max_solver_iter 110 --dist_prob --trilinos_solver --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --prob_id 11"
 
 for PREC  in $PRECLIST
 do

@@ -47,29 +47,62 @@ PROGRAM="step_po"
 #FAMG_COARSE="--f_amg_coarse 1"
 
 
-ANGLIST="67"
-NOELLIST="2"
+ANGLIST="0 30 67"
+NOELLIST="2 4 8 16 32 64 128"
 
 
 FAMG_ITER="--f_amg_iter 1"
 FAMG_SMITER="--f_amg_smiter 2"
-#FAMG_SSMOOTHER="--f_amg_sim_smoo 1" # GS
-FAMG_CSMOOTHER="--f_amg_com_smoo 9"
+FAMG_SSMOOTHER="--f_amg_sim_smoo 1" # GS
+FAMG_CSMOOTHER=""
 FAMG_DAMP="--f_amg_damp -1"
 FAMG_STRN="--f_amg_str 0.668" # REMEMBER TO CHANGE THIS FOR SIMPLE/STRESS VISCOUS FORMS.
 FAMG_COARSE="--f_amg_coarse 1" #RS
 
 FAMGPARAM="--f_solver 96 $FAMG_ITER $FAMG_SMITER $FAMG_SSMOOTHER $FAMG_CSMOOTHER $FAMG_DAMP $FAMG_STRN $FAMG_COARSE"
+ITSTIMEDIR="It1Sit2_GSs_RSc_Strn0.25"
 
+touch $ITSTIMEDIR
+rm -rf $ITSTIMEDIR
+mkdir $ITSTIMEDIR
 for ANG in $ANGLIST
 do
   for NOEL in $NOELLIST
   do
-  mpirun -np 1 ./$PROGRAM --dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --p_solver 1 $FAMGPARAM --visc 1 --ang $ANG --rey_start 0 --rey_end 200 --rey_incre 25 --print_hypre --noel $NOEL
+  mpirun -np 1 ./$PROGRAM --dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --p_solver 1 $FAMGPARAM --visc 0 --ang $ANG --rey_start 0 --rey_end 200 --rey_incre 25 --print_hypre --noel $NOEL --itstimedir $ITSTIMEDIR
   done
 done
 
 	
+FAMG_ITER="--f_amg_iter 2"
+FAMG_SMITER="--f_amg_smiter 2"
+FAMG_SSMOOTHER="--f_amg_sim_smoo 1" # GS
+FAMG_CSMOOTHER=""
+FAMG_DAMP="--f_amg_damp -1"
+FAMG_STRN="--f_amg_str 0.668" # REMEMBER TO CHANGE THIS FOR SIMPLE/STRESS VISCOUS FORMS.
+FAMG_COARSE="--f_amg_coarse 1" #RS
+
+FAMGPARAM="--f_solver 96 $FAMG_ITER $FAMG_SMITER $FAMG_SSMOOTHER $FAMG_CSMOOTHER $FAMG_DAMP $FAMG_STRN $FAMG_COARSE"
+ITSTIMEDIR="It2Sit2_GSs_RSc_Strn0.25"
+
+touch $ITSTIMEDIR
+rm -rf $ITSTIMEDIR
+mkdir $ITSTIMEDIR
+for ANG in $ANGLIST
+do
+  for NOEL in $NOELLIST
+  do
+  mpirun -np 1 ./$PROGRAM --dist_prob --trilinos_solver --prob_id 11 --w_solver 0 --ns_solver 1 --p_solver 1 $FAMGPARAM --visc 0 --ang $ANG --rey_start 0 --rey_end 200 --rey_incre 25 --print_hypre --noel $NOEL --itstimedir $ITSTIMEDIR
+  done
+done
+
+
+
+
+
+
+
+
 
 #FAMG_ITER="--f_amg_iter 2"
 #FAMG_SMITER="--f_amg_smiter 2"
