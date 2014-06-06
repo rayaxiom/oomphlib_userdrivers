@@ -1305,6 +1305,264 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+namespace AnnularWedgeLagrange
+{
+
+  std::map<int,std::string> valid_prob_id_map;
+
+  // Prob id, set by main method
+  const int* Prob_id_pt = 0;
+
+  std::string Prob_str = "";
+  std::string Ang_deg_str = "";
+  std::string Noel_str = "";
+
+  ///////////////////////
+  // Domain dimensions.//
+  ///////////////////////
+  //
+  // This is a square domain: x,y \in [0,1]
+  //
+
+  // Min and max x value respectively.
+  static const double X_min = 0.0;
+  static const double X_max = 1.0;
+
+  // Min and max y value respectively.
+  static const double Y_min = 0.0;
+  static const double Y_max = 1.0;
+
+  // The length in the x and y direction respectively.
+  static const double Lx = X_max - X_min;
+  static const double Ly = Y_max - Y_min;
+
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // CL - set directly from the command line.
+  // To set from CL - a CL value is set, this is changed depending on that
+  // value.
+  //
+  // Problem parameter overview:
+  //
+  // // Solvers:
+  //
+  //
+  // F_ns + L^T inv(W) L | B^T
+  // --------------------------
+  //                     | W
+  //
+  // W = 0 (SuperLU)
+  // NS_solver = 0 (SuperLU) or 1 (LSC)
+  // 
+  // If NS_solver = 1, then we have:
+  //
+  // | F | B^T |   |
+  // |----------   |
+  // |   |-M_s |   |
+  // |-------------|
+  // |         | W |
+  //
+  // F_solver = 0 (SuperLU) or 1 (AMG)
+  // P_solver = 0 (SuperLU) or 1 (AMG)
+  // 
+
+  // All problems based on the square domain will be in the same file.
+  // Each unique problem will have an id.
+  // 00 = (SqTmp) Square, custom stuff...
+  // 01 = (SqPo) Square, Parallel outflow (para inflow) 
+  // 02 = (SqTf) Square, Tangential flow (Semi para inflow)
+  // 03 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)
+  //
+  // 10 = (AwTmp) Annulus wedge, custom stuff...
+  // 11 = (AwPo) Annulus wedge, Parallel outflow (para inflow)
+  // 12 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)
+  // 13 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)
+
+  // These are self explanatory:
+  double Ang_deg = -1.0; //CL, Angle in degrees
+  double Ang = -1.0; //CL, Angle in degrees
+  unsigned Noel = 4; //CL, Number of elements in 1D
+  double Phi_lo = 0.0; // CL, Low angle of annulus
+  double Phi_hi = 90.0; // CL, Upper angle of annulus
+  double R_lo = 1.0; // CL, lower radius from the origin
+  double R_hi = 3.0; // CL, higher radius from the origin
+
+  inline void setup_commandline_flags()
+  {
+    CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
+
+    CommandLineArgs::specify_command_line_flag("--phi_lo", &Phi_lo);
+    CommandLineArgs::specify_command_line_flag("--phi_hi", &Phi_hi);
+    CommandLineArgs::specify_command_line_flag("--r_lo", &R_lo);
+    CommandLineArgs::specify_command_line_flag("--r_hi", &R_hi);
+
+    CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+  }
+
+  inline void set_prob_str()
+  {
+
+    std::map<int,std::string>::iterator prob_id_it;
+
+    // Set a problem id to identify the problem.
+    // This is used for book keeping purposes.
+    if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+    {
+      if(Prob_id_pt == 0)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please set Prob_id_pt from NSPP." << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // Locally cache the problem id for convenience.
+      const int prob_id = *Prob_id_pt;
+
+      // The argument immediately after --prob_id is put into SL::Prob_id.
+      // If this begins with "--", then no problem id has been provided.
+
+      // Maybe I should check if SL::Prob_id is a number or a string...
+
+      // We only accept problem IDs as defined below.
+      // Creating a set of acceptable IDs
+      // 10,11,12,13
+      prob_id_it = valid_prob_id_map.find(prob_id);
+
+      // Check if they have provided an acceptable ID.
+      if(prob_id_it == valid_prob_id_map.end())
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide a problem id to identify the problem after "
+          << "after the argument --prob_id.\n" 
+          << "Acceptable IDs are:\n"
+          << "10 = (AwTmp) Square, custom stuff...\n"
+          << "11 = (AwPo) Square, Parallel outflow (para inflow)\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      else
+      {
+        Prob_str = prob_id_it->second;
+      }
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set Prob_id with: \n"
+        << "--prob_id \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  } // set_prob_str
+
+  inline void set_ang_str()
+  {
+    // Check if the problem id has been set. This will be used to see
+    // if we must or must not supply the angle.
+    if(Prob_id_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Oh dear, Prob_id_pt is null. Please set this in main().\n"
+        << "This should be stored in NSPP::Prob_id, and set by cmd via\n"
+        << "--prob_id \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    } 
+
+    // This problem requires tilting, thus we set the Ang and Ang_deg_str.
+    // But first we check that --ang has been set.
+    // Check that Ang has been set.
+    if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Angle has not been set. Set (in degrees) with: \n"
+        << "--ang \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+      // Now we need to convert Ang_deg into radians.
+      Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+      // Now we set the Ang_deg_str.
+      std::ostringstream strs;
+      strs << "A" << Ang_deg;
+      Ang_deg_str = strs.str();
+    }
+    else
+    {
+      Ang = -1.0;
+      std::ostringstream strs;
+      strs << "A_";
+      Ang_deg_str = strs.str();
+    }
+  } // set_ang_str
+
+
+    inline void set_noel_str()
+  {
+    // Set Noel_str, used for book keeping.
+    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    {
+      std::ostringstream strs;
+      strs << "N" <<Noel;
+      Noel_str = strs.str();
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  }
+
+
+  inline void generic_setup()
+  {
+    // Insert the prob id and string pairs.
+    valid_prob_id_map.insert(std::pair<int,std::string>(10,"AwTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(11,"AwPo"));
+
+    set_prob_str();
+    set_ang_str();
+    set_noel_str();
+  }
+
+  inline std::string prob_str()
+  {
+    set_prob_str();
+    return Prob_str;
+  }
+
+  inline std::string ang_deg_str()
+  {
+    set_ang_str();
+    return Ang_deg_str;
+  }
+
+  inline std::string noel_str()
+  {
+    set_noel_str();
+    return Noel_str;
+  }
+
+  inline std::string create_label()
+  {
+    std::string label = prob_str() + ang_deg_str() + noel_str();
+    return label; 
+  } // inlined function create_label
+} // Namespace AnnularWedgeLagrange
 
 namespace StepLagrange
 {
@@ -1753,7 +2011,7 @@ namespace SquareLagrange
             OOMPH_CURRENT_FUNCTION,
             OOMPH_EXCEPTION_LOCATION);
       }
-      Ang = -1;
+      Ang = -1.0;
       // Now we set the Ang_deg_str.
       std::ostringstream strs;
       strs << "A_";
