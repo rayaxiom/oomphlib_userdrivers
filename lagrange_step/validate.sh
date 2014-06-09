@@ -2,15 +2,16 @@
 
 ###############################################################################
 # Current directory
-CURRENTDIR=`pwd`
+PROGRAM_DIR=`pwd`
 
 # Where the static validata is.
-VALIDATADIR="validata"
+VALIDATA_DIR="validata"
+VALIDATA_TAR="StPo_validata.tar.gz"
 
 # This is where the validation is performed. 
 # This will be removed at the beginning of every validation.
-VALIDATEDIR="Validate"
-TEMPVALIDATADIR="temp_validata"
+VALIDATE_DIR="Validate"
+TEMPRES_DIR="temp_validata"
 
 
 
@@ -23,28 +24,22 @@ OOMPH_ROOT_DIR=$(make -s --no-print-directory print-top_builddir)
 PROGRAM="step_po"
 
 ###############################################################################
-#cd $OOMPH_ROOT_DIR && \
-#./autogen_wipebuild_noselftest.sh --rebuild --jobs=4 && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && \
-#mpirun -np 2 ./$PROGRAM $RUNARGUMENTS
-
-
-#cd $OOMPH_ROOT_DIR/src && make && make install && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && mpirun -np 1 ./$PROGRAM $RUNARGUMENTS
+###############################################################################
+###############################################################################
+###############################################################################
+## Start of the validation process
 
 make clean
 make $PROGRAM
 
-# Make the Validation folder, go into it and mkdir temp_validata, this is
-# where the program's results will be outputted.
-touch $VALIDATEDIR
-rm -rf $VALIDATEDIR
-mkdir $VALIDATEDIR
-cd $VALIDATEDIR
-mkdir $TEMPVALIDATADIR
+touch $VALIDATE_DIR
+rm -rf $VALIDATE_DIR
+mkdir $VALIDATE_DIR
+cd $VALIDATE_DIR
+mkdir $TEMPRES_DIR
 
+## NOW WE ARE RUNNING PROGRAM INSIDE Validate, results are doing into 
+## temp_validata
 
 MAX_SOLVER_ITER="--max_solver_iter 110"
 DIST_PROB="--dist_prob"
@@ -54,7 +49,7 @@ ANG="--ang 42"
 REY="--rey_start 0 --rey_end 50 --rey_incre 25"
 VIS="--visc 1"
 NOEL='--noel 8'
-ITSTIMEDIR="--itstimedir $TEMPVALIDATADIR"
+ITSTIMEDIR="--itstimedir $TEMPRES_DIR"
 
 
 COMMONRUNARGUMENTS="$MAX_SOLVER_ITER $DIST_PROB $SOLVER_TYPE $PROB_ID $ANG $REY $VIS $NOEL $ITSTIMEDIR"
@@ -72,6 +67,12 @@ mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+
 
 # Now I need to compare files... grep for RAYITS
 # Generate the array of files!
@@ -109,35 +110,19 @@ do
   done
 done
 
-touch validation.log
-
-for i in "${files[@]}"
-do
-	grep "RAYITS" $TEMPVALIDATADIR/$i > RAYITS_new
-  grep "RAYITS" ./../$VALIDATADIR/$i > RAYITS_old
-  
-  DIFF=$(diff RAYITS_new RAYITS_old)
-  if [ "$DIFF" != "" ]
-  then
-    echo "File not the same: $i" >> validation.log
-  fi
-  rm -rf RAYITS_new RAYITS_old
-done
-
-cd $CURRENTDIR
-
-#make $PROGRAM && mpirun -np 2 ./$PROGRAM $RUNARGUMENTS
-
 ###############################################################################
+###############################################################################
+###############################################################################
+# Now do the comparison
 
-#cd $OOMPH_ROOT_DIR && \
-#./autogen_wipebuild_noselftest.sh --rebuild --jobs=4 && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && \
-#mpirun -np 1 ./$PROGRAM --ns_solver 1 --visc 0 --ang 0 --rey 0 --noel 64 --itstimedir ray_temp
+# These needs to be defined:
+# PROGRAM_DIR
+# VALIDATE_DIR
+# VALIDATA_DIR
+# VALIDATA_TAR
+# files
+# TEMPRES_DIR
+. ./../../validate_common_code.sh
 
-# I should get:
-# RAYITS: 0    19 34    26.5(2)
-
-
+cd $PROGRAM_DIR
 
