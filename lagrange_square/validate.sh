@@ -2,15 +2,16 @@
 
 ###############################################################################
 # Current directory
-CURRENTDIR=`pwd`
+PROGRAM_DIR=`pwd`
 
 # Where the static validata is.
-VALIDATADIR="validata"
+VALIDATA_DIR="validata"
+VALIDATA_TAR="SqPo_validata.tar.gz" ## RAYRAY EDIT!!!
 
 # This is where the validation is performed. 
 # This will be removed at the beginning of every validation.
-VALIDATEDIR="Validate"
-TEMPVALIDATADIR="temp_validata"
+VALIDATE_DIR="Validate"
+TEMPRES_DIR="temp_results"
 
 
 
@@ -20,61 +21,37 @@ OOMPH_ROOT_DIR=$(make -s --no-print-directory print-top_builddir)
 ## EDIT THIS
 ############
 
-PROGRAM="sq_lgr"
+PROGRAM="sq_lgr" ## RAYRAY EDIT!!!
 
 ###############################################################################
-#cd $OOMPH_ROOT_DIR && \
-#./autogen_wipebuild_noselftest.sh --rebuild --jobs=4 && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && \
-#mpirun -np 2 ./$PROGRAM $RUNARGUMENTS
-
-
-#cd $OOMPH_ROOT_DIR/src && make && make install && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && mpirun -np 1 ./$PROGRAM $RUNARGUMENTS
+###############################################################################
+###############################################################################
+###############################################################################
+## Start of the validation process
 
 make clean
 make $PROGRAM
 
-touch $VALIDATEDIR
-rm -rf $VALIDATEDIR
-mkdir $VALIDATEDIR
-cd $VALIDATEDIR
-mkdir $TEMPVALIDATADIR
+touch $VALIDATE_DIR
+rm -rf $VALIDATE_DIR
+mkdir $VALIDATE_DIR
+cd $VALIDATE_DIR
+mkdir $TEMPRES_DIR
 
-COMMONRUNARGUMENTS="--max_solver_iter 110 --dist_prob --trilinos_solver --prob_id 11 --ang 42 --rey 100 --itstimedir $TEMPVALIDATADIR"
+## NOW WE ARE RUNNING PROGRAM INSIDE Validate, results are doing into 
+## temp_validata
+
+COMMONRUNARGUMENTS="--max_solver_iter 110 --dist_prob --trilinos_solver --prob_id 11 --ang 42 --rey 100 --itstimedir $TEMPRES_DIR"
 COMMONRUNARGUMENT_SIM="$COMMONRUNARGUMENTS --visc 0"
 COMMONRUNARGUMENT_STR="$COMMONRUNARGUMENTS --visc 1"
 
 PREC="--w_solver 0 --ns_solver 0"
-RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 8"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 16"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 32"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-
-RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 8"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 16"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 32"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
@@ -83,27 +60,6 @@ mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
 
 PREC="--w_solver 0 --ns_solver 1 --f_solver 0 --p_solver 0"
-RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 8"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 16"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-RUNARGUMENTS="$COMMONRUNARGUMENT_SIM $PREC --noel 32"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
-
-RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 8"
-mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
-mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 RUNARGUMENTS="$COMMONRUNARGUMENT_STR $PREC --noel 16"
 mpirun -np 1 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
@@ -115,158 +71,67 @@ mpirun -np 2 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 3 ../$PROGRAM $RUNARGUMENTS
 mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 
-
+###############################################################################
+###############################################################################
+###############################################################################
 # Now I need to compare files... grep for RAYITS
-files=("SqPoSimR100WedNeA42N16NP1R0" \
-"SqPoSimR100WedNeA42N16NP2R0" \
-"SqPoSimR100WedNeA42N16NP2R1" \
-"SqPoSimR100WedNeA42N16NP3R0" \
-"SqPoSimR100WedNeA42N16NP3R1" \
-"SqPoSimR100WedNeA42N16NP3R2" \
-"SqPoSimR100WedNeA42N16NP4R0" \
-"SqPoSimR100WedNeA42N16NP4R1" \
-"SqPoSimR100WedNeA42N16NP4R2" \
-"SqPoSimR100WedNeA42N16NP4R3" \
-"SqPoSimR100WedNeA42N32NP1R0" \
-"SqPoSimR100WedNeA42N32NP2R0" \
-"SqPoSimR100WedNeA42N32NP2R1" \
-"SqPoSimR100WedNeA42N32NP3R0" \
-"SqPoSimR100WedNeA42N32NP3R1" \
-"SqPoSimR100WedNeA42N32NP3R2" \
-"SqPoSimR100WedNeA42N32NP4R0" \
-"SqPoSimR100WedNeA42N32NP4R1" \
-"SqPoSimR100WedNeA42N32NP4R2" \
-"SqPoSimR100WedNeA42N32NP4R3" \
-"SqPoSimR100WedNeA42N8NP1R0" \
-"SqPoSimR100WedNeA42N8NP2R0" \
-"SqPoSimR100WedNeA42N8NP2R1" \
-"SqPoSimR100WedNeA42N8NP3R0" \
-"SqPoSimR100WedNeA42N8NP3R1" \
-"SqPoSimR100WedNeA42N8NP3R2" \
-"SqPoSimR100WedNeA42N8NP4R0" \
-"SqPoSimR100WedNeA42N8NP4R1" \
-"SqPoSimR100WedNeA42N8NP4R2" \
-"SqPoSimR100WedNeA42N8NP4R3" \
-"SqPoSimR100WedNlFePeA42N16NP1R0" \
-"SqPoSimR100WedNlFePeA42N16NP2R0" \
-"SqPoSimR100WedNlFePeA42N16NP2R1" \
-"SqPoSimR100WedNlFePeA42N16NP3R0" \
-"SqPoSimR100WedNlFePeA42N16NP3R1" \
-"SqPoSimR100WedNlFePeA42N16NP3R2" \
-"SqPoSimR100WedNlFePeA42N16NP4R0" \
-"SqPoSimR100WedNlFePeA42N16NP4R1" \
-"SqPoSimR100WedNlFePeA42N16NP4R2" \
-"SqPoSimR100WedNlFePeA42N16NP4R3" \
-"SqPoSimR100WedNlFePeA42N32NP1R0" \
-"SqPoSimR100WedNlFePeA42N32NP2R0" \
-"SqPoSimR100WedNlFePeA42N32NP2R1" \
-"SqPoSimR100WedNlFePeA42N32NP3R0" \
-"SqPoSimR100WedNlFePeA42N32NP3R1" \
-"SqPoSimR100WedNlFePeA42N32NP3R2" \
-"SqPoSimR100WedNlFePeA42N32NP4R0" \
-"SqPoSimR100WedNlFePeA42N32NP4R1" \
-"SqPoSimR100WedNlFePeA42N32NP4R2" \
-"SqPoSimR100WedNlFePeA42N32NP4R3" \
-"SqPoSimR100WedNlFePeA42N8NP1R0" \
-"SqPoSimR100WedNlFePeA42N8NP2R0" \
-"SqPoSimR100WedNlFePeA42N8NP2R1" \
-"SqPoSimR100WedNlFePeA42N8NP3R0" \
-"SqPoSimR100WedNlFePeA42N8NP3R1" \
-"SqPoSimR100WedNlFePeA42N8NP3R2" \
-"SqPoSimR100WedNlFePeA42N8NP4R0" \
-"SqPoSimR100WedNlFePeA42N8NP4R1" \
-"SqPoSimR100WedNlFePeA42N8NP4R2" \
-"SqPoSimR100WedNlFePeA42N8NP4R3" \
-"SqPoStrR100WedNeA42N16NP1R0" \
-"SqPoStrR100WedNeA42N16NP2R0" \
-"SqPoStrR100WedNeA42N16NP2R1" \
-"SqPoStrR100WedNeA42N16NP3R0" \
-"SqPoStrR100WedNeA42N16NP3R1" \
-"SqPoStrR100WedNeA42N16NP3R2" \
-"SqPoStrR100WedNeA42N16NP4R0" \
-"SqPoStrR100WedNeA42N16NP4R1" \
-"SqPoStrR100WedNeA42N16NP4R2" \
-"SqPoStrR100WedNeA42N16NP4R3" \
-"SqPoStrR100WedNeA42N32NP1R0" \
-"SqPoStrR100WedNeA42N32NP2R0" \
-"SqPoStrR100WedNeA42N32NP2R1" \
-"SqPoStrR100WedNeA42N32NP3R0" \
-"SqPoStrR100WedNeA42N32NP3R1" \
-"SqPoStrR100WedNeA42N32NP3R2" \
-"SqPoStrR100WedNeA42N32NP4R0" \
-"SqPoStrR100WedNeA42N32NP4R1" \
-"SqPoStrR100WedNeA42N32NP4R2" \
-"SqPoStrR100WedNeA42N32NP4R3" \
-"SqPoStrR100WedNeA42N8NP1R0" \
-"SqPoStrR100WedNeA42N8NP2R0" \
-"SqPoStrR100WedNeA42N8NP2R1" \
-"SqPoStrR100WedNeA42N8NP3R0" \
-"SqPoStrR100WedNeA42N8NP3R1" \
-"SqPoStrR100WedNeA42N8NP3R2" \
-"SqPoStrR100WedNeA42N8NP4R0" \
-"SqPoStrR100WedNeA42N8NP4R1" \
-"SqPoStrR100WedNeA42N8NP4R2" \
-"SqPoStrR100WedNeA42N8NP4R3" \
-"SqPoStrR100WedNlFePeA42N16NP1R0" \
-"SqPoStrR100WedNlFePeA42N16NP2R0" \
-"SqPoStrR100WedNlFePeA42N16NP2R1" \
-"SqPoStrR100WedNlFePeA42N16NP3R0" \
-"SqPoStrR100WedNlFePeA42N16NP3R1" \
-"SqPoStrR100WedNlFePeA42N16NP3R2" \
-"SqPoStrR100WedNlFePeA42N16NP4R0" \
-"SqPoStrR100WedNlFePeA42N16NP4R1" \
-"SqPoStrR100WedNlFePeA42N16NP4R2" \
-"SqPoStrR100WedNlFePeA42N16NP4R3" \
-"SqPoStrR100WedNlFePeA42N32NP1R0" \
-"SqPoStrR100WedNlFePeA42N32NP2R0" \
-"SqPoStrR100WedNlFePeA42N32NP2R1" \
-"SqPoStrR100WedNlFePeA42N32NP3R0" \
-"SqPoStrR100WedNlFePeA42N32NP3R1" \
-"SqPoStrR100WedNlFePeA42N32NP3R2" \
-"SqPoStrR100WedNlFePeA42N32NP4R0" \
-"SqPoStrR100WedNlFePeA42N32NP4R1" \
-"SqPoStrR100WedNlFePeA42N32NP4R2" \
-"SqPoStrR100WedNlFePeA42N32NP4R3" \
-"SqPoStrR100WedNlFePeA42N8NP1R0" \
-"SqPoStrR100WedNlFePeA42N8NP2R0" \
-"SqPoStrR100WedNlFePeA42N8NP2R1" \
-"SqPoStrR100WedNlFePeA42N8NP3R0" \
-"SqPoStrR100WedNlFePeA42N8NP3R1" \
-"SqPoStrR100WedNlFePeA42N8NP3R2" \
-"SqPoStrR100WedNlFePeA42N8NP4R0" \
-"SqPoStrR100WedNlFePeA42N8NP4R1" \
-"SqPoStrR100WedNlFePeA42N8NP4R2" \
-"SqPoStrR100WedNlFePeA42N8NP4R3")
+# Generate the array of files!
+# Parameter list (to be concatenated into file names):
+PROBLIST="SqPo"
+VISLIST="x"
+RELIST="R100"
+PRECLIST="WedNe WedNlFePe"
+ANGLIST="A42"
+NOELLIST="N16 N32"
+PROCLIST="NP1R0 NP2R0 NP2R1 NP3R0 NP3R1 NP3R2 NP4R0 NP4R1 NP4R2 NP4R3"
 
-touch validation.log
-
-for i in "${files[@]}"
+files=()
+for PROB in $PROBLIST
 do
-	grep "RAYITS" $TEMPVALIDATADIR/$i > RAYITS_new
-  grep "RAYITS" ./../$VALIDATADIR/$i > RAYITS_old
-  
-  DIFF=$(diff RAYITS_new RAYITS_old)
-  if [ "$DIFF" != "" ]
-  then
-    echo "File not the same: $i" >> validation.log
-  fi
-  rm -rf RAYITS_new RAYITS_old
+  for VIS in $VISLIST
+  do
+    for RE in $RELIST
+    do
+      for PREC in $PRECLIST
+      do
+if [ "$PREC" == "WedNe" ]; then
+  VIS="Sim"
+elif [ "$PREC" == "WedNlFePe" ]; then
+  VIS="Str"
+else
+  echo "Problem with generating list of files."
+  echo "The preconditioner does not make sense"
+  exit 1
+fi
+        for ANG in $ANGLIST
+        do
+          for NOEL in $NOELLIST
+          do
+            for PROC in $PROCLIST
+            do
+              RESFILE="$PROB$VIS$RE$PREC$ANG$NOEL$PROC"
+              files+=("$RESFILE")
+            done
+          done
+        done
+      done
+    done
+  done
 done
 
-cd $CURRENTDIR
-
-#make $PROGRAM && mpirun -np 2 ./$PROGRAM $RUNARGUMENTS
-
 ###############################################################################
+###############################################################################
+###############################################################################
+# Now do the comparison
 
-#cd $OOMPH_ROOT_DIR && \
-#./autogen_wipebuild_noselftest.sh --rebuild --jobs=4 && \
-#cd $CURRENTDIR && \
-#make $PROGRAM && \
-#mpirun -np 1 ./$PROGRAM --ns_solver 1 --visc 0 --ang 0 --rey 0 --noel 64 --itstimedir ray_temp
+# These needs to be defined:
+# PROGRAM_DIR
+# VALIDATE_DIR
+# VALIDATA_DIR
+# VALIDATA_TAR
+# files
+# TEMPRES_DIR
+. ./../../validate_common_code.sh
 
-# I should get:
-# RAYITS: 0    19 34    26.5(2)
-
-
+cd $PROGRAM_DIR
 
