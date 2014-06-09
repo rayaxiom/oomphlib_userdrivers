@@ -1836,7 +1836,12 @@ namespace StepLagrange
 } // Namespace StepLagrange
 
 
-
+///////////////////////////////////////////////////////////////////////////////
+///
+/// Namepace for all things related to the problem where the domain is a 
+/// unit square.
+///
+///////////////////////////////////////////////////////////////////////////////
 namespace SquareLagrange
 {
   std::map<int,std::string> valid_prob_id_map;
@@ -2362,687 +2367,687 @@ namespace LagrangianPreconditionerHelpers
 
   inline Preconditioner* get_lsc_preconditioner()
   {
-   if(Lsc_only && (Mesh_pt.size() != 1))
-   {
-        std::ostringstream err_msg;
-        err_msg << "You have chosen to use only the LSC preconditioner\n"
-          << "Thus the Vector Mesh_pt must contain exactly one mesh,\n"
-          << "the Navier Stokes bulk mesh.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-   }
-
-
-      // If ns_solver is 1, this means we want to use LSC.
-      // So the F_solver and P_solver must be set.
-      if((F_solver == -1) || (P_solver == -1))
-      {
-        std::ostringstream err_msg;
-        err_msg << "Getting LSC preconditioner for NS block.\n"
-          << "But --f_solver and --p_solver have not been set.\n"
-          << "0 - Exact (SuperLU)\n"
-          << "xy - please check the code for more details.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-
-      // Check that the problem pointer is set (not null).
-      // LSC requires a problem pointer.
-      if(Problem_pt == 0)
-      {
-        std::ostringstream err_msg;
-        err_msg << "Please set the Problem_pt variable.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-
-      // Create the NS LSC preconditioner.
-      NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
-        new NavierStokesSchurComplementPreconditioner(Problem_pt);
-
-
-      // Give LSC the bulk mesh (Navier-Stokes mesh).
-      ns_preconditioner_pt->set_navier_stokes_mesh(Mesh_pt[0]);
-
-
-
-     //// Setting the F solver within the NS block
-      /////////////////////////////////////////////
-
-      // Preconditioner for the F block:
-      Preconditioner* f_preconditioner_pt = 0;
-
-      // f_solver == 0 is default, so do nothing.
-      //
-      // AMG depends on the Reynolds number so we check that the Reynolds number
-      // is set if LSC is switched on - even if we do not want to use AMG...
-      // for consistency.
-      if(Vis_pt == 0)
-      {
-        std::ostringstream err_msg;
-        err_msg << "Please set your Vis_pt variable.\n"
-                << "E.g. in main method do: LPH::Vis_pt = &NSPP::Vis;"
-                << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-
-      if((*Vis_pt) == -1)
-      {
-        std::ostringstream err_msg;
-        err_msg << "Please set your viscuous term in NSPP header.\n"
-          << std::endl;
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-
-
-      ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
-
- 
-      if(F_solver == 11)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_2D_poison_problem();
-#endif
-      }
-      else if(F_solver == 12)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_navier_stokes_momentum_block();
-#endif
-      }
-      else if(F_solver == 13)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_CLJPGSStrn075();
-#endif
-      }
-      else if(F_solver == 14)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_RSGSStrn075();
-#endif
-      }
-      else if(F_solver == 15)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_CLJPPilutStrn075();
-#endif
-      }
-      else if(F_solver == 16)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_RSPilutStrn075();
-#endif
-      }
-      else if(F_solver == 17)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_augmented_momentum_block();
-#endif
-      }
-      else if(F_solver == 81)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_CLJPGSStrn0668();
-#endif
-      }
-      else if(F_solver == 82)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_CLJPJStrn0668();
-#endif
-      }
-      else if(F_solver == 83)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_CLJPPilutStrn0668();
-#endif
-      }
-      else if(F_solver == 84)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_RSGSStrn0668();
-#endif
-      }
-      else if(F_solver == 85)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_RSJStrn0668();
-#endif
-      }
-      else if(F_solver == 86)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // LSC takes type "Preconditioner".
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          set_hypre_for_RSPilutStrn0668();
-#endif
-      }
-      else if(F_solver == 2)
-      {
-        //f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
-        f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-      }
-      else if(F_solver == 3)
-      {
-        f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-#ifdef OOMPH_HAS_HYPRE
-        dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
-          (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-          (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
-#endif
-      }
-      else if (F_solver == 69)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // This is what set_defaults_for_2D_poisson_problem() does:
-        f_amg_iterations = 1;
-        //f_amg_simple_smoother = 1; // GS - commented out since it is reset below
-        //f_amg_strength = 0.25; // commented out since it is reset below, depending on the viscous term.
-        //f_amg_coarsening = 0; // CLJP - commented out since it is reset below.
-        // END OF 2D poisson stuff.
-       
-        // Set this to -1 to make sure complex isn't used
-        f_amg_complex_smoother = -1;
-
-        // The default smoother iterations is two.
-        f_amg_smoother_iterations = 2;
-
-        // Now set my own stuff.
-        f_amg_simple_smoother = 1; // GS
-        f_amg_coarsening = 1; // RSs.
-
-        // There is no damping with GS, otherwise we set the parameter:
-        f_amg_damping = -1.0;
-
-        // Different amg strength for simple/stress divergence for viscous term.
-        // This is only set to the below defaults if the strength parameter is
-        // not already set.
-        if(f_amg_strength < 0)
-        {
-          const int vis = *Vis_pt;
-          if(vis == 0)
-          {
-            // Simple form
-            f_amg_strength = 0.25;
-          }
-          else if (vis == 1)
-          {
-            // Stress divergence form
-            f_amg_strength = 0.668;
-          }
-          else
-          {
-            std::ostringstream err_msg;
-            err_msg << "Do not recognise viscuous term: " << vis << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-          }
-        }
-
-        // Setup the preconditioner.
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          get_custom_hypre_preconditioner(
-              f_amg_iterations, f_amg_smoother_iterations, 
-              f_amg_simple_smoother, f_amg_complex_smoother,
-              f_amg_damping, f_amg_strength,
-              f_amg_coarsening);
-
-        if(Print_hypre)
-        {
-          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-              f_preconditioner_pt);
-        }
-#endif
-      }
-      else if (F_solver == 96)
-      {
-#ifdef OOMPH_HAS_HYPRE
-        // In this method we pass everything to the global AMG parameters and
-        // let that handle the work.
-
-        // AMG coarsening:
-        // Set: RayGlobalAMGParam::amg_coarsening = 
-        //
-        // 0 - CLJP
-        // 1 - Classical RS
-        // 3 - modified RS
-        // 6 - Falgout - default on documentation
-        // 8 - PMIS
-        // 10 - HMIS
-        // 11 - One pass on RS coarsening on each processor, not recommended.
-
-        // AMG smoother:
-        // Set: RayGlobalAMGParam::amg_smoother = 
-        // 0 - Jacobi (Need to set damping as well)
-        // 1 - Gauss-Seidel, sequential, very slow in parallel
-        // 2 - GS - interior parallel, serial on boundary.
-        // 3 - hybrid GS or SOR, forward solve
-        // 4 - hybrid GS or SOR, backwards solve.
-        // 6 - hybrid symmetric GS or SSOR.
-        // REMEMBER TO SET SIMPLE SMOOTHING TO TRUE. This should be handled
-        // by your hypre preconditioner creation function.
-        //
-        // Complex smoothing:
-        // 6 - Schwarz
-        // 7 - Pilut
-        // 8 - ParaSails
-        // 9 - Euclid
-        // REMEMBER TO SET SIMPLE SMOOTHING TO FALSE, this should be handled
-        // by the hypre subsidiary helper function.
-
-        // First check that the user has selected a coarsening strategy
-        // using --f_amg_coarse.
-        // If the user has, then f_amg_coarsening should no longer be -1.
-        bool coarsening_ok 
-          = RayGen::check_amg_coarsener(f_amg_coarsening);
-        if((f_amg_coarsening < 0) || (!coarsening_ok))
-        {
-          std::ostringstream err_msg;
-          err_msg 
-            << "Please set a coarsening strategy with --f_amg_coarse.\n"
-            << "Current coarsening strategy (f_amg_coarsening) is: " 
-            << f_amg_coarsening << "\n\n"
-
-            << "You have either not set it or it is not valid.\n\n"
-
-            << "Valid IDs are:\n"
-            << "0 - CLJP\n"
-            << "1 - Classical RS\n"
-            << "3 - modified RS\n"
-            << "6 - Falgout (default in documentation)\n"
-            << "8 - PMIS\n"
-            << "10 - HMIS\n"
-            << "11 - One pass on RS coarsening on each processor, "
-            << "not recommended.\n"
-            << std::endl;
-
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-
-        // First check if the user has selected both simple and complex
-        // smoothing, this is not allowed, either one or the other.
-        if((f_amg_simple_smoother >= 0) && 
-            (f_amg_complex_smoother >= 0))
-        {
-          std::ostringstream err_msg;
-          err_msg 
-            << "Both simple and complex smoothers are set.\n"
-            << "Please choose one or the other.\n\n" 
-            << "f_amg_simple_smoother is " << f_amg_simple_smoother << "\n"
-            << "f_amg_complex_smoother is " << f_amg_complex_smoother << "\n\n"
-
-            << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
-            << "0 - Jacobi (Need to set damping as well)\n"
-            << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
-            << "2 - GS - interior parallel, serial on boundary\n"
-            << "3 - hybrid GS or SOR, forward solve\n"
-            << "4 - hybrid GS or SOR, backwards solve\n"
-            << "6 - hybrid symmetric GS or SSOR.\n\n"
-
-            << "Complex smoother IDs, set with --f_amg_com_smoo\n"
-            << "6 - Schwarz (default in documentation)\n"
-            << "7 - Pilut\n"
-            << "8 - ParaSails\n"
-            << "9 - Euclid\n" 
-            << std::endl;
-
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-        else if((f_amg_simple_smoother < 0) && (f_amg_complex_smoother < 0))
-        {
-          std::ostringstream err_msg;
-          err_msg 
-            << "Please select a smoother for the f block.\n"
-            << "Use --f_amg_sim_smoo or --f_amg_com_smoo flag.\n\n"
-
-            << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
-            << "0 - Jacobi (Need to set damping as well)\n"
-            << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
-            << "2 - GS - interior parallel, serial on boundary\n"
-            << "3 - hybrid GS or SOR, forward solve\n"
-            << "4 - hybrid GS or SOR, backwards solve\n"
-            << "6 - hybrid symmetric GS or SSOR.\n\n"
-
-            << "Complex smoother IDs, set with --f_amg_com_smoo\n"
-            << "6 - Schwarz (default in documentation)\n"
-            << "7 - Pilut\n"
-            << "8 - ParaSails\n"
-            << "9 - Euclid\n" 
-            << std::endl;
-
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-
-
-        // Only one of the two smoothers have been set. We see if these are
-        // valid smoothing IDs.
-        if(f_amg_simple_smoother >= 0)
-        {
-          // check if simple smoother is okay.
-          bool sim_smoother_ok
-            = RayGen::check_amg_sim_smoother(f_amg_simple_smoother);
-
-          if(!sim_smoother_ok)
-          {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Please provide a valid simple smoother \n"
-              << "using --f_amg_sim_smoo. You have provided: " 
-              << f_amg_simple_smoother <<"\n\n"
-              << "Valid IDs are:\n"
-              << "0 - Jacobi (Need to set damping as well)\n"
-              << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
-              << "2 - GS - interior parallel, serial on boundary\n"
-              << "3 - hybrid GS or SOR, forward solve\n"
-              << "4 - hybrid GS or SOR, backwards solve\n"
-              << "6 - hybrid symmetric GS or SSOR.\n"
-              << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-          }
-        }
-        else if(f_amg_complex_smoother >=0)
-        {
-          // check if complex smoother is valid.
-          bool com_smoother_ok
-            = RayGen::check_amg_com_smoother(f_amg_complex_smoother);
-          if(!com_smoother_ok)
-          {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Please provide a valid complex smoother \n"
-              << "using --f_amg_com_smoo. You have provided: " 
-              << f_amg_complex_smoother <<"\n\n"
-              << "Valid IDs are:\n"
-              << "6 - Schwarz (default in documentation)\n"
-              << "7 - Pilut\n"
-              << "8 - ParaSails\n"
-              << "9 - Euclid\n"
-              << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-          }
-        }
-        else
-        {
-          // Should never get here, something has gone wrong.
-          std::ostringstream err_msg;
-          err_msg 
-            << "Something when wrong with your selection of smoother.\n"
-            << "Choose to use either a simple smoother or complex smoother\n"
-            << "with the flags --f_amg_sim_smoo and --f_amg_com_smoo.\n\n"
-
-            << "Current f_amg_simple_smoother is " 
-            << f_amg_simple_smoother << "\n"
-            << "Current f_amg_complex_smoother is " 
-            << f_amg_complex_smoother << "\n\n"
-
-            << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
-            << "0 - Jacobi (Need to set damping as well)\n"
-            << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
-            << "2 - GS - interior parallel, serial on boundary\n"
-            << "3 - hybrid GS or SOR, forward solve\n"
-            << "4 - hybrid GS or SOR, backwards solve\n"
-            << "6 - hybrid symmetric GS or SSOR.\n\n"
-
-            << "Complex smoother IDs, set with --f_amg_com_smoo\n"
-            << "6 - Schwarz (default in documentation)\n"
-            << "7 - Pilut\n"
-            << "8 - ParaSails\n"
-            << "9 - Euclid\n" 
-            << std::endl;
-
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-
-
-    // Damping is required for Jacobi or hybrid SOR smoothers.
-    // First check if amg_simple_smoother is one of those.
-    bool damping_required
-      = RayGen::check_amg_sim_smoother_damping_required(f_amg_simple_smoother);
-
-    if(damping_required && (f_amg_damping < 0))
+    if(Lsc_only && (Mesh_pt.size() != 1))
     {
       std::ostringstream err_msg;
-      err_msg 
-        << "Have selected simple smoother: " << f_amg_simple_smoother << "\n"
-        << "Damping parameter is required for this smoother.\n"
-        << "Please set it via --f_amg_damp.\n"
+      err_msg << "You have chosen to use only the LSC preconditioner\n"
+        << "Thus the Vector Mesh_pt must contain exactly one mesh,\n"
+        << "the Navier Stokes bulk mesh.\n"
         << std::endl;
-
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-    // Note that we haven't checked the reverse, i.e. if a smoother
-    // which does not required damping is set, and the damping parameter
-    // is set, we allow this... if implemented properly, the hypre
-    // code should just ignore it. It will also be interesting to find
-    // smoothers which the damping parameter affects the result.
 
 
-        // Now check if the strength parameter is set. 
-        // But don't throw an error, just a warning.
-        if(f_amg_strength < 0)
+    // If ns_solver is 1, this means we want to use LSC.
+    // So the F_solver and P_solver must be set.
+    if((F_solver == -1) || (P_solver == -1))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Getting LSC preconditioner for NS block.\n"
+        << "But --f_solver and --p_solver have not been set.\n"
+        << "0 - Exact (SuperLU)\n"
+        << "xy - please check the code for more details.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    // Check that the problem pointer is set (not null).
+    // LSC requires a problem pointer.
+    if(Problem_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set the Problem_pt variable.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    // Create the NS LSC preconditioner.
+    NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt =
+      new NavierStokesSchurComplementPreconditioner(Problem_pt);
+
+
+    // Give LSC the bulk mesh (Navier-Stokes mesh).
+    ns_preconditioner_pt->set_navier_stokes_mesh(Mesh_pt[0]);
+
+
+
+    //// Setting the F solver within the NS block
+    /////////////////////////////////////////////
+
+    // Preconditioner for the F block:
+    Preconditioner* f_preconditioner_pt = 0;
+
+    // f_solver == 0 is default, so do nothing.
+    //
+    // AMG depends on the Reynolds number so we check that the Reynolds number
+    // is set if LSC is switched on - even if we do not want to use AMG...
+    // for consistency.
+    if(Vis_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set your Vis_pt variable.\n"
+        << "E.g. in main method do: LPH::Vis_pt = &NSPP::Vis;"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    if((*Vis_pt) == -1)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set your viscuous term in NSPP header.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+
+    ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
+
+
+    if(F_solver == 11)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_2D_poison_problem();
+#endif
+    }
+    else if(F_solver == 12)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_navier_stokes_momentum_block();
+#endif
+    }
+    else if(F_solver == 13)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_CLJPGSStrn075();
+#endif
+    }
+    else if(F_solver == 14)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_RSGSStrn075();
+#endif
+    }
+    else if(F_solver == 15)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_CLJPPilutStrn075();
+#endif
+    }
+    else if(F_solver == 16)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_RSPilutStrn075();
+#endif
+    }
+    else if(F_solver == 17)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_augmented_momentum_block();
+#endif
+    }
+    else if(F_solver == 81)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_CLJPGSStrn0668();
+#endif
+    }
+    else if(F_solver == 82)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_CLJPJStrn0668();
+#endif
+    }
+    else if(F_solver == 83)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_CLJPPilutStrn0668();
+#endif
+    }
+    else if(F_solver == 84)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_RSGSStrn0668();
+#endif
+    }
+    else if(F_solver == 85)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_RSJStrn0668();
+#endif
+    }
+    else if(F_solver == 86)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // LSC takes type "Preconditioner".
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        set_hypre_for_RSPilutStrn0668();
+#endif
+    }
+    else if(F_solver == 2)
+    {
+      //f_preconditioner_pt = new RayBlockDiagonalPreconditioner<CRDoubleMatrix>;
+      f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+    }
+    else if(F_solver == 3)
+    {
+      f_preconditioner_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+#ifdef OOMPH_HAS_HYPRE
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+        (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+        (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_for_2D_poison_problem);
+#endif
+    }
+    else if (F_solver == 69)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // This is what set_defaults_for_2D_poisson_problem() does:
+      f_amg_iterations = 1;
+      //f_amg_simple_smoother = 1; // GS - commented out since it is reset below
+      //f_amg_strength = 0.25; // commented out since it is reset below, depending on the viscous term.
+      //f_amg_coarsening = 0; // CLJP - commented out since it is reset below.
+      // END OF 2D poisson stuff.
+
+      // Set this to -1 to make sure complex isn't used
+      f_amg_complex_smoother = -1;
+
+      // The default smoother iterations is two.
+      f_amg_smoother_iterations = 2;
+
+      // Now set my own stuff.
+      f_amg_simple_smoother = 1; // GS
+      f_amg_coarsening = 1; // RSs.
+
+      // There is no damping with GS, otherwise we set the parameter:
+      f_amg_damping = -1.0;
+
+      // Different amg strength for simple/stress divergence for viscous term.
+      // This is only set to the below defaults if the strength parameter is
+      // not already set.
+      if(f_amg_strength < 0)
+      {
+        const int vis = *Vis_pt;
+        if(vis == 0)
         {
-          std::ostringstream warning_msg;
-          warning_msg 
-            << "You have not set the strength parameter for --f_amg_str\n"
-            << "The default settings will be used.\n"
-            << "0.25 for simple form of the viscous term or \n"
-            << "0.668 for stress divergence form of the viscous term.\n"
-            << std::endl;
+          // Simple form
+          f_amg_strength = 0.25;
+        }
+        else if (vis == 1)
+        {
+          // Stress divergence form
+          f_amg_strength = 0.668;
+        }
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg << "Do not recognise viscuous term: " << vis << std::endl;
 
-          throw OomphLibWarning(warning_msg.str(),
+          throw OomphLibError(err_msg.str(),
               OOMPH_CURRENT_FUNCTION,
               OOMPH_EXCEPTION_LOCATION);
-
-          const int vis = (*Vis_pt);
-          if(vis == 0)
-          {
-            // Simple form
-            f_amg_strength = 0.25;
-          }
-          else if(vis == 1)
-          {
-            // Stress divergence form
-            f_amg_strength = 0.668;
-          }
-          else
-          {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Do not recognise viscuous term: " << vis << "\n"
-              << "Please point it to NSPP::Vis\n" 
-              << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-          }
         }
-
-        // Now check the f_amg_iterations
-        if(f_amg_iterations < 0)
-        {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Have not set f_amg_iterations via --f_amg_iter\n"
-              << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-        }
-
-        if(f_amg_smoother_iterations < 0)
-        {
-            std::ostringstream err_msg;
-            err_msg 
-              << "Have not set f_amg_smoother_iterations via --f_amg_smiter\n"
-              << std::endl;
-
-            throw OomphLibError(err_msg.str(),
-                OOMPH_CURRENT_FUNCTION,
-                OOMPH_EXCEPTION_LOCATION);
-        }
-
-        // Setup the preconditioner.
-        f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          get_custom_hypre_preconditioner(
-              f_amg_iterations, f_amg_smoother_iterations, 
-              f_amg_simple_smoother, f_amg_complex_smoother,
-              f_amg_damping, f_amg_strength,
-              f_amg_coarsening);
-
-        if(Print_hypre)
-        {
-          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-              f_preconditioner_pt);
-        }
-#endif
       }
 
-      // Set the preconditioner in the LSC preconditioner.
-      ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
+      // Setup the preconditioner.
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        get_custom_hypre_preconditioner(
+            f_amg_iterations, f_amg_smoother_iterations, 
+            f_amg_simple_smoother, f_amg_complex_smoother,
+            f_amg_damping, f_amg_strength,
+            f_amg_coarsening);
 
-      ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
-
-
-     // P block solve.
-      ///////////////////////////////////////////
-
-      // Pointer to the preconditioner.
-      Preconditioner * p_preconditioner_pt = 0;
-
-      //SL::P_solver == 0 is default, so do nothing.
-      if(P_solver == 1) 
+      if(Print_hypre)
       {
+        Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            f_preconditioner_pt);
+      }
+#endif
+    }
+    else if (F_solver == 96)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // In this method we pass everything to the global AMG parameters and
+      // let that handle the work.
+
+      // AMG coarsening:
+      // Set: RayGlobalAMGParam::amg_coarsening = 
+      //
+      // 0 - CLJP
+      // 1 - Classical RS
+      // 3 - modified RS
+      // 6 - Falgout - default on documentation
+      // 8 - PMIS
+      // 10 - HMIS
+      // 11 - One pass on RS coarsening on each processor, not recommended.
+
+      // AMG smoother:
+      // Set: RayGlobalAMGParam::amg_smoother = 
+      // 0 - Jacobi (Need to set damping as well)
+      // 1 - Gauss-Seidel, sequential, very slow in parallel
+      // 2 - GS - interior parallel, serial on boundary.
+      // 3 - hybrid GS or SOR, forward solve
+      // 4 - hybrid GS or SOR, backwards solve.
+      // 6 - hybrid symmetric GS or SSOR.
+      // REMEMBER TO SET SIMPLE SMOOTHING TO TRUE. This should be handled
+      // by your hypre preconditioner creation function.
+      //
+      // Complex smoothing:
+      // 6 - Schwarz
+      // 7 - Pilut
+      // 8 - ParaSails
+      // 9 - Euclid
+      // REMEMBER TO SET SIMPLE SMOOTHING TO FALSE, this should be handled
+      // by the hypre subsidiary helper function.
+
+      // First check that the user has selected a coarsening strategy
+      // using --f_amg_coarse.
+      // If the user has, then f_amg_coarsening should no longer be -1.
+      bool coarsening_ok 
+        = RayGen::check_amg_coarsener(f_amg_coarsening);
+      if((f_amg_coarsening < 0) || (!coarsening_ok))
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Please set a coarsening strategy with --f_amg_coarse.\n"
+          << "Current coarsening strategy (f_amg_coarsening) is: " 
+          << f_amg_coarsening << "\n\n"
+
+          << "You have either not set it or it is not valid.\n\n"
+
+          << "Valid IDs are:\n"
+          << "0 - CLJP\n"
+          << "1 - Classical RS\n"
+          << "3 - modified RS\n"
+          << "6 - Falgout (default in documentation)\n"
+          << "8 - PMIS\n"
+          << "10 - HMIS\n"
+          << "11 - One pass on RS coarsening on each processor, "
+          << "not recommended.\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // First check if the user has selected both simple and complex
+      // smoothing, this is not allowed, either one or the other.
+      if((f_amg_simple_smoother >= 0) && 
+          (f_amg_complex_smoother >= 0))
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Both simple and complex smoothers are set.\n"
+          << "Please choose one or the other.\n\n" 
+          << "f_amg_simple_smoother is " << f_amg_simple_smoother << "\n"
+          << "f_amg_complex_smoother is " << f_amg_complex_smoother << "\n\n"
+
+          << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
+          << "0 - Jacobi (Need to set damping as well)\n"
+          << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
+          << "2 - GS - interior parallel, serial on boundary\n"
+          << "3 - hybrid GS or SOR, forward solve\n"
+          << "4 - hybrid GS or SOR, backwards solve\n"
+          << "6 - hybrid symmetric GS or SSOR.\n\n"
+
+          << "Complex smoother IDs, set with --f_amg_com_smoo\n"
+          << "6 - Schwarz (default in documentation)\n"
+          << "7 - Pilut\n"
+          << "8 - ParaSails\n"
+          << "9 - Euclid\n" 
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      else if((f_amg_simple_smoother < 0) && (f_amg_complex_smoother < 0))
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Please select a smoother for the f block.\n"
+          << "Use --f_amg_sim_smoo or --f_amg_com_smoo flag.\n\n"
+
+          << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
+          << "0 - Jacobi (Need to set damping as well)\n"
+          << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
+          << "2 - GS - interior parallel, serial on boundary\n"
+          << "3 - hybrid GS or SOR, forward solve\n"
+          << "4 - hybrid GS or SOR, backwards solve\n"
+          << "6 - hybrid symmetric GS or SSOR.\n\n"
+
+          << "Complex smoother IDs, set with --f_amg_com_smoo\n"
+          << "6 - Schwarz (default in documentation)\n"
+          << "7 - Pilut\n"
+          << "8 - ParaSails\n"
+          << "9 - Euclid\n" 
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+
+      // Only one of the two smoothers have been set. We see if these are
+      // valid smoothing IDs.
+      if(f_amg_simple_smoother >= 0)
+      {
+        // check if simple smoother is okay.
+        bool sim_smoother_ok
+          = RayGen::check_amg_sim_smoother(f_amg_simple_smoother);
+
+        if(!sim_smoother_ok)
+        {
+          std::ostringstream err_msg;
+          err_msg 
+            << "Please provide a valid simple smoother \n"
+            << "using --f_amg_sim_smoo. You have provided: " 
+            << f_amg_simple_smoother <<"\n\n"
+            << "Valid IDs are:\n"
+            << "0 - Jacobi (Need to set damping as well)\n"
+            << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
+            << "2 - GS - interior parallel, serial on boundary\n"
+            << "3 - hybrid GS or SOR, forward solve\n"
+            << "4 - hybrid GS or SOR, backwards solve\n"
+            << "6 - hybrid symmetric GS or SSOR.\n"
+            << std::endl;
+
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+      else if(f_amg_complex_smoother >=0)
+      {
+        // check if complex smoother is valid.
+        bool com_smoother_ok
+          = RayGen::check_amg_com_smoother(f_amg_complex_smoother);
+        if(!com_smoother_ok)
+        {
+          std::ostringstream err_msg;
+          err_msg 
+            << "Please provide a valid complex smoother \n"
+            << "using --f_amg_com_smoo. You have provided: " 
+            << f_amg_complex_smoother <<"\n\n"
+            << "Valid IDs are:\n"
+            << "6 - Schwarz (default in documentation)\n"
+            << "7 - Pilut\n"
+            << "8 - ParaSails\n"
+            << "9 - Euclid\n"
+            << std::endl;
+
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+      else
+      {
+        // Should never get here, something has gone wrong.
+        std::ostringstream err_msg;
+        err_msg 
+          << "Something when wrong with your selection of smoother.\n"
+          << "Choose to use either a simple smoother or complex smoother\n"
+          << "with the flags --f_amg_sim_smoo and --f_amg_com_smoo.\n\n"
+
+          << "Current f_amg_simple_smoother is " 
+          << f_amg_simple_smoother << "\n"
+          << "Current f_amg_complex_smoother is " 
+          << f_amg_complex_smoother << "\n\n"
+
+          << "Simple smoother IDs, set with --f_amg_sim_smoo\n"
+          << "0 - Jacobi (Need to set damping as well)\n"
+          << "1 - Gauss-Seidel, sequential, very slow in parallel\n"
+          << "2 - GS - interior parallel, serial on boundary\n"
+          << "3 - hybrid GS or SOR, forward solve\n"
+          << "4 - hybrid GS or SOR, backwards solve\n"
+          << "6 - hybrid symmetric GS or SSOR.\n\n"
+
+          << "Complex smoother IDs, set with --f_amg_com_smoo\n"
+          << "6 - Schwarz (default in documentation)\n"
+          << "7 - Pilut\n"
+          << "8 - ParaSails\n"
+          << "9 - Euclid\n" 
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+
+      // Damping is required for Jacobi or hybrid SOR smoothers.
+      // First check if amg_simple_smoother is one of those.
+      bool damping_required
+        = RayGen::check_amg_sim_smoother_damping_required(f_amg_simple_smoother);
+
+      if(damping_required && (f_amg_damping < 0))
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Have selected simple smoother: " << f_amg_simple_smoother << "\n"
+          << "Damping parameter is required for this smoother.\n"
+          << "Please set it via --f_amg_damp.\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      // Note that we haven't checked the reverse, i.e. if a smoother
+      // which does not required damping is set, and the damping parameter
+      // is set, we allow this... if implemented properly, the hypre
+      // code should just ignore it. It will also be interesting to find
+      // smoothers which the damping parameter affects the result.
+
+
+      // Now check if the strength parameter is set. 
+      // But don't throw an error, just a warning.
+      if(f_amg_strength < 0)
+      {
+        std::ostringstream warning_msg;
+        warning_msg 
+          << "You have not set the strength parameter for --f_amg_str\n"
+          << "The default settings will be used.\n"
+          << "0.25 for simple form of the viscous term or \n"
+          << "0.668 for stress divergence form of the viscous term.\n"
+          << std::endl;
+
+        throw OomphLibWarning(warning_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+
+        const int vis = (*Vis_pt);
+        if(vis == 0)
+        {
+          // Simple form
+          f_amg_strength = 0.25;
+        }
+        else if(vis == 1)
+        {
+          // Stress divergence form
+          f_amg_strength = 0.668;
+        }
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg 
+            << "Do not recognise viscuous term: " << vis << "\n"
+            << "Please point it to NSPP::Vis\n" 
+            << std::endl;
+
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+
+      // Now check the f_amg_iterations
+      if(f_amg_iterations < 0)
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Have not set f_amg_iterations via --f_amg_iter\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      if(f_amg_smoother_iterations < 0)
+      {
+        std::ostringstream err_msg;
+        err_msg 
+          << "Have not set f_amg_smoother_iterations via --f_amg_smiter\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // Setup the preconditioner.
+      f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        get_custom_hypre_preconditioner(
+            f_amg_iterations, f_amg_smoother_iterations, 
+            f_amg_simple_smoother, f_amg_complex_smoother,
+            f_amg_damping, f_amg_strength,
+            f_amg_coarsening);
+
+      if(Print_hypre)
+      {
+        Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            f_preconditioner_pt);
+      }
+#endif
+    }
+
+    // Set the preconditioner in the LSC preconditioner.
+    ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
+
+    ///////////////////////////////////////// FFFFFFFFFFFFFFFFFF
+
+
+    // P block solve.
+    ///////////////////////////////////////////
+
+    // Pointer to the preconditioner.
+    Preconditioner * p_preconditioner_pt = 0;
+
+    //SL::P_solver == 0 is default, so do nothing.
+    if(P_solver == 1) 
+    {
 #ifdef OOMPH_HAS_HYPRE
 
-        p_preconditioner_pt = new HyprePreconditioner;
+      p_preconditioner_pt = new HyprePreconditioner;
 
-        // Cast it to a Hypre preconditioner so we can set AMG settings.
-        HyprePreconditioner* hypre_preconditioner_pt =
-          static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+      // Cast it to a Hypre preconditioner so we can set AMG settings.
+      HyprePreconditioner* hypre_preconditioner_pt =
+        static_cast<HyprePreconditioner*>(p_preconditioner_pt);
 
-        Hypre_default_settings::
-          set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+      Hypre_default_settings::
+        set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
 
-        if(Print_hypre)
-        {
-          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-              p_preconditioner_pt);
-        }
-
-        // Set it as the p preconditioner for LSC
-        //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
-#endif
-      }
-      else if(P_solver == 96)
+      if(Print_hypre)
       {
+        Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            p_preconditioner_pt);
+      }
+
+      // Set it as the p preconditioner for LSC
+      //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+#endif
+    }
+    else if(P_solver == 96)
+    {
 #ifdef OOMPH_HAS_HYPRE
 
-        p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
-          get_custom_hypre_preconditioner(
-              p_amg_iterations, p_amg_smoother_iterations, 
-              p_amg_simple_smoother, p_amg_complex_smoother,
-              p_amg_damping, p_amg_strength,
-              p_amg_coarsening);
-        
-        if(Print_hypre)
-        {
-          Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-              p_preconditioner_pt);
-        }
-#endif
-      }
-      else if(P_solver == 2)
+      p_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+        get_custom_hypre_preconditioner(
+            p_amg_iterations, p_amg_smoother_iterations, 
+            p_amg_simple_smoother, p_amg_complex_smoother,
+            p_amg_damping, p_amg_strength,
+            p_amg_coarsening);
+
+      if(Print_hypre)
       {
-#ifdef OOMPH_HAS_HYPRE
-        p_preconditioner_pt = new HyprePreconditioner;
-
-        HyprePreconditioner* hypre_preconditioner_pt =
-          static_cast<HyprePreconditioner*>(p_preconditioner_pt);
-
-        hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-
-        // Setup v-cycles
-        hypre_preconditioner_pt->set_amg_iterations(2);
-        hypre_preconditioner_pt->amg_smoother_iterations() = 2;
-
-        // Setup smoother
-        // simple: 0 - DJ, 1 - GS
-        // compelx: Pilut - 7
-        hypre_preconditioner_pt->amg_using_simple_smoothing();
-        hypre_preconditioner_pt->amg_simple_smoother() = 0;
-        // only applicable for DJ
-        hypre_preconditioner_pt->amg_damping() = 0.8;
-
-        // Setup coarsening
-        // 0 - CLJP
-        // 1 - RS
-        hypre_preconditioner_pt->amg_coarsening() = 1;
-#endif
+        Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            p_preconditioner_pt);
       }
+#endif
+    }
+    else if(P_solver == 2)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      p_preconditioner_pt = new HyprePreconditioner;
 
-      ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+      HyprePreconditioner* hypre_preconditioner_pt =
+        static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+
+      hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+
+      // Setup v-cycles
+      hypre_preconditioner_pt->set_amg_iterations(2);
+      hypre_preconditioner_pt->amg_smoother_iterations() = 2;
+
+      // Setup smoother
+      // simple: 0 - DJ, 1 - GS
+      // compelx: Pilut - 7
+      hypre_preconditioner_pt->amg_using_simple_smoothing();
+      hypre_preconditioner_pt->amg_simple_smoother() = 0;
+      // only applicable for DJ
+      hypre_preconditioner_pt->amg_damping() = 0.8;
+
+      // Setup coarsening
+      // 0 - CLJP
+      // 1 - RS
+      hypre_preconditioner_pt->amg_coarsening() = 1;
+#endif
+    }
+
+    ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
 
 
     return ns_preconditioner_pt;
 
 
 
-  } // EoFunc
+  } // EoFunc get_lsc_preconditioner(...)
 
   inline Preconditioner* get_lgr_preconditioner()
   {
