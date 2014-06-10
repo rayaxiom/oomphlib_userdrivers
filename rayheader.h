@@ -3084,6 +3084,12 @@ namespace LagrangianPreconditionerHelpers
     {
       // Using SuperLU, this is the default, do nothing.
     }
+    else if (W_solver ==1)
+    {
+      prec_pt->set_lagrange_multiplier_subsidiary_preconditioner
+        (Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper
+         ::get_lagrange_multiplier_preconditioner);
+    }
     else
     {
       std::ostringstream err_msg;
@@ -3312,6 +3318,9 @@ namespace LagrangianPreconditionerHelpers
     {
       case 0:
         w_str = "We";
+        break;
+      case 1:
+        w_str = "Wc";
         break;
       default:
         {
