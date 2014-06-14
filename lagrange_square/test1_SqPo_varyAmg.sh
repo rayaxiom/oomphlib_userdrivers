@@ -241,13 +241,25 @@ done
 TESTLIST_FILEBASE="tests_varyAmg"
 TEST_LIST="$TESTLIST_FILEBASE.list"
 
-RESITS_DIR="res_its_1v22_GS_RS"
+RESITS_DIR="res_its_1v22_GS_RS_T1"
+gen_tests_1v22_GS_RS
+RESITS_DIR="res_its_1v22_GS_RS_T2"
+gen_tests_1v22_GS_RS
+RESITS_DIR="res_its_1v22_GS_RS_T3"
 gen_tests_1v22_GS_RS
 
-RESITS_DIR="res_its_2v22_GS_RS"
+RESITS_DIR="res_its_2v22_GS_RS_T1"
+gen_tests_2v22_GS_RS
+RESITS_DIR="res_its_2v22_GS_RS_T2"
+gen_tests_2v22_GS_RS
+RESITS_DIR="res_its_2v22_GS_RS_T3"
 gen_tests_2v22_GS_RS
 
-RESITS_DIR="res_its_1v22_EUCLID_RS"
+RESITS_DIR="res_its_1v22_EUCLID_RS_T1"
+gen_tests_1v22_EUCLID_RS
+RESITS_DIR="res_its_1v22_EUCLID_RS_T2"
+gen_tests_1v22_EUCLID_RS
+RESITS_DIR="res_its_1v22_EUCLID_RS_T3"
 gen_tests_1v22_EUCLID_RS
 
 . $PROGRAM_DIR/../generate_qsub_script.sh
@@ -270,74 +282,102 @@ function local_format_results()
 {
 CURRENT_DIR=`pwd`
 
-ITSTIMEDIR=""
+ITSTIMEDIR_LIST=""
 
-function format_res_all_params()
-{
-cd $ITSTIMEDIR
-
-TAG="RAYITS"
+TAG=""
+# Set these below:
+#TAG="RAYITS"
 #TAG="RAYPRECSETUP"
 #TAG="RAYLINSOLVER"
 
-LINE=""
+function format_res_all_params()
+{
+  LINE=""
 
-Prob_str="SqPo"
-PRECLIST="WedNlFrayPa"
-VISLIST="Sim Str"
-ANGLIST="A0 A30 A67"
-RELIST="R200"
-NOELLIST="N4 N8 N16 N32 N64 N128 N256 N512"
+  Prob_str="SqPo"
+  PRECLIST="WedNlFrayPa"
+  VISLIST="Sim Str"
+  ANGLIST="A0 A30 A67"
+  RELIST="R200"
+  NOELLIST="N4 N8 N16 N32 N64 N128 N256 N512"
 
-for PREC in $PRECLIST
-do
-  for VIS in $VISLIST
+  for PREC in $PRECLIST
   do
-    for ANG in $ANGLIST
+    for VIS in $VISLIST
     do
-      for RE in $RELIST
+      for ANG in $ANGLIST
       do
-        LINE=""
-        for NOEL in $NOELLIST
+        for RE in $RELIST
         do
+          LINE=""
+          for NOEL in $NOELLIST
+          do
 
-          RESFILE="${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
-          TOKEN=""
 
-          if [ -f $RESFILE ]
-          then
-            TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
-          else
-            TOKEN="x"
-          fi
-          
-          LINE="$LINE $TOKEN"
+            ## Set the first min.
+            MIN_TOKEN=""
+            MIN_NUM="-1.0"
+
+            ITSTIMEDIR=${ITSTIMEDIR_LIST[0]}
+            RESFILE="${ITSTIMEDIR}/${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
+
+            if [ -f $RESFILE ]; then
+
+              MIN_TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+              MIN_NUM=${MIN_TOKEN%(*}
+
+              for ITSTIMEDIR in "${ITSTIMEDIR_LIST[@]}"
+              do
+                RESFILE="${ITSTIMEDIR}/${Prob_str}${VIS}${RE}${PREC}${ANG}${NOEL}NP1R0"
+
+                CURRENT_TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+                CURRENT_NUM=${CURRENT_TOKEN%(*}
+
+                # Now check to see which is bigger...
+                bools=$(echo "$CURRENT_NUM < $MIN_NUM" | bc)
+
+                if [ "$bools" == "1" ]; then
+                  MIN_TOKEN=$CURRENT_TOKEN
+                  MIN_NUM=$CURRENT_NUM
+                fi
+
+              done
+
+              LINE="$LINE $MIN_TOKEN"
+            else
+              LINE="$LINE x"
+            fi
+
+          done
+          echo $LINE
         done
-        echo $LINE
       done
     done
   done
-done
 }
 
+TAG="RAYITS"
+
 cd $CURRENT_DIR
 echo -e "\n"
-echo -e "Formatting 1V22 GS_RS"
-ITSTIMEDIR="res_its_1v22_GS_RS"
+ITSTIMEDIR_BASE="res_its_1v22_GS_RS"
+echo -e "Formatting $ITSTIMEDIR_BASE"
+ITSTIMEDIR_LIST=("${ITSTIMEDIR_BASE}_T1" "${ITSTIMEDIR_BASE}_T2" "${ITSTIMEDIR_BASE}_T3" )
 format_res_all_params
 
 cd $CURRENT_DIR
 echo -e "\n"
-echo -e "Formatting 2V22 GS_RS"
-ITSTIMEDIR="res_its_2v22_GS_RS"
+ITSTIMEDIR_BASE="res_its_2v22_GS_RS"
+echo -e "Formatting $ITSTIMEDIR_BASE"
+ITSTIMEDIR_LIST=("${ITSTIMEDIR_BASE}_T1" "${ITSTIMEDIR_BASE}_T2" "${ITSTIMEDIR_BASE}_T3" )
 format_res_all_params
 
 cd $CURRENT_DIR
 echo -e "\n"
-echo -e "Formatting 1V22 EUCLID_RS"
-ITSTIMEDIR="res_its_1v22_EUCLID_RS"
+ITSTIMEDIR_BASE="res_its_1v22_EUCLID_RS"
+echo -e "Formatting $ITSTIMEDIR_BASE"
+ITSTIMEDIR_LIST=("${ITSTIMEDIR_BASE}_T1" "${ITSTIMEDIR_BASE}_T2" "${ITSTIMEDIR_BASE}_T3" )
 format_res_all_params
-
 }
 
 FORMAT_RESULTS_SCRIPT="format_results.sh"
@@ -409,7 +449,17 @@ then
   rsync -av $OOMPH_TEST_DIR/$FORMAT_RESULTS_SCRIPT $SCRATCH_TEST_DIR/
 
   ## Create the res_its and qsub output directories in scratch.
-  DIR_LIST=("res_its_1v22_GS_RS" "res_its_2v22_GS_RS" "res_its_1v22_EUCLID_RS" "qsub_output_$TESTLIST_FILEBASE")
+  DIR_LIST=("res_its_1v22_GS_RS_T1" \
+            "res_its_1v22_GS_RS_T2" \
+            "res_its_1v22_GS_RS_T3" \
+            "res_its_2v22_GS_RS_T1" \
+            "res_its_2v22_GS_RS_T2" \
+            "res_its_2v22_GS_RS_T3" \
+            "res_its_1v22_EUCLID_RS_T1" \
+            "res_its_1v22_EUCLID_RS_T2" \
+            "res_its_1v22_EUCLID_RS_T3" \
+            "qsub_output_$TESTLIST_FILEBASE")
+
   for DIR in "${DIR_LIST[@]}"
   do
     mkdir -p $SCRATCH_TEST_DIR/$DIR
