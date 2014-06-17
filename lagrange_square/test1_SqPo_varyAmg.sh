@@ -56,8 +56,69 @@ OOMPHROOT_DIR=""
 
 setup_initial
 
+## Load the preconditioners... preconditioner parameters:
+
+## All exact
+LPREC0_LU_LU=""
+
+## Exact LSC
+LPREC1_LU_LSCLuLu=""
+
+## AMG for pressure block.
+LPREC2_LU_LSCAmgLu=""
+
+### AMG for LSC block.
+LPREC3_LU_LSCLu_C1v22_GS_RS_sim=""
+LPREC3_LU_LSCLu_C1v22_GS_RS_str=""
+
+LPREC3_LU_LSCLu_C2v22_GS_RS_sim=""
+LPREC3_LU_LSCLu_C2v22_GS_RS_str=""
+
+LPREC3_LU_LSCLu_C1v22_Eu_RS_sim=""
+LPREC3_LU_LSCLu_C1v22_Eu_RS_str=""
+
+### Full AMG
+LPREC4_LU_LSCAmg_C1v22_GS_RS_sim=""
+LPREC4_LU_LSCAmg_C1v22_GS_RS_str=""
+
+LPREC4_LU_LSCAmg_C2v22_GS_RS_sim=""
+LPREC4_LU_LSCAmg_C2v22_GS_RS_str=""
+
+LPREC4_LU_LSCAmg_C1v22_Eu_RS_sim=""
+LPREC4_LU_LSCAmg_C1v22_Eu_RS_str=""
+
+################################### Vanilla prec
+## Exact for both P and F solve
+VPREC0_Lu_Lu=""
+
+## P - AMG, F exact
+VPREC1_Amg_Lu=""
+
+## P - Exact, F - AMG
+VPREC2_Lu_C1v22_GS_RS_sim=""
+VPREC2_Lu_C1v22_GS_RS_str=""
+
+VPREC2_Lu_C2v22_GS_RS_sim=""
+VPREC2_Lu_C2v22_GS_RS_str=""
+
+VPREC2_Lu_C1v22_Eu_RS_sim=""
+VPREC2_Lu_C1v22_Eu_RS_str=""
+
+## P - Amg, F - AMG
+VPREC3_Amg_C1v22_GS_RS_sim=""
+VPREC3_Amg_C1v22_GS_RS_str=""
+
+VPREC3_Amg_C2v22_GS_RS_sim=""
+VPREC3_Amg_C2v22_GS_RS_str=""
+
+VPREC3_Amg_C1v22_Eu_RS_sim=""
+VPREC3_Amg_C1v22_Eu_RS_str=""
+
+load_prec_param
+
+
+
 # folder of where the iteration counts will be.
-## NOTE: For this case only, it will be cr
 RESITS_DIR=""
 
 
@@ -76,7 +137,7 @@ TEST_LIST=""
 ## Common problem parameters ######################
 
 ## The lists (param to loop through)
-PRECLIST="0" # To be determined later...
+PRECLIST="4" # 4 is full AMG, check out test_common_code.sh
 VISLIST="0 1"
 ANGLIST="0 30 67"
 RELIST="200"
@@ -92,11 +153,10 @@ PRINT_HYPRE="--print_hypre"
 COMMON_PARAM="$PROB_ID $MAX_SOLVER_ITER $DIST_PROB $ITERATIVE_SOLVER $PRINT_HYPRE"
 
 
-## Preconditioner parameters.
-Famg_BASE="--f_solver 96"
-Famg_STRN_SIM="--f_amg_str 0.25"
-Famg_STRN_STR="--f_amg_str 0.668"
-Famg_COARSE="--f_amg_coarse 1" #RS
+#Famg_BASE="--f_solver 96"
+#Famg_STRN_SIM="--f_amg_str 0.25"
+#Famg_STRN_STR="--f_amg_str 0.668"
+#Famg_COARSE="--f_amg_coarse 1" #RS
 
 
 
@@ -107,16 +167,7 @@ Famg_COARSE="--f_amg_coarse 1" #RS
 ###############################################################################
 function gen_tests_1v22_GS_RS()
 {
-Famg_ITER="--f_amg_iter 1"
-Famg_SMITER="--f_amg_smiter 2"
-Famg_SMOOTHER="--f_amg_sim_smoo 1" #GS
-Famg_DAMP="--f_amg_damp -1"
-
-Famg_SIM="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_SIM $Famg_COARSE"
-Famg_STR="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_STR $Famg_COARSE"
-
-Prec_WLu_NSLscPamgFamgSim="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_SIM"
-Prec_WLu_NSLscPamgFamgStr="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_STR"
+PREC_PARAM=""
 
 for PREC in $PRECLIST
 do
@@ -128,15 +179,8 @@ do
       do
         for NOEL in $NOELLIST
         do
-# Set the PREC_PARAM dependent on VIS.
-case "$VIS" in
-  0)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgSim"
-    ;;
-  1)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgStr"
-    ;;
-esac
+
+load_LPREC_C1v22_GS_RS_case
 
 echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
@@ -153,17 +197,7 @@ done
 ###############################################################################
 function gen_tests_2v22_GS_RS()
 {
-Famg_ITER="--f_amg_iter 2"
-Famg_SMITER="--f_amg_smiter 2"
-Famg_SMOOTHER="--f_amg_sim_smoo 1" #GS
-Famg_DAMP="--f_amg_damp -1"
-
-Famg_SIM="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_SIM $Famg_COARSE"
-Famg_STR="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_STR $Famg_COARSE"
-
-Prec_WLu_NSLscPamgFamgSim="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_SIM"
-Prec_WLu_NSLscPamgFamgStr="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_STR"
-
+PREC_PARAM=""
 for PREC in $PRECLIST
 do
   for VIS in $VISLIST
@@ -174,15 +208,9 @@ do
       do
         for NOEL in $NOELLIST
         do
-# Set the PREC_PARAM dependent on VIS.
-case "$VIS" in
-  0)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgSim"
-    ;;
-  1)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgStr"
-    ;;
-esac
+
+
+load_LPREC_C2v22_GS_RS_case
 
 echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
@@ -199,17 +227,7 @@ done
 ###############################################################################
 function gen_tests_1v22_EUCLID_RS()
 {
-Famg_ITER="--f_amg_iter 1"
-Famg_SMITER="--f_amg_smiter 2"
-Famg_SMOOTHER="--f_amg_com_smoo 9" #GS
-Famg_DAMP="--f_amg_damp -1"
-
-Famg_SIM="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_SIM $Famg_COARSE"
-Famg_STR="$Famg_BASE $Famg_ITER $Famg_SMITER $Famg_SMOOTHER $Famg_DAMP $Famg_STRN_STR $Famg_COARSE"
-
-Prec_WLu_NSLscPamgFamgSim="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_SIM"
-Prec_WLu_NSLscPamgFamgStr="--w_solver 0 --ns_solver 1 --p_solver 1 $Famg_STR"
-
+PREC_PARAM=""
 for PREC in $PRECLIST
 do
   for VIS in $VISLIST
@@ -220,15 +238,9 @@ do
       do
         for NOEL in $NOELLIST
         do
-# Set the PREC_PARAM dependent on VIS.
-case "$VIS" in
-  0)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgSim"
-    ;;
-  1)
-    PREC_PARAM="$Prec_WLu_NSLscPamgFamgStr"
-    ;;
-esac
+
+
+load_LPREC_C1v22_Eu_RS_case
 
 echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS --ang $ANG --rey $RE --noel $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
