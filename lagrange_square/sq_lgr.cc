@@ -206,15 +206,8 @@ public:
 
 private:
 
- void set_bc_for_SqTmp();
  void set_mesh_bc_for_SqPo();
- void set_bc_for_SqTf();
- void set_bc_for_SqTfPo();
- void set_bc_for_AwTmp();
- void set_bc_for_AwPo();
- void set_bc_for_AwTf();
- void set_bc_for_AwTfPo();
-
+ void set_mesh_bc_for_SqTf();
  void set_mesh_bc_for_SqVa();
 
  /// Pointer to the "bulk" mesh
@@ -273,35 +266,54 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
     // Domain length in y-direction
     double ly=SL::Ly;
   // First we set the mesh.
-  if((NSPP::Prob_id >= 10) && (NSPP::Prob_id < 19) )
+  if((NSPP::Prob_id == SL::PID_SQ_TMP) ||
+     (NSPP::Prob_id == SL::PID_SQ_PO)  ||
+     (NSPP::Prob_id == SL::PID_SQ_TF)  ||
+     (NSPP::Prob_id == SL::PID_SQ_TFPO) )
   {
     // This is the tilted cavity mesh.
-
-    
     Bulk_mesh_pt =
       new SlopingQuadMesh<ELEMENT>(nx,ny,lx,ly,SL::Ang);
   }
-  else if (NSPP::Prob_id == 88)
+  else if (NSPP::Prob_id == SL::PID_SQ_VA)
   {
     Bulk_mesh_pt = new RectangularQuadMesh<ELEMENT>(nx,ny,lx,ly);
   }
   else
   {
-    pause("Not done yet."); 
-    
+   std::ostringstream err_msg;
+   err_msg << "There is no mesh for the problem ID: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
   }
 
-  if(NSPP::Prob_id == 11)
+  // Set the boundary conditions
+  if(NSPP::Prob_id == SL::PID_SQ_PO)
   {
-  set_mesh_bc_for_SqPo();
+    set_mesh_bc_for_SqPo();
   }
-  else if(NSPP::Prob_id == 88)
+  else if(NSPP::Prob_id == SL::PID_SQ_TF)
   {
-set_mesh_bc_for_SqVa();
+    set_mesh_bc_for_SqTf();
+  }
+  else if(NSPP::Prob_id == SL::PID_SQ_VA)
+  {
+    set_mesh_bc_for_SqVa();
   }
   else
   {
-    pause("not done yet!");
+    std::ostringstream err_msg;
+   err_msg << "There are no boundary conditions configured for prob_id: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
   }
 
 
@@ -348,22 +360,28 @@ set_mesh_bc_for_SqVa();
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
  
 
+ // Create the vector of mesh pointers!
  Vector<Mesh*> mesh_pt;
-
- if(NSPP::Prob_id == 11)
+ if(NSPP::Prob_id == SL::PID_SQ_PO)
  {
  mesh_pt.resize(2,0);
  mesh_pt[0] = Bulk_mesh_pt;
  mesh_pt[1] = Surface_mesh_P_pt;
  }
- else if(NSPP::Prob_id == 88)
+ else if(NSPP::Prob_id == SL::PID_SQ_TF)
+ {
+   mesh_pt.resize(2,0);
+   mesh_pt[0] = Bulk_mesh_pt;
+   mesh_pt[1] = Surface_mesh_T_pt;
+ }
+ else if(NSPP::Prob_id == SL::PID_SQ_VA)
  {
    mesh_pt.resize(1,0);
    mesh_pt[0] = Bulk_mesh_pt;
  }
 
  // Quick check that the correct preconditioner is chosen.
- if((NSPP::Prob_id == 88) && 
+ if((NSPP::Prob_id == SL::PID_SQ_VA) && 
      !CommandLineArgs::command_line_flag_has_been_set("--lsc_only"))
  {
    std::ostringstream err_msg;
@@ -510,6 +528,138 @@ void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqPo()
    nod_pt->set_value(0,u0);
    nod_pt->set_value(1,u1);
  }
+} // set_mesh_bc_for_SqPo
+
+//============RAYRAY===========
+/// RAYRAY
+//=======================================================================
+template<class ELEMENT>
+void TiltedCavityProblem<ELEMENT>::set_mesh_bc_for_SqTf()
+{
+  // Alias the namespace for convenience
+  namespace SL = SquareLagrange;
+
+  // Assign the boundaries:
+  //             2 slip bc
+  //         ----------
+  //         |        |
+  // 3 Inflow|        |1 Imposed outflow
+  //         |        |
+  //         ----------
+  //             0 non slip
+//  const unsigned if_b = 3; // inflow
+//  const unsigned po_b = 1; // parallel outflow
+  const unsigned slip_b = 2;
+
+  // Create a "surface mesh" that will contain only
+  // ImposeParallelOutflowElements in boundary 1
+  // The constructor just creates the mesh without
+  // giving it any elements, nodes, etc.
+  Surface_mesh_T_pt = new Mesh;
+
+  // Create ImposeParallelOutflowElement from all elements that are
+  // adjacent to the Neumann boundary.
+  create_impenetrable_lagrange_elements(slip_b,Bulk_mesh_pt,
+                                        Surface_mesh_T_pt);
+//  create_parall_outflow_lagrange_elements(slip_b,
+//                                          Bulk_mesh_pt,Surface_mesh_T_pt);
+
+  // Add the two meshes to the problem.
+  add_sub_mesh(Bulk_mesh_pt);
+  add_sub_mesh(Surface_mesh_T_pt);
+  
+  // combine all sub-meshes into a single mesh.
+  build_global_mesh();
+//  const unsigned num_bound = mesh_pt()->nboundary();
+
+
+ // Which boundary are we dealing with?
+ unsigned current_bound;
+ 
+ // The number of nodes on a boundary.
+ unsigned num_nod;
+
+ // Inflow is at boundary 3
+ current_bound = 3;
+ num_nod= mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   // Get the x and y cartesian coordinates
+   double x0=nod_pt->x(0);
+   double x1=nod_pt->x(1);
+
+   // Tilt x1 by -SL::Ang, this will give us the original coordinate.
+   double x1_old = x0*sin(-SL::Ang) + x1*cos(-SL::Ang);
+
+   // Now calculate the parabolic inflow at this point.
+   double u0_old = (x1_old - SL::Y_min)*(2*SL::Y_max - x1_old);
+   
+   // Now apply the rotation to u0_old, using rotation matrices.
+   // with x = u0_old and y = 0, i.e. R*[u;0] since we have the
+   // velocity in the x direction only. There is no velocity
+   // in the y direction.
+   double u0=u0_old*cos(SL::Ang);
+   double u1=u0_old*sin(SL::Ang);
+
+   nod_pt->set_value(0,u0);
+   nod_pt->set_value(1,u1);
+ }
+
+ // Now do the outflow.
+ // This is on boundary 1.
+ current_bound = 1;
+ num_nod= mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   // Get the x and y cartesian coordinates
+   double x0=nod_pt->x(0);
+   double x1=nod_pt->x(1);
+
+   // Tilt x1 by -SL::Ang, this will give us the original coordinate.
+   double x1_old = x0*sin(-SL::Ang) + x1*cos(-SL::Ang);
+
+   // Now calculate the parabolic inflow at this point.
+   double u0_old = (x1_old - SL::Y_min)*(2*SL::Y_max - x1_old);
+   
+   // Now apply the rotation to u0_old, using rotation matrices.
+   // with x = u0_old and y = 0, i.e. R*[u;0] since we have the
+   // velocity in the x direction only. There is no velocity
+   // in the y direction.
+   double u0=u0_old*cos(SL::Ang);
+   double u1=u0_old*sin(SL::Ang);
+
+//   nod_pt->unpin(0);
+   nod_pt->set_value(0,u0);
+   nod_pt->set_value(1,u1);
+ }
+
+ // Now we do the bottom boundary, this is boundary 0
+ current_bound = 0;
+ num_nod= mesh_pt()->nboundary_node(current_bound);
+ for(unsigned inod=0;inod<num_nod;inod++)
+ {
+   Node* nod_pt=mesh_pt()->boundary_node_pt(current_bound,inod);
+
+   // Pin both velocity components
+   nod_pt->pin(0);
+   nod_pt->pin(1);
+
+   nod_pt->set_value(0,0.0);
+   nod_pt->set_value(1,0.0);
+ }
+
 } // set_mesh_bc_for_SqPo
 
 template<class ELEMENT>
@@ -819,8 +969,8 @@ create_impenetrable_lagrange_elements(const unsigned &b,
     {
      Node* nod_pt = flux_element_pt->node_pt(j);
 
-     // Is the node also on boundary 0 or 2?
-     if ((nod_pt->is_on_boundary(0))||(nod_pt->is_on_boundary(2)))
+     // Is the node also on boundary 3 or 1?
+     if ((nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(1)))
       {
        // How many nodal values were used by the "bulk" element
        // that originally created this node?

@@ -1844,6 +1844,12 @@ namespace StepLagrange
 ///////////////////////////////////////////////////////////////////////////////
 namespace SquareLagrange
 {
+  static int PID_SQ_TMP = 10;
+  static int PID_SQ_PO = 11;
+  static int PID_SQ_TF = 12;
+  static int PID_SQ_TFPO = 13;
+  static int PID_SQ_VA = 88;
+
   std::map<int,std::string> valid_prob_id_map;
   
   // Prob id, set by main method
@@ -1971,11 +1977,6 @@ namespace SquareLagrange
           << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
           << "\n"
           << "88 = (SqVa) Square, Vanilla LSC\n"
-          << "\n"
-          << "20 = (AwTmp) Annulus wedge, custom stuff...\n"
-          << "21 = (AwPo) Annulus wedge, Parallel outflow (para inflow)\n"
-          << "22 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)\n"
-          << "23 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)\n"
           << std::endl;
 
         throw OomphLibError(err_msg.str(),
@@ -2079,17 +2080,12 @@ namespace SquareLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(10,"SqTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(11,"SqPo"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(12,"SqTf"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(13,"SqTfPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TMP,"SqTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_PO,"SqPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TF,"SqTf"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TFPO,"SqTfPo"));
 
-    valid_prob_id_map.insert(std::pair<int,std::string>(20,"AwTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(21,"AwPo"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(22,"AwTf"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(23,"AwTfPo"));
-
-    valid_prob_id_map.insert(std::pair<int,std::string>(88,"SqVa"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_VA,"SqVa"));
 
     set_prob_str();
     set_ang_str();
