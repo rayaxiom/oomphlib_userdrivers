@@ -307,12 +307,12 @@ function format_res_all_params()
 {
   LINE=""
 
-  Prob_str="SqPo"
+  Prob_str="StPo"
   PRECLIST="WedNlFrayPa"
   VISLIST="Sim Str"
   ANGLIST="A0 A30 A67"
-  RELIST="R200"
-  NOELLIST="N4 N8 N16 N32 N64 N128 N256 N512"
+  RELIST="R0 R25 R50 R75 R100 R125 R150 R175 R200"
+  NOELLIST="N2 N4 N8 N16 N32 N64 N128"
 
   for PREC in $PRECLIST
   do
