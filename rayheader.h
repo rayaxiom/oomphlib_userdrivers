@@ -3138,6 +3138,11 @@ namespace LagrangianPreconditionerHelpers
       pause("There is no solver for NS.");
     }
 
+    if(!Use_axnorm)
+    {
+      prec_pt->scaling_sigma() = Scaling_sigma;
+    }
+
     // Set the doc info for book keeping purposes. First we check that it is
     // actually set.
     if(Doc_linear_solver_info_pt == 0)
