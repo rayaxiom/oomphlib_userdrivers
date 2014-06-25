@@ -43,7 +43,7 @@ mkdir $TEMPRES_DIR
 
 MAX_SOLVER_ITER="--max_solver_iter 110"
 DIST_PROB="--dist_prob"
-SOLVER_TYPE="--trilinos_solver"
+SOLVER_TYPE="--solver_type 2"
 PROB_ID="--prob_id 11"
 ANG="--ang 42"
 REY="--rey_start 0 --rey_end 50 --rey_incre 25"

@@ -142,13 +142,24 @@ public:
    namespace NSPP = NavierStokesProblemParameters;
    namespace AWL = AnnularWedgeLagrange;
 
-   if(NSPP::Prob_id == AWL::PID_AW_PO)
+   if(NavierStokesProblemParameters::Distribute_problem)
    {
-     if(NavierStokesProblemParameters::Distribute_problem)
+   if(NSPP::Prob_id == AWL::PID_AW_PO)
      {
       delete_flux_elements(Surface_mesh_P_pt);
       rebuild_global_mesh();
      }
+   else
+   {
+   std::ostringstream err_msg;
+   err_msg << "Please set up the distributed bit for problem id: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+   }
    }
  }
 
@@ -157,14 +168,25 @@ public:
    namespace NSPP = NavierStokesProblemParameters;
    namespace AWL = AnnularWedgeLagrange;
 
-   if(NSPP::Prob_id == AWL::PID_AW_PO)
-   {
      if(NavierStokesProblemParameters::Distribute_problem)
+   {
+   if(NSPP::Prob_id == AWL::PID_AW_PO)
      {
        create_parall_outflow_lagrange_elements(
            1,Bulk_mesh_pt,Surface_mesh_P_pt);
        rebuild_global_mesh();
      }
+   else
+   {
+   std::ostringstream err_msg;
+   err_msg << "Please set up the distributed bit for problem id: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+   }
    }
  }
 
@@ -386,12 +408,15 @@ PartialAnnulusProblem<ELEMENT>::PartialAnnulusProblem()
   LPH::Problem_pt = this;
   Prec_pt = LPH::get_preconditioner();
 
+  }
+
+
+
   const double solver_tol = 1.0e-6;
   const double newton_tol = 1.0e-6;
   GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
       solver_tol,newton_tol,
       NSPP::Solver_type,this,Prec_pt);
-  }
 }
 
 //==start_of_doc_solution=================================================

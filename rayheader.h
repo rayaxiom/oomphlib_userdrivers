@@ -1308,9 +1308,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 namespace AnnularWedgeLagrange
 {
 
-  static int PID_AW_TMP = 10;
-  static int PID_AW_PO = 11;
-  static int PID_AW_TF = 12;
+  const static int PID_AW_TMP = 10;
+  const static int PID_AW_PO = 11;
+  const static int PID_AW_TF = 12;
 
   //// NEED MORE STATIC VARIABLES FOR BOUNDARY TYPES FOR EACH PROBLEM
   //// SEE THE PROBLEM FILE
@@ -1588,6 +1588,12 @@ namespace AnnularWedgeLagrange
 namespace StepLagrange
 {
 
+  const static int PID_ST_TMP = 10;
+  const static int PID_ST_PO = 11;
+  const static int PID_ST_TF = 12;
+  const static int PID_ST_TFPO = 13;
+  const static int PID_ST_VA = 88;
+
   std::map<int,std::string> valid_prob_id_map;
 
   // Prob id, set by main method
@@ -1811,11 +1817,16 @@ namespace StepLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(10,"StTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(11,"StPo"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(12,"StTf"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(13,"StTfPo"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(88,"StVa"));
+    valid_prob_id_map.insert(
+        std::pair<int,std::string>(PID_ST_TMP,"StTmp"));
+    valid_prob_id_map.insert(
+        std::pair<int,std::string>(PID_ST_PO,"StPo"));
+    valid_prob_id_map.insert(
+        std::pair<int,std::string>(PID_ST_TF,"StTf"));
+    valid_prob_id_map.insert(
+        std::pair<int,std::string>(PID_ST_TFPO,"StTfPo"));
+    valid_prob_id_map.insert(
+        std::pair<int,std::string>(PID_ST_VA,"StVa"));
 
     set_prob_str();
     set_ang_str();
@@ -1856,11 +1867,11 @@ namespace StepLagrange
 ///////////////////////////////////////////////////////////////////////////////
 namespace SquareLagrange
 {
-  static int PID_SQ_TMP = 10;
-  static int PID_SQ_PO = 11;
-  static int PID_SQ_TF = 12;
-  static int PID_SQ_TFPO = 13;
-  static int PID_SQ_VA = 88;
+  const static int PID_SQ_TMP = 10;
+  const static int PID_SQ_PO = 11;
+  const static int PID_SQ_TF = 12;
+  const static int PID_SQ_TFPO = 13;
+  const static int PID_SQ_VA = 88;
 
   std::map<int,std::string> valid_prob_id_map;
   
@@ -3423,9 +3434,9 @@ namespace NavierStokesProblemParameters
   typedef std::map<int,std::string>::iterator int_string_map_it_type;
 
 
-  static int Solver_type_DIRECT_SOLVE = 0;
-  static int Solver_type_OOMPHLIB_GMRES = 1;
-  static int Solver_type_TRILINOS_GMRES = 2;
+  const static int Solver_type_DIRECT_SOLVE = 0;
+  const static int Solver_type_OOMPHLIB_GMRES = 1;
+  const static int Solver_type_TRILINOS_GMRES = 2;
 
   // To fill
   std::map<int,std::string> valid_solver_type_map;
@@ -3849,16 +3860,18 @@ namespace GenericProblemSetup
                            const int& solver_type,
                            Problem* problem_pt, Preconditioner* prec_pt)
   {
+    namespace NSPP = NavierStokesProblemParameters;
+    
     IterativeLinearSolver* solver_pt = 0;
 
 #ifdef OOMPH_HAS_TRILINOS
-    if(solver_type == NavierStokesProblemParameters::Solver_type_TRILINOS_GMRES)
+    if(solver_type == NSPP::Solver_type_TRILINOS_GMRES)
     {
       TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
       trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
       solver_pt = trilinos_solver_pt;
     }
-    else
+    else if(solver_type == NSPP::Solver_type_OOMPHLIB_GMRES)
     {
       solver_pt = new GMRES<CRDoubleMatrix>;
       // We use RHS preconditioning. Note that by default,
@@ -3866,7 +3879,7 @@ namespace GenericProblemSetup
       static_cast<GMRES<CRDoubleMatrix>*>(solver_pt)->set_preconditioner_RHS();
     }
 #else
-    if(solver_type == NavierStokesProblemParameters::Solver_type_TRILINOS_GMRES)
+    if(solver_type == NSPP::Solver_type_TRILINOS_GMRES)
     {
       std::ostringstream err_msg;
       err_msg << "You have set --solver_type 2\n"
@@ -3875,7 +3888,7 @@ namespace GenericProblemSetup
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
-    else
+    else if(solver_type == NSPP::Solver_type_OOMPHLIB_GMRES)
     {
       solver_pt = new GMRES<CRDoubleMatrix>;
       // We use RHS preconditioning. Note that by default,

@@ -98,8 +98,12 @@ public:
  /// Update before solve is empty
  void actions_before_newton_solve()
  {
-   // Initialise counters for each newton solve.
-   Doc_linear_solver_info_pt->setup_new_time_step();
+   namespace NSPP = NavierStokesProblemParameters;
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+    // Initialise counters for each newton solve.
+    Doc_linear_solver_info_pt->setup_new_time_step();
+   }
  }
 
  /// \short Update after solve is empty
@@ -109,78 +113,63 @@ public:
 
  void actions_after_newton_step()
  {
-   unsigned iters = 0;
-   double preconditioner_setup_time = 0.0;
-   double solver_time = 0.0;
-
-   // Get the iteration counts.
-#ifdef PARANOID
-   IterativeLinearSolver* iterative_solver_pt
-     = dynamic_cast<IterativeLinearSolver*>
-       (this->linear_solver_pt());
-   if(iterative_solver_pt == 0)
+   namespace NSPP = NavierStokesProblemParameters;
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
    {
-     std::ostringstream error_message;
-     error_message << "Cannot cast the solver pointer." << std::endl;
-
-     throw OomphLibError(error_message.str(),
-                         OOMPH_CURRENT_FUNCTION,
-                         OOMPH_EXCEPTION_LOCATION);
+     NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
-   else
-   {
-     iters = iterative_solver_pt->iterations();
-     preconditioner_setup_time 
-       = iterative_solver_pt->preconditioner_pt()->setup_time();
-   }
-#else
-   iters = static_cast<IterativeLinearSolver*>
-             (this->linear_solver_pt())->iterations();
-   preconditioner_setup_time = static_cast<IterativeLinearSolver*>
-             (this->linear_solver_pt())->preconditioner_pt()->setup_time();
-
-#endif
-
-   // Get the preconditioner setup time.
-   
-   // Set the solver time.
-   if(NavierStokesProblemParameters::Using_trilinos_solver)
-   {
-     TrilinosAztecOOSolver* trilinos_solver_pt 
-       = dynamic_cast<TrilinosAztecOOSolver*>(this->linear_solver_pt());
-     solver_time = trilinos_solver_pt->linear_solver_solution_time();
-   }
-   else
-   {
-     solver_time = linear_solver_pt()->linear_solver_solution_time();
-   }
-
-   Doc_linear_solver_info_pt->add_iteration_and_time
-     (iters,preconditioner_setup_time,solver_time);
  }
 
  void delete_flux_elements(Mesh* const &surface_mesh_pt);
 
  void actions_before_distribute()
  {
-   if(NavierStokesProblemParameters::Prob_id != 88)
+   namespace NSPP = NavierStokesProblemParameters;
+   namespace SL = SquareLagrange;
+
+   if(NSPP::Distribute_problem)
    {
-   if(NavierStokesProblemParameters::Distribute_problem)
-   {
-    delete_flux_elements(Surface_mesh_P_pt);
-    rebuild_global_mesh();
-   }
+     if(NSPP::Prob_id == SL::PID_SQ_PO)
+     {
+      delete_flux_elements(Surface_mesh_P_pt);
+      rebuild_global_mesh();
+     }
+     else
+     {
+   std::ostringstream err_msg;
+   err_msg << "Please set up the distributed bit for problem id: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+     }
    }
  }
 
  void actions_after_distribute()
  {
-   if(NavierStokesProblemParameters::Prob_id != 88)
+   namespace NSPP = NavierStokesProblemParameters;
+   namespace SL = SquareLagrange;
+
+   if(NSPP::Distribute_problem)
    {
-   if(NavierStokesProblemParameters::Distribute_problem)
+   if(NSPP::Prob_id == SL::PID_SQ_PO)
    {
      create_parall_outflow_lagrange_elements(1,Bulk_mesh_pt,Surface_mesh_P_pt);
      rebuild_global_mesh();
+   }
+   else
+   {
+   std::ostringstream err_msg;
+   err_msg << "Please set up the distributed bit for problem id: "
+           << NSPP::Prob_id << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
    }
    }
  }
@@ -360,6 +349,9 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
  std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
  
 
+ // Only do this bit if we do NOT have a direct solver.
+ if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+ {
  // Create the vector of mesh pointers!
  Vector<Mesh*> mesh_pt;
  if(NSPP::Prob_id == SL::PID_SQ_PO)
@@ -399,12 +391,12 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
  LPH::Mesh_pt = mesh_pt;
  LPH::Problem_pt = this;
  Prec_pt = LPH::get_preconditioner();
-
+ }
  const double solver_tol = 1.0e-6;
  const double newton_tol = 1.0e-6;
  GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
                                    solver_tol,newton_tol,
-                                   NSPP::Using_trilinos_solver,this,Prec_pt);
+                                   NSPP::Solver_type,this,Prec_pt);
 }
 
 //==start_of_doc_solution=================================================
@@ -1105,6 +1097,8 @@ int main(int argc, char* argv[])
       ////////////// Outputting results ////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////
 
+      if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+      {
       // Get the global oomph-lib communicator 
       const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
@@ -1165,6 +1159,7 @@ int main(int argc, char* argv[])
         outfile << "\n" << results_stream.str();
         outfile.close();
       }
+      }
 
       rey_increment++;
 
@@ -1195,6 +1190,8 @@ int main(int argc, char* argv[])
     ////////////// Outputting results ////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////
 
+    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+    {
     // Get the global oomph-lib communicator 
     const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
@@ -1273,6 +1270,7 @@ int main(int argc, char* argv[])
     {
       outfile << "\n" << results_stream.str();
       outfile.close();
+    }
     }
   } // else do not loop reynolds
 
