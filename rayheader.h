@@ -1308,6 +1308,16 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 namespace AnnularWedgeLagrange
 {
 
+  static int PID_AW_TMP = 10;
+  static int PID_AW_PO = 11;
+  static int PID_AW_TF = 12;
+
+  //// NEED MORE STATIC VARIABLES FOR BOUNDARY TYPES FOR EACH PROBLEM
+  //// SEE THE PROBLEM FILE
+
+
+
+
   std::map<int,std::string> valid_prob_id_map;
 
   // Prob id, set by main method
@@ -1367,6 +1377,7 @@ namespace AnnularWedgeLagrange
   // P_solver = 0 (SuperLU) or 1 (AMG)
   // 
 
+  // RAYRAY THIS IS INCORRECT, UPDATE THIS!!!
   // All problems based on the square domain will be in the same file.
   // Each unique problem will have an id.
   // 00 = (SqTmp) Square, custom stuff...
@@ -1387,7 +1398,7 @@ namespace AnnularWedgeLagrange
   double Phi_hi = 90.0; // CL, Upper angle of annulus
   double R_lo = 1.0; // CL, lower radius from the origin
   double R_hi = 3.0; // CL, higher radius from the origin
-  double V_lo = 1.0; // CL, higher radius from the origin
+  double V_lo = 1.0; // CL, Lower velocity
   unsigned BC_setting = 0; // CL, higher radius from the origin
 
 
@@ -1514,7 +1525,7 @@ namespace AnnularWedgeLagrange
   } // set_ang_str
 
 
-    inline void set_noel_str()
+  inline void set_noel_str()
   {
     // Set Noel_str, used for book keeping.
     if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
@@ -1538,8 +1549,9 @@ namespace AnnularWedgeLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(10,"AwTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(11,"AwPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_AW_TMP,"AwTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_AW_PO,"AwPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_AW_TF,"AwTF"));
 
     V_loR_lo = V_lo*R_lo;
 
@@ -3407,7 +3419,20 @@ namespace LagrangianPreconditionerHelpers
 //=============================================================================
 namespace NavierStokesProblemParameters
 {
+
+  typedef std::map<int,std::string>::iterator int_string_map_it_type;
+
+
+  static int Solver_type_DIRECT_SOLVE = 0;
+  static int Solver_type_OOMPHLIB_GMRES = 1;
+  static int Solver_type_TRILINOS_GMRES = 2;
+
+  // To fill
+  std::map<int,std::string> valid_solver_type_map;
+
+
   // From Commandline
+  int Solver_type = -1;
   int Prob_id = -1;
   bool Distribute_problem = false;
   int Vis = -1;
@@ -3418,9 +3443,6 @@ namespace NavierStokesProblemParameters
   double Rey_end = -1.0;
 
   int Max_solver_iteration = -1;
-
-
-  bool Using_trilinos_solver = false;
 
   std::string Soln_dir_str = "";
   std::string Itstime_dir_str = "";
@@ -3456,7 +3478,10 @@ namespace NavierStokesProblemParameters
     CommandLineArgs::specify_command_line_flag("--itstimedir", 
         &Itstime_dir_str);
 
-    CommandLineArgs::specify_command_line_flag("--trilinos_solver");
+    CommandLineArgs::specify_command_line_flag("--solver_type",
+        &Solver_type);
+
+
   }
 
   inline void generic_problem_setup(const unsigned& dim)
@@ -3625,24 +3650,77 @@ namespace NavierStokesProblemParameters
       }
     }
 
-    if(CommandLineArgs::command_line_flag_has_been_set("--trilinos_solver"))
+    ////////////////////////////////////////////
+    //Set up the solver types
+    valid_solver_type_map.insert(
+        std::pair<int,std::string>(Solver_type_DIRECT_SOLVE, 
+                                   "Direct solve"));
+    valid_solver_type_map.insert(
+        std::pair<int,std::string>(Solver_type_OOMPHLIB_GMRES, 
+                                   "OOMPH-LIB's GMRES"));
+    valid_solver_type_map.insert(
+        std::pair<int,std::string>(Solver_type_TRILINOS_GMRES, 
+                                   "Trilinos Aztec00 GMRES"));
+
+    if(CommandLineArgs::command_line_flag_has_been_set("--solver_type"))
     {
-#ifdef OOMPH_HAS_TRILINOS
-      Using_trilinos_solver = true;
-#else
+#ifndef OOMPH_HAS_TRILINOS
+      if(Solver_type == Solver_type_TRILINOS_GMRES)
       {
         std::ostringstream err_msg;
-        err_msg << "The flag --trilinos_solver has been set.\n"
+        err_msg << "Have set --solver_type to: " << Solver_type << "\n"
           << "But OOMPH-LIB does not have trilinos!" << std::endl;
         throw OomphLibError(err_msg.str(),
             OOMPH_CURRENT_FUNCTION,
             OOMPH_EXCEPTION_LOCATION);
       }
 #endif
+
+
+      int_string_map_it_type solver_type_it;
+
+      // Check that the solver type is valid.
+      solver_type_it = valid_solver_type_map.find(Solver_type);
+
+      if(solver_type_it == valid_solver_type_map.end())
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide a valid solver type "
+          << "after the argument --solver_type:\n"
+          << "Acceptable IDs are:\n";
+          // Loop through the solver types
+
+
+for(int_string_map_it_type iterator = valid_solver_type_map.begin(); 
+    iterator != valid_solver_type_map.end(); iterator++) 
+{
+  err_msg << iterator->first << " = " << iterator->second << "\n";
+}
+          err_msg << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
     }
     else
     {
-      Using_trilinos_solver = false;
+        std::ostringstream err_msg;
+        err_msg << "Please set --solver_type\n"
+          << "Acceptable IDs are:\n";
+          // Loop through the solver types
+
+for(int_string_map_it_type iterator = valid_solver_type_map.begin(); 
+    iterator != valid_solver_type_map.end(); iterator++) 
+{
+  err_msg << iterator->first << " = " << iterator->second << "\n";
+}
+          err_msg << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
     }
 
     if(!CommandLineArgs::command_line_flag_has_been_set("--max_solver_iter"))
@@ -3705,6 +3783,58 @@ namespace NavierStokesProblemParameters
 
     return label;
   } // create_label()
+
+  inline void doc_iter_times(Problem* problem_pt,
+                             DocLinearSolverInfo* doc_linear_solver_info_pt)
+  {
+     unsigned iters = 0;
+     double preconditioner_setup_time = 0.0;
+     double solver_time = 0.0;
+
+     // Get the iteration counts and preconditioner setup time
+#ifdef PARANOID
+     IterativeLinearSolver* iterative_solver_pt
+       = dynamic_cast<IterativeLinearSolver*>
+       (problem_pt->linear_solver_pt());
+     if(iterative_solver_pt == 0)
+     {
+       std::ostringstream error_message;
+       error_message << "Cannot cast the solver pointer." << std::endl;
+
+       throw OomphLibError(error_message.str(),
+           OOMPH_CURRENT_FUNCTION,
+           OOMPH_EXCEPTION_LOCATION);
+     }
+     else
+     {
+       iters = iterative_solver_pt->iterations();
+       preconditioner_setup_time 
+         = iterative_solver_pt->preconditioner_pt()->setup_time();
+     }
+#else
+     iters = static_cast<IterativeLinearSolver*>
+       (problem_pt->linear_solver_pt())->iterations();
+     preconditioner_setup_time = static_cast<IterativeLinearSolver*>
+       (problem_pt->linear_solver_pt())->preconditioner_pt()->setup_time();
+#endif
+
+     // Set the solver time.
+     if(Solver_type == Solver_type_TRILINOS_GMRES)
+     {
+       TrilinosAztecOOSolver* trilinos_solver_pt 
+         = dynamic_cast<TrilinosAztecOOSolver*>(problem_pt->linear_solver_pt());
+       solver_time = trilinos_solver_pt->linear_solver_solution_time();
+     }
+     else
+     {
+       solver_time = problem_pt->linear_solver_pt()->linear_solver_solution_time();
+     }
+
+     doc_linear_solver_info_pt->add_iteration_and_time
+       (iters,preconditioner_setup_time,solver_time);
+  }
+
+  
 } // NavierStokesProblemParameters
 
 
@@ -3716,13 +3846,13 @@ namespace GenericProblemSetup
 {
   inline void setup_solver(const int& max_solver_iter,
                            const double& solver_tol, const double& newton_tol,
-                           const bool& use_trilinos_solver,
+                           const int& solver_type,
                            Problem* problem_pt, Preconditioner* prec_pt)
   {
     IterativeLinearSolver* solver_pt = 0;
 
 #ifdef OOMPH_HAS_TRILINOS
-    if(use_trilinos_solver)
+    if(solver_type == NavierStokesProblemParameters::Solver_type_TRILINOS_GMRES)
     {
       TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
       trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
@@ -3736,10 +3866,10 @@ namespace GenericProblemSetup
       static_cast<GMRES<CRDoubleMatrix>*>(solver_pt)->set_preconditioner_RHS();
     }
 #else
-    if(use_trilinos_solver)
+    if(solver_type == NavierStokesProblemParameters::Solver_type_TRILINOS_GMRES)
     {
       std::ostringstream err_msg;
-      err_msg << "You have set --trilinos_solver\n"
+      err_msg << "You have set --solver_type 2\n"
         << "But OOMPH does not have trilinos" << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
@@ -3763,15 +3893,20 @@ namespace GenericProblemSetup
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
-    } 
+    }
 
-    solver_pt->tolerance() = solver_tol;
-    solver_pt->max_iter() = max_solver_iter;
+    // Now set everything!
+    if(solver_pt != 0)
+    {
+      solver_pt->tolerance() = solver_tol;
+      solver_pt->max_iter() = max_solver_iter;
+      solver_pt->preconditioner_pt() = prec_pt;
+      problem_pt->linear_solver_pt() = solver_pt;
+    }
+
     problem_pt->newton_solver_tolerance() = newton_tol;
-
-    solver_pt->preconditioner_pt() = prec_pt;
-    problem_pt->linear_solver_pt() = solver_pt;
   }
+
 } // namespace GenericProblemSetup
 
 
