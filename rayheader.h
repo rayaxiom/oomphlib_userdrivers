@@ -2141,13 +2141,27 @@ namespace SquareLagrange
 
 } // Namespace SquareLagrange
 
+
+
+
+////////////////////////////////////////////////////////////////////////////
+//
+// //
+//   /////        QUARTER CIRCLE!!!!
+//        ////
+//           //
+//           //
+///////////////
+//
+//
+//
 namespace QuarterCircleLagrange
 {
-  const static int PID_SQ_TMP = 10;
-  const static int PID_SQ_PO = 11;
-  const static int PID_SQ_TF = 12;
-  const static int PID_SQ_TFPO = 13;
-  const static int PID_SQ_VA = 88;
+  const static int PID_QC_TMP = 10;
+  const static int PID_QC_PO = 20;
+  const static int PID_QC_TF = 30;
+  const static int PID_QC_TFPO = 40;
+  const static int PID_QC_VA = 80;
 
   std::map<int,std::string> valid_prob_id_map;
   
@@ -2155,82 +2169,36 @@ namespace QuarterCircleLagrange
   const int* Prob_id_pt = 0;
 
   std::string Prob_str = "";
-  std::string Ang_deg_str = "";
-  std::string Noel_str = "";
+  std::string Noref_str = "";
+
+  unsigned Noref = 2; //CL, Number of elements in 1D
 
 
-  ///////////////////////
-  // Domain dimensions.//
-  ///////////////////////
-  //
-  // This is a square domain: x,y \in [0,1]
-  //
 
-  // Min and max x value respectively.
-  static const double X_min = 0.0;
-  static const double X_max = 1.0;
+  // New stuff ///////////////////////////////////
+ /// Gravity vector
+ Vector<double> Gravity(2);
 
-  // Min and max y value respectively.
-  static const double Y_min = 0.0;
-  static const double Y_max = 1.0;
+ /// Functional body force
+// void body_force(const double& time, const Vector<double>& x, 
+//                 Vector<double>& result)
+// {
+//  result[0]=0.0;
+//  result[1]=-Re_invFr;
+// }
+//
+ /// Zero functional body force
+ void zero_body_force(const double& time, const Vector<double>& x, 
+                      Vector<double>& result)
+ {
+  result[0]=0.0;
+  result[1]=0.0;
+ }
 
-  // The length in the x and y direction respectively.
-  static const double Lx = X_max - X_min;
-  static const double Ly = Y_max - Y_min;
-
-  /////////////////////////////////////////////////////////////////////////////
-
-  // CL - set directly from the command line.
-  // To set from CL - a CL value is set, this is changed depending on that
-  // value.
-  //
-  // Problem parameter overview:
-  //
-  // // Solvers:
-  //
-  //
-  // F_ns + L^T inv(W) L | B^T
-  // --------------------------
-  //                     | W
-  //
-  // W = 0 (SuperLU)
-  // NS_solver = 0 (SuperLU) or 1 (LSC)
-  // 
-  // If NS_solver = 1, then we have:
-  //
-  // | F | B^T |   |
-  // |----------   |
-  // |   |-M_s |   |
-  // |-------------|
-  // |         | W |
-  //
-  // F_solver = 0 (SuperLU) or 1 (AMG)
-  // P_solver = 0 (SuperLU) or 1 (AMG)
-  // 
-
-  // All problems based on the square domain will be in the same file.
-  // Each unique problem will have an id.
-  // 00 = (SqTmp) Square, custom stuff...
-  // 01 = (SqPo) Square, Parallel outflow (para inflow) 
-  // 02 = (SqTf) Square, Tangential flow (Semi para inflow)
-  // 03 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)
-  //
-  // 10 = (AwTmp) Annulus wedge, custom stuff...
-  // 11 = (AwPo) Annulus wedge, Parallel outflow (para inflow)
-  // 12 = (AwTf) Annulus wedge, Tangential flow (semi para inflow)
-  // 13 = (AwTfPo) Annulus wedge, Tan. flow, Para. outflow (semi para inflow)
-
-  // These are self explanatory:
-  double Ang_deg = 30.0; //CL, Angle in degrees
-  double Ang = 0.0; //CL, Angle in degrees
-  unsigned Noel = 4; //CL, Number of elements in 1D
-  // the default is the norm of the momentum block.
 
   inline void setup_commandline_flags()
   {
-    CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
-
-    CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+    CommandLineArgs::specify_command_line_flag("--ref", &Noref);
   }
 
   inline void set_prob_str()
@@ -2267,15 +2235,10 @@ namespace QuarterCircleLagrange
       if(prob_id_it == valid_prob_id_map.end())
       {
         std::ostringstream err_msg;
-        err_msg << "Please provide a problem id to identify the problem after "
+        err_msg << "Please provide a problem id to "
+          << "identify the problem after "
           << "after the argument --prob_id.\n" 
-          << "Acceptable IDs are:\n"
-          << "10 = (SqTmp) Square, custom stuff...\n"
-          << "11 = (SqPo) Square, Parallel outflow (para inflow)\n"
-          << "12 = (SqTf) Square, Tangential flow (Semi para inflow)\n"
-          << "13 = (SqTfPo) Square, Tangential flow, Parallel outflow (semi para inflow)\n"
-          << "\n"
-          << "88 = (SqVa) Square, Vanilla LSC\n"
+          << "Acceptable IDs are: TODO\n"
           << std::endl;
 
         throw OomphLibError(err_msg.str(),
@@ -2298,77 +2261,19 @@ namespace QuarterCircleLagrange
     }
   } // set_prob_str
 
-  inline void set_ang_str()
-  {
-    if(Prob_id_pt == 0)
-    {
-      std::ostringstream err_msg;
-      err_msg << "Oh dear, Prob_id_pt is null. Please set this in main().\n"
-        << "This should be stored in NSPP::Prob_id, and set by cmd via\n"
-        << "--prob_id \n"; 
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-
-    // If this is the vanilla problem, we set the angle as -1 and set the
-    // string as "A_". This would indicate that no angle is used.
-    // Furthermore, we ensure that no --ang is set.
-    if(Prob_str.compare("SqVa") == 0)
-    {
-      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
-      {
-        std::ostringstream err_msg;
-        err_msg << "prob_id is 88, doing vanilla LSC with no tilt.\n"
-          << "But you have set --ang, please do not set this."; 
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-      Ang = -1.0;
-      // Now we set the Ang_deg_str.
-      std::ostringstream strs;
-      strs << "A_";
-      Ang_deg_str = strs.str();
-    }
-    else
-    // This problem requires tilting, thus we set the Ang and Ang_deg_str.
-    {
-      // But first we check that --ang has been set.
-      // Check that Ang has been set.
-      if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
-      {
-        std::ostringstream err_msg;
-        err_msg << "Angle has not been set. Set (in degrees) with: \n"
-          << "--ang \n"; 
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-      }
-
-      // Now we need to convert Ang_deg into radians.
-      Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
-
-      // Now we set the Ang_deg_str.
-      std::ostringstream strs;
-      strs << "A" << Ang_deg;
-      Ang_deg_str = strs.str();
-    }
-  } // set_ang_str
-
-  inline void set_noel_str()
+  inline void set_noref_str()
   {
     // Set Noel_str, used for book keeping.
-    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    if(CommandLineArgs::command_line_flag_has_been_set("--ref"))
     {
       std::ostringstream strs;
-      strs << "N" <<Noel;
-      Noel_str = strs.str();
+      strs << "Ref" <<Noref;
+      Noref_str = strs.str();
     }
     else
     {
       std::ostringstream err_msg;
-      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+      err_msg << "Please supply the number of refinements using --noref.\n"
         << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
@@ -2379,16 +2284,14 @@ namespace QuarterCircleLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TMP,"SqTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_PO,"SqPo"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TF,"SqTf"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_TFPO,"SqTfPo"));
-
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_SQ_VA,"SqVa"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_TMP,"QcTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_PO,"QcPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_TF,"QcTf"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_TFPO,"QcTfPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_VA,"QcVa"));
 
     set_prob_str();
-    set_ang_str();
-    set_noel_str();
+    set_noref_str();
   }
 
   inline std::string prob_str()
@@ -2397,21 +2300,15 @@ namespace QuarterCircleLagrange
     return Prob_str;
   }
 
-  inline std::string ang_deg_str()
+  inline std::string noref_str()
   {
-    set_ang_str();
-    return Ang_deg_str;
-  }
-
-  inline std::string noel_str()
-  {
-    set_noel_str();
-    return Noel_str;
+    set_noref_str();
+    return Noref_str;
   }
 
   inline std::string create_label()
   {
-    std::string label = prob_str() + ang_deg_str() + noel_str();
+    std::string label = prob_str() + noref_str();
     return label; 
   } // inlined function create_label
 
@@ -3716,13 +3613,13 @@ namespace NavierStokesProblemParameters
   // To fill
   std::map<int,std::string> valid_solver_type_map;
 
-
   // From Commandline
   int Solver_type = -1;
   int Prob_id = -1;
   bool Distribute_problem = false;
   int Vis = -1;
   double Rey = -1.0;
+  double Re_invFr = -1.0;
 
   double Rey_start = -1.0;
   double Rey_incre = -1.0;
@@ -3740,6 +3637,26 @@ namespace NavierStokesProblemParameters
   // From code:
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
 
+
+  // Additional stuff required for quarter circle, but putting it
+  // here since it may be required elsewhere
+  
+  // Functional body force
+//  void body_force(const double& time, const Vector<double>& x,
+//                   Vector<double>& result)
+//  {
+//    result[0] = 0.0;
+//    result[1] = -Re_invFr;
+//  }
+//
+//  void zero_body_force(const double& time, const Vector<double>& x,
+//                       Vector<double>& result)
+//  {
+//    result[0] = 0.0;
+//    result[1] = 0.0;
+//  }
+
+//  Vector<double> Gravity(2);
 
   inline void setup_commandline_flags()
   {
@@ -4113,7 +4030,8 @@ for(int_string_map_it_type iterator = valid_solver_type_map.begin();
      }
      else
      {
-       solver_time = problem_pt->linear_solver_pt()->linear_solver_solution_time();
+       solver_time 
+         = problem_pt->linear_solver_pt()->linear_solver_solution_time();
      }
 
      doc_linear_solver_info_pt->add_iteration_and_time
