@@ -4,7 +4,11 @@ lagrange_square/sq_lgr
 lagrange_bifurcation/unstructured_three_d_fluid
 lagrange_step/step_po
 lagrange_annular_wedge/two_d_annular_wedge
-
+time_stepping/rayleigh_channel
+time_stepping/rayleigh_traction_channel
+time_stepping/sq_lgr
+time_stepping/three_d_fp
+time_stepping/unstructured_three_d_fluid
 
 tags
 
