@@ -378,7 +378,7 @@ FpTestProblem::FpTestProblem(const unsigned& n_el)
 
  
 
- // In/outflow bcs
+   // OUTFLOW ONLY, for inflow, check out the before solve
 // if (Problem_id==Global_Variables::Through_flow)
   {
    unsigned ibound=Outflow_boundary;
@@ -603,7 +603,7 @@ int main(int argc, char **argv)
           
           // Attach traction elements now with the problem in its
           // most refined state
-         problem.create_traction_elements<QTaylorHoodElement<3> >();
+//         problem.create_traction_elements<QTaylorHoodElement<3> >();
           
           
           // Loop over Reynolds numbers (limited during validation)
