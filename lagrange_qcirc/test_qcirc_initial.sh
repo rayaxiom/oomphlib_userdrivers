@@ -105,7 +105,7 @@ case "$PREC" in
     ;;
 esac
 # Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
-echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS --rey $RE --noref $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS $RE --ref $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
       done
   done
