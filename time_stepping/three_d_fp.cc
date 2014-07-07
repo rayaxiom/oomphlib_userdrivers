@@ -122,11 +122,9 @@ public:
  FpTestProblem(const unsigned& n_element,
                const bool& use_tets,
                const bool& use_adaptivity, 
-               const bool& use_lsc,
                const bool& use_hypre_for_pressure,
                const bool& use_block_diagonal_for_momentum,
-               const bool& use_hypre_for_momentum_diagonals,
-               const int& problem_id);
+               const bool& use_hypre_for_momentum_diagonals);
 
  
  /// Destructor: Cleanup
@@ -161,7 +159,7 @@ public:
     pin_redundant_nodal_pressures(Bulk_mesh_pt->element_pt());
    
    // Now set the first pressure dof in the first element to 0.0
-   if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
+//   if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
   } // end_of_actions_after_adapt
  
 
@@ -186,41 +184,6 @@ public:
   Global_Variables::Iterations.clear();
   Global_Variables::Linear_solver_time.clear();
 
-  // Driven cavity bcs
-  if (Problem_id==Global_Variables::Driven_cavity)
-   {
-    // Setup tangential flow along driven boundary
-    unsigned ibound=Driven_boundary;
-    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-     {
-      // Tangential flow
-      Bulk_mesh_pt->boundary_node_pt(ibound,inod)->set_value(0,1.0);
-      Bulk_mesh_pt->boundary_node_pt(ibound,inod)->set_value(1,0.0);
-      
-      // No penetration
-      Bulk_mesh_pt->boundary_node_pt(ibound,inod)->set_value(2,0.0);
-     }
-    
-    // Overwrite with no flow along the other boundaries
-    unsigned num_bound = Bulk_mesh_pt->nboundary();
-    for(unsigned ibound=0;ibound<num_bound;ibound++)
-     {
-      if (ibound!=Driven_boundary)
-       {
-        unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-        for (unsigned inod=0;inod<num_nod;inod++)
-         {
-          for (unsigned i=0;i<3;i++)
-           {
-            Bulk_mesh_pt->boundary_node_pt(ibound,inod)->set_value(i,0.0);
-           }
-         }
-       }
-     }
-   }
-  // Inflow at left boundary
-  else
    {
     // Inflow in upper half of inflow boundary
     unsigned ibound=Inflow_boundary; 
@@ -293,9 +256,6 @@ private:
  /// ID of outflow boundary
  unsigned Outflow_boundary;
 
- /// Problem id
- unsigned Problem_id;
-
  /// Pointer to the "bulk" mesh
  Mesh* Bulk_mesh_pt;
  
@@ -311,16 +271,11 @@ private:
 FpTestProblem::FpTestProblem(const unsigned& n_el,
                              const bool& use_tets,
                              const bool& use_adaptivity, 
-                             const bool& use_lsc,
                              const bool& use_hypre_for_pressure,
                              const bool& use_block_diagonal_for_momentum,
-                             const bool& use_hypre_for_momentum_diagonals,
-                             const int& problem_id)
+                             const bool& use_hypre_for_momentum_diagonals)
 { 
  
- // Store flag
- Problem_id=problem_id;
-
  // Setup mesh
  
  // # of elements in x-direction
@@ -451,13 +406,8 @@ FpTestProblem::FpTestProblem(const unsigned& n_el,
  
    
    // Use LSC?
-   if (use_lsc)
     {
      prec_pt->use_lsc();
-    }
-   else
-    {
-     prec_pt->use_fp();
     }
    
    // Set Navier Stokes mesh
@@ -484,7 +434,7 @@ FpTestProblem::FpTestProblem(const unsigned& n_el,
  
 
  // In/outflow bcs
- if (Problem_id==Global_Variables::Through_flow)
+// if (Problem_id==Global_Variables::Through_flow)
   {
    unsigned ibound=Outflow_boundary;
    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
@@ -533,7 +483,7 @@ FpTestProblem::FpTestProblem(const unsigned& n_el,
   }
 
  // Now set the first pressure value in element 0 to 0.0
- if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
+// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
 
  // Setup equation numbering scheme
  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
@@ -710,18 +660,7 @@ int main(int argc, char **argv)
  bool use_block_diagonal_for_momentum=false;
  bool use_hypre_for_momentum_diagonals=false;
    
- //Loop over problems: Driven cavity and step
- for (unsigned problem_id=0;problem_id<2;problem_id++) 
-  {
-   
-   if (problem_id==0)
-    {
-     out_file.open("three_d_iter_driven_cavity.dat");
-    }
-   else 
-    {      
      out_file.open("three_d_iter_through_flow.dat");
-    }
    
    out_file
     << "VARIABLES=\"nel_1d\","
@@ -739,13 +678,14 @@ int main(int argc, char **argv)
      
    // Loop over preconditioners: iprec=0: LSC
    //                            iprec=1: Fp
-   bool use_lsc=true;
    //bool use_robin=true;
-   for (unsigned iprec=0;iprec<2;iprec++)
+//   for (unsigned iprec=0;iprec<2;iprec++)
     {
+      unsigned iprec=0;
      
      // Loop over three cases (tets, non-refineable/refineable bricks)
-     for (unsigned icase=0;icase<=2;icase++) 
+//     for (unsigned icase=0;icase<=2;icase++) 
+      unsigned icase = 1;
       {
        bool use_tets=false;
        bool use_adaptivity=false;
@@ -783,12 +723,10 @@ int main(int argc, char **argv)
        // Set preconditioner
        if (iprec==0)
         {
-         use_lsc=true;
          header2=", LSC";
         }
        else if (iprec==1)
         {
-         use_lsc=false;
          //use_robin=true;
          header2=", Fp";
         }   
@@ -801,58 +739,22 @@ int main(int argc, char **argv)
                  
         // Number of elements in x/y directions (reduced for validaton)
         unsigned max_nel_1d=4; 
-        if (argc>1) max_nel_1d=2;
-        for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
+        //if (argc>1) max_nel_1d=2;
+        //for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
          {
+           unsigned nel_1d = 4;
            
           // Build the problem 
           FpTestProblem problem(
-           nel_1d,use_tets,use_adaptivity,use_lsc,
+           nel_1d,use_tets,use_adaptivity,
            use_hypre_for_pressure,use_block_diagonal_for_momentum,
-           use_hypre_for_momentum_diagonals,problem_id);
+           use_hypre_for_momentum_diagonals);
            
           
           
-          // Refine a few times
-          if (use_adaptivity)
-           {             
-            // Note: This manually chosen refinement pattern introduces
-            // doubly hanging nodes on boundary and in the interior
-            Vector<unsigned> elements_to_be_refined;
-            unsigned nel=problem.bulk_mesh_pt()->nelement();
-            unsigned e=0;
-            while (e<nel)
-             {
-              elements_to_be_refined.push_back(e);
-              e+=7;
-             }
-            problem.refine_selected_elements(0,elements_to_be_refined); 
-            elements_to_be_refined.clear();
-            elements_to_be_refined.push_back(1);
-            problem.refine_selected_elements(0,elements_to_be_refined); 
-            elements_to_be_refined.clear();
-            elements_to_be_refined.push_back(4);
-            problem.refine_selected_elements(0,elements_to_be_refined); 
-           }
           // Attach traction elements now with the problem in its
           // most refined state
-          if (use_tets)
-           {
-            problem.create_traction_elements<TTaylorHoodElement<3> >();
-           }
-          else 
-           {
-            if (use_adaptivity)
-             {
-              problem.create_refineable_traction_elements
-               <RefineableQTaylorHoodElement<3> >();
-             }
-            else
-             {
-              problem.create_traction_elements<QTaylorHoodElement<3> >();
-             }
-           }
-          
+         problem.create_traction_elements<QTaylorHoodElement<3> >();
           
           
           // Loop over Reynolds numbers (limited during validation)
@@ -899,7 +801,6 @@ int main(int argc, char **argv)
    
    out_file.close();
    
-  }
  
 
 #ifdef OOMPH_HAS_MPI
