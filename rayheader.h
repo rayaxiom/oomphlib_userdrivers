@@ -2161,6 +2161,7 @@ namespace QuarterCircleLagrange
   const static int PID_QC_PO = 20;
   const static int PID_QC_TF = 30;
   const static int PID_QC_TFPO = 40;
+  const static int PID_QC_VA_DRIVEN = 50;
   const static int PID_QC_VA = 80;
 
   std::map<int,std::string> valid_prob_id_map;
@@ -2288,6 +2289,7 @@ namespace QuarterCircleLagrange
     valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_PO,"QcPo"));
     valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_TF,"QcTf"));
     valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_TFPO,"QcTfPo"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_VA_DRIVEN,"QcVaDri"));
     valid_prob_id_map.insert(std::pair<int,std::string>(PID_QC_VA,"QcVa"));
 
     set_prob_str();

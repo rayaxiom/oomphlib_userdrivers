@@ -74,7 +74,7 @@ public:
  void actions_before_newton_solve()
   { 
   // Setup tangential flow along boundary 1:
-  unsigned ibound=1; 
+  unsigned ibound=Curved_bound; 
   unsigned num_nod= mesh_pt()->nboundary_node(ibound);
   for (unsigned inod=0;inod<num_nod;inod++)
    {
@@ -99,7 +99,7 @@ public:
   unsigned num_bound = mesh_pt()->nboundary();
   for(unsigned ibound=0;ibound<num_bound;ibound++)
    {
-    if (ibound!=1)
+    if (ibound!=Curved_bound)
      {
       unsigned num_nod= mesh_pt()->nboundary_node(ibound);
       for (unsigned inod=0;inod<num_nod;inod++)
@@ -222,6 +222,8 @@ QuarterCircleProblem<ELEMENT>::QuarterCircleProblem(
  dynamic_cast<RefineableQuarterCircleSectorMesh<ELEMENT>*>(
   Bulk_mesh_pt)->spatial_error_estimator_pt()=error_estimator_pt;
  
+ if(NSPP::Prob_id == QCL::PID_QC_VA_DRIVEN)
+ {
  // Set the boundary conditions for this problem: All nodes are
  // free by default -- just pin the ones that have Dirichlet conditions
  // here: All boundaries are Dirichlet boundaries.
@@ -238,6 +240,17 @@ QuarterCircleProblem<ELEMENT>::QuarterCircleProblem(
       }
     }
   } // end loop over boundaries
+ }
+ else
+ {
+   std::ostringstream err_msg;
+   err_msg << "No such boundary conditions set for Problem id:\n"
+           << "NSPP::Prob_id: " << NSPP::Prob_id << "\n"
+           << std::endl;
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+ }
 
  //Find number of elements in mesh
  unsigned n_element = mesh_pt()->nelement();
