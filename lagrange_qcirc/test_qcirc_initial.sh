@@ -79,7 +79,31 @@ do
 RE="--rey_start 0 --rey_end 500 --rey_incre 50"
         for NOEL in $NOELLIST
         do
-load_LPREC_C1v22_Eu_Rs_case
+case "$PREC" in
+  0)
+    PREC_PARAM="$LPREC0_LU_LU"
+    ;;
+  1)
+    PREC_PARAM="$LPREC1_LU_LSCLuLu"
+    ;;
+  2)
+    PREC_PARAM="$LPREC2_LU_LSCAmgLu"
+    ;;
+  3)
+    if [ "$VIS" -eq "0" ]; then
+      PREC_PARAM="$LPREC3_LU_LSCLu_C1v22_Eu_RS_sim"
+    else
+      PREC_PARAM="$LPREC3_LU_LSCLu_C1v22_Eu_RS_str"
+    fi
+    ;;
+  4)
+    if [ "$VIS" -eq "0" ]; then
+      PREC_PARAM="$LPREC4_LU_LSCAmg_C1v22_Eu_RS_sim"
+    else
+      PREC_PARAM="$LPREC4_LU_LSCAmg_C1v22_Eu_RS_str"
+    fi
+    ;;
+esac
 # Note: I took out --dist_prob and --trilinos_solver because we ARE using OOMPHLIB's GMRES, not trilinos
 echo "mpirun -np 1 ./$PROGRAM $COMMON_PARAM $PREC_PARAM --visc $VIS --rey $RE --noref $NOEL --itstimedir $RESITS_DIR" >> $TEST_LIST
         done
