@@ -77,6 +77,8 @@ namespace Global_Variables
  /// Enumeration for the problem ids
  enum {Driven_cavity, Through_flow};
 
+ double Time_start = 0.0;
+ double Time_end = 40.0;
 
  /// Reynolds number
  double Re=50.0;
@@ -99,42 +101,60 @@ namespace Global_Variables
   traction[2]=0.0;
  } 
 
- /// Traction at the outflow boundary
- void inflow_prescribed_traction(const double& t,
-                          const Vector<double>& x,
-                          const Vector<double> &n,
-                          Vector<double>& traction)
+// /// Traction at the outflow boundary
+// void get_prescribed_inflow(const double& t,
+//                            const Vector<double>& x,
+//                            Vector<double>& presc_inflow)
+// {
+//   // Get the x and y coordinates.
+//   double y = x[1];
+//   double z = x[2];
+//
+//   // For the velocity profile in the x direction.
+//   // 1) First form the parabolic profile
+//   double ux = 0.0;
+//   if((y > 0.5)&&(z > 0.5))
+//   {
+////     // 2) Now make it move in time
+////     const double trig_scaling = 0.025;
+////     const double ux_scaling = 1.0 
+////                               - cos(trig_scaling
+////                                     *MathematicalConstants::Pi
+////                                     *t);
+////
+////     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+//   }
+//
+//
+//  presc_inflow.resize(3);
+//  presc_inflow[0]=ux;
+//  presc_inflow[1]=0.0;
+//  presc_inflow[2]=0.0;
+// } 
+
+ void get_prescribed_inflow(const double& t,
+                            const double& y,
+                            const double& z,
+                            double& ux)
  {
-
-
-   // Get the x and y coordinates.
-   double y = x[1];
-   double z = x[2];
-
    // For the velocity profile in the x direction.
    // 1) First form the parabolic profile
-   double ux = 0.0;
+   ux = 0.0;
    if((y > 0.5)&&(z > 0.5))
    {
-//     // 2) Now make it move in time
+     // 2) Now make it move in time
 //     const double trig_scaling = 0.025;
-//     const double ux_scaling = 1.0 
+//     const double ux_scaling = (1.0 
 //                               - cos(trig_scaling
 //                                     *MathematicalConstants::Pi
-//                                     *t);
-//
-//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
-     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+//                                     *t)) * 2.0;
+
+     const double ux_scaling = t / Time_end;
+     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
    }
-
-
-  traction.resize(3);
-  traction[0]=ux;
-  traction[1]=0.0;
-  traction[2]=0.0;
  } 
-
-
 } // end_of_namespace
 
 
@@ -178,6 +198,36 @@ public:
   } // end of fix_pressure
 
 
+//////////////////////////////
+
+ void actions_before_implicit_timestep()
+  {
+
+   {
+    // Inflow in upper half of inflow boundary
+    const unsigned ibound=Inflow_boundary; 
+    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+     {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+      const double y=nod_pt->x(1);
+      const double z=nod_pt->x(2);
+      const double time=time_pt()->time();
+      double ux = 0.0;
+
+      Global_Variables::get_prescribed_inflow(time,y,z,ux);
+
+      nod_pt->set_value(0,ux);
+      nod_pt->set_value(1,0.0);
+      nod_pt->set_value(2,0.0);
+     }
+   }
+  } // end of actions_before_implicit_timestep
+
+
+
+////////////////////////////////
+
  
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
  void actions_after_adapt()
@@ -215,32 +265,12 @@ public:
   // Initialise counter for iterations
   Global_Variables::Iterations.clear();
   Global_Variables::Linear_solver_time.clear();
-
-   {
-    // Inflow in upper half of inflow boundary
-    unsigned ibound=Inflow_boundary; 
-    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-     {
-      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-      double y=nod_pt->x(1);
-      double z=nod_pt->x(2);
-      if ((y>0.5)&&(z>0.5))
-       {
-        double u=(y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
-        nod_pt->set_value(0,u);
-       }
-      else
-       {
-        nod_pt->set_value(0,0.0);
-       }
-      nod_pt->set_value(1,0.0);
-      nod_pt->set_value(2,0.0);
-     }
-   }
   
  } // end_of_actions_before_newton_solve
 
+ /// Run an unsteady simulation
+ void unsteady_run(DocInfo& doc_info); 
+ 
  /// Doc the solution
  void doc_solution(DocInfo& doc_info);
 
@@ -294,6 +324,7 @@ template<class ELEMENT>
 FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
 { 
  
+ add_time_stepper_pt(new BDF<2>);
  // Setup mesh
  
  // # of elements in x-direction
@@ -317,7 +348,7 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
 
   {
      Bulk_mesh_pt = 
-      new SimpleCubicMesh<QTaylorHoodElement<3> >(n_x,n_y,n_z,l_x,l_y,l_z);
+      new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
      
      Driven_boundary=0;
      Inflow_boundary=4;
@@ -505,6 +536,47 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
  
 } // end_of_constructor
 
+template<class ELEMENT>
+void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
+{
+
+ //Set value of dt
+ double dt = 1e-2;
+
+   // Initialise all history values for an impulsive start
+   assign_initial_values_impulsive(dt);
+   cout << "IC = impulsive start" << std::endl;
+
+ //Now do many timesteps
+ unsigned ntsteps = Global_Variables::Time_end / dt;
+ std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
+ 
+
+ // Doc initial condition
+ doc_solution(doc_info);
+ 
+ // increment counter
+ doc_info.number()++;
+
+ //Loop over the timesteps
+ for(unsigned t=1;t<=ntsteps;t++)
+  {
+   cout << "TIMESTEP " << t << std::endl;
+   
+   //Take one fixed timestep
+   unsteady_newton_solve(dt);
+
+   //Output the time
+   cout << "Time is now " << time_pt()->time() << std::endl;
+
+   // Doc solution
+   doc_solution(doc_info);
+
+   // increment counter
+   doc_info.number()++;
+  }
+
+} // end of unsteady run
 
 
 //============start_of_create_traction_elements==========================
@@ -777,7 +849,7 @@ int main(int argc, char **argv)
            unsigned nel_1d = 4;
            
           // Build the problem 
-          FpTestProblem <QTaylorHoodElement<2> >problem(nel_1d);
+          FpTestProblem <QTaylorHoodElement<3> >problem(nel_1d);
            
           
           
@@ -798,11 +870,12 @@ int main(int argc, char **argv)
             Global_Variables::Re=re;
             
             // Solve the problem 
-            problem.newton_solve();
+//            problem.newton_solve();
+            problem.unsteady_run(doc_info);
             
             // Doc solution
-            problem.doc_solution(doc_info);
-            doc_info.number()++;
+//            problem.doc_solution(doc_info);
+//            doc_info.number()++;
             
             // Doc iteration counts for each Newton iteration
             unsigned ndof = problem.ndof();
