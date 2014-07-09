@@ -99,6 +99,42 @@ namespace Global_Variables
   traction[2]=0.0;
  } 
 
+ /// Traction at the outflow boundary
+ void inflow_prescribed_traction(const double& t,
+                          const Vector<double>& x,
+                          const Vector<double> &n,
+                          Vector<double>& traction)
+ {
+
+
+   // Get the x and y coordinates.
+   double y = x[1];
+   double z = x[2];
+
+   // For the velocity profile in the x direction.
+   // 1) First form the parabolic profile
+   double ux = 0.0;
+   if((y > 0.5)&&(z > 0.5))
+   {
+//     // 2) Now make it move in time
+//     const double trig_scaling = 0.025;
+//     const double ux_scaling = 1.0 
+//                               - cos(trig_scaling
+//                                     *MathematicalConstants::Pi
+//                                     *t);
+//
+//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+   }
+
+
+  traction.resize(3);
+  traction[0]=ux;
+  traction[1]=0.0;
+  traction[2]=0.0;
+ } 
+
+
 } // end_of_namespace
 
 
@@ -112,6 +148,7 @@ namespace Global_Variables
 //==start_of_problem_class============================================
 /// Test problem for Fp/PCD preconditioner
 //====================================================================
+template<class ELEMENT>
 class FpTestProblem : public Problem
 {
 
@@ -208,8 +245,12 @@ public:
  void doc_solution(DocInfo& doc_info);
 
  /// Create traction elements on outflow boundary
- template<class ELEMENT>
- void create_traction_elements();
+// template<class ELEMENT>
+// void create_traction_elements();
+
+ void create_inflow_traction_elements(const unsigned &b,
+                                      Mesh* const &bulk_mesh_pt,
+                                      Mesh* const &surface_mesh_pt);
 
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
@@ -249,7 +290,8 @@ private:
 //==start_of_constructor==================================================
 /// Constructor for DrivenCavity problem 
 //========================================================================
-FpTestProblem::FpTestProblem(const unsigned& n_el)
+template<class ELEMENT>
+FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
 { 
  
  // Setup mesh
@@ -286,13 +328,97 @@ FpTestProblem::FpTestProblem(const unsigned& n_el)
  // elements.
  Surface_mesh_pt = new Mesh;
 
+// create_inflow_traction_elements(Inflow_boundary,
+//                                 Bulk_mesh_pt,Surface_mesh_pt);
+
  // Add the two sub meshes to the problem
  add_sub_mesh(Bulk_mesh_pt);
  add_sub_mesh(Surface_mesh_pt);
 
  // Combine all submeshes into a single Mesh
  build_global_mesh();
+
+
+
+
+   // Set the boundary conditions for this problem: All nodes are
+   // free by default -- just pin the ones that have Dirichlet conditions
+   // here. 
+   unsigned num_bound = Bulk_mesh_pt->nboundary();
+   for(unsigned ibound=0;ibound<num_bound;ibound++)
+    {
+     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
+      {
+       // Loop over values (u, v and w velocities)
+       for (unsigned i=0;i<3;i++)
+        {
+         Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
+        }
+      }
+    } // end loop over boundaries
+
  
+
+   // OUTFLOW ONLY, for inflow, check out the before solve
+// if (Problem_id==Global_Variables::Through_flow)
+  {
+   unsigned ibound=Outflow_boundary;
+   unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+   for (unsigned inod=0;inod<num_nod;inod++)
+    {
+     Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+     // Only free if node is ONLY on a single boundary
+     std::set<unsigned>* bnd_pt=0;
+     nod_pt->get_boundaries_pt(bnd_pt);
+     if (bnd_pt!=0)
+      {
+       if (bnd_pt->size()<2)
+        {
+         if (!(nod_pt->is_on_boundary(0)))
+          {
+           if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
+          }
+        }
+      }
+    }
+  }
+
+  // Unpin the velocity on the inflow mesh!
+//  {
+    // Loop through all the nodes!
+    
+//  }
+
+ // Complete the build of all elements so they are fully functional
+
+ //Find number of elements in mesh
+ unsigned n_element = Bulk_mesh_pt->nelement();
+
+ // Loop over the elements to set up element-specific 
+ // things that cannot be handled by constructor
+ for(unsigned e=0;e<n_element;e++)
+  {
+   // Upcast from GeneralisedElement to the present element
+   NavierStokesEquations<3>* el_pt = 
+    dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
+   
+   //Set the Reynolds number
+   el_pt->re_pt() = &Global_Variables::Re;
+  } // end loop over elements
+ 
+ 
+
+ // Now set the first pressure value in element 0 to 0.0
+// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
+
+ // Setup equation numbering scheme
+ oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+
+
+
+
+
  // Build preconditoner
  NavierStokesSchurComplementPreconditioner* prec_pt = 
   new NavierStokesSchurComplementPreconditioner(this);
@@ -359,7 +485,86 @@ FpTestProblem::FpTestProblem(const unsigned& n_el)
    prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);    
    
    
-   // Set the boundary conditions for this problem: All nodes are
+
+
+#ifdef OOMPH_HAS_TRILINOS
+
+ // Build iterative linear solver
+ oomph_info << "Using Trilinos GMRES\n"; 
+ TrilinosAztecOOSolver* iterative_linear_solver_pt = 
+  new TrilinosAztecOOSolver;
+
+ Solver_pt=iterative_linear_solver_pt;
+
+#else
+
+ // Build solve and preconditioner
+ Solver_pt = new GMRES<CRDoubleMatrix>;
+ dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+
+#endif
+
+ // Set solver and preconditioner
+ Solver_pt->preconditioner_pt() = Prec_pt;
+ linear_solver_pt() = Solver_pt;
+ 
+} // end_of_constructor
+
+
+
+//============start_of_create_traction_elements==========================
+/// Create Navier-Stokes traction elements on outflow boundary
+//=======================================================================
+//template<class ELEMENT>
+//void FpTestProblem::create_traction_elements()
+//{
+//
+// unsigned b=Outflow_boundary;
+//
+// // How many bulk elements are adjacent to boundary b?
+// unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
+//
+// // Loop over the bulk elements adjacent to boundary b?
+// for(unsigned e=0;e<n_element;e++)
+//  {
+//   // Get pointer to the bulk element that is adjacent to boundary b
+//   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
+//    Bulk_mesh_pt->boundary_element_pt(b,e));
+//   
+//   //What is the index of the face of element e along boundary b
+//   int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
+//   
+//   // Build the corresponding prescribed-flux element
+//   NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
+//      NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
+//
+//   //Add the prescribed-flux element to the surface mesh
+//   Surface_mesh_pt->add_element_pt(flux_element_pt);
+//   
+//   // Set the pointer to the prescribed traction function
+//   flux_element_pt->traction_fct_pt() = &Global_Variables::prescribed_traction;
+//   
+//  } //end of loop over bulk elements adjacent to boundary b
+//
+// // Now rebuild the global mesh
+// rebuild_global_mesh();
+//
+// // Reassign equation numbers
+// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+//
+//} // end of create_traction_elements
+
+
+template<class ELEMENT>
+void FpTestProblem<ELEMENT>::create_inflow_traction_elements(
+    const unsigned &b, 
+    Mesh* const &bulk_mesh_pt, 
+    Mesh* const &surface_mesh_pt)
+{
+ // How many bulk elements are adjacent to boundary b?
+ unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
+
+ // Loop over the bulk elements adjacent to boundary b?   // Set the boundary conditions for this problem: All nodes are
    // free by default -- just pin the ones that have Dirichlet conditions
    // here. 
    unsigned num_bound = Bulk_mesh_pt->nboundary();
@@ -426,63 +631,44 @@ FpTestProblem::FpTestProblem(const unsigned& n_el)
 
  // Setup equation numbering scheme
  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
-#ifdef OOMPH_HAS_TRILINOS
-
- // Build iterative linear solver
- oomph_info << "Using Trilinos GMRES\n"; 
- TrilinosAztecOOSolver* iterative_linear_solver_pt = 
-  new TrilinosAztecOOSolver;
-
- Solver_pt=iterative_linear_solver_pt;
-
-#else
-
- // Build solve and preconditioner
- Solver_pt = new GMRES<CRDoubleMatrix>;
- dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
-
-#endif
-
- // Set solver and preconditioner
- Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt;
- 
-} // end_of_constructor
-
-
-
-//============start_of_create_traction_elements==========================
-/// Create Navier-Stokes traction elements on outflow boundary
-//=======================================================================
-template<class ELEMENT>
-void FpTestProblem::create_traction_elements()
-{
-
- unsigned b=Outflow_boundary;
-
- // How many bulk elements are adjacent to boundary b?
- unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
-
- // Loop over the bulk elements adjacent to boundary b?
  for(unsigned e=0;e<n_element;e++)
   {
    // Get pointer to the bulk element that is adjacent to boundary b
    ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
     Bulk_mesh_pt->boundary_element_pt(b,e));
-   
-   //What is the index of the face of element e along boundary b
-   int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
-   
-   // Build the corresponding prescribed-flux element
-   NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
-      NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
 
-   //Add the prescribed-flux element to the surface mesh
-   Surface_mesh_pt->add_element_pt(flux_element_pt);
+   // Loop through all of the nodes on this element and find and out if
+   // all the y and z coordinates with within [0.5]^2
+   const unsigned nbulk_nod = bulk_elem_pt->nnode();
+   bool within_inflow = true;
+
+   for(unsigned nod_i = 0; (nod_i < nbulk_nod) && within_inflow; nod_i++)
+   {
+     Node* bulk_nod_pt = bulk_elem_pt->node_pt(nod_i);
+     const double y = bulk_nod_pt->x(1);
+     const double z = bulk_nod_pt->x(2);
+     if((y <= 0.5) || (z <= 0.5))
+     {
+       within_inflow = false;
+     }
+   }
    
-   // Set the pointer to the prescribed traction function
-   flux_element_pt->traction_fct_pt() = &Global_Variables::prescribed_traction;
+   if(within_inflow)
+   {
+     //What is the index of the face of element e along boundary b
+     int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
+
+     // Build the corresponding prescribed-flux element
+     NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
+       NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
+
+     //Add the prescribed-flux element to the surface mesh
+     Surface_mesh_pt->add_element_pt(flux_element_pt);
+
+     // Set the pointer to the prescribed traction function
+     flux_element_pt->traction_fct_pt() 
+       = &Global_Variables::inflow_prescribed_traction;
+   }
    
   } //end of loop over bulk elements adjacent to boundary b
 
@@ -495,11 +681,11 @@ void FpTestProblem::create_traction_elements()
 } // end of create_traction_elements
 
 
-
 //==start_of_doc_solution=================================================
 /// Doc the solution
 //========================================================================
-void FpTestProblem::doc_solution(DocInfo& doc_info)
+template<class ELEMENT>
+void FpTestProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 { 
  ofstream some_file;
  char filename[100];
@@ -607,11 +793,12 @@ int main(int argc, char **argv)
           
           
           // Loop over Reynolds numbers (limited during validation)
-          double start_re = 0.0; 
-          if (argc>1) start_re=50;
-          double end_re = 50.0; 
-          for (double re = start_re; re <= end_re; re+=50.0)
+//          double start_re = 0.0; 
+//          if (argc>1) start_re=50;
+//          double end_re = 50.0; 
+//          for (double re = start_re; re <= end_re; re+=50.0)
            {
+             double re = 50.0;
             
             // Set Reynolds
             Global_Variables::Re=re;
