@@ -248,9 +248,9 @@ public:
 // template<class ELEMENT>
 // void create_traction_elements();
 
- void create_inflow_traction_elements(const unsigned &b,
-                                      Mesh* const &bulk_mesh_pt,
-                                      Mesh* const &surface_mesh_pt);
+// void create_inflow_traction_elements(const unsigned &b,
+//                                      Mesh* const &bulk_mesh_pt,
+//                                      Mesh* const &surface_mesh_pt);
 
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
@@ -333,7 +333,7 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
 
  // Add the two sub meshes to the problem
  add_sub_mesh(Bulk_mesh_pt);
- add_sub_mesh(Surface_mesh_pt);
+// add_sub_mesh(Surface_mesh_pt);
 
  // Combine all submeshes into a single Mesh
  build_global_mesh();
@@ -384,11 +384,6 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
     }
   }
 
-  // Unpin the velocity on the inflow mesh!
-//  {
-    // Loop through all the nodes!
-    
-//  }
 
  // Complete the build of all elements so they are fully functional
 
@@ -555,130 +550,130 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
 //} // end of create_traction_elements
 
 
-template<class ELEMENT>
-void FpTestProblem<ELEMENT>::create_inflow_traction_elements(
-    const unsigned &b, 
-    Mesh* const &bulk_mesh_pt, 
-    Mesh* const &surface_mesh_pt)
-{
- // How many bulk elements are adjacent to boundary b?
- unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
-
- // Loop over the bulk elements adjacent to boundary b?   // Set the boundary conditions for this problem: All nodes are
-   // free by default -- just pin the ones that have Dirichlet conditions
-   // here. 
-   unsigned num_bound = Bulk_mesh_pt->nboundary();
-   for(unsigned ibound=0;ibound<num_bound;ibound++)
-    {
-     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-     for (unsigned inod=0;inod<num_nod;inod++)
-      {
-       // Loop over values (u, v and w velocities)
-       for (unsigned i=0;i<3;i++)
-        {
-         Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
-        }
-      }
-    } // end loop over boundaries
-
- 
-
-   // OUTFLOW ONLY, for inflow, check out the before solve
-// if (Problem_id==Global_Variables::Through_flow)
-  {
-   unsigned ibound=Outflow_boundary;
-   unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-   for (unsigned inod=0;inod<num_nod;inod++)
-    {
-     Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-     // Only free if node is ONLY on a single boundary
-     std::set<unsigned>* bnd_pt=0;
-     nod_pt->get_boundaries_pt(bnd_pt);
-     if (bnd_pt!=0)
-      {
-       if (bnd_pt->size()<2)
-        {
-         if (!(nod_pt->is_on_boundary(0)))
-          {
-           if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
-          }
-        }
-      }
-    }
-  }
-
- // Complete the build of all elements so they are fully functional
-
- //Find number of elements in mesh
- unsigned n_element = Bulk_mesh_pt->nelement();
-
- // Loop over the elements to set up element-specific 
- // things that cannot be handled by constructor
- for(unsigned e=0;e<n_element;e++)
-  {
-   // Upcast from GeneralisedElement to the present element
-   NavierStokesEquations<3>* el_pt = 
-    dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
-   
-   //Set the Reynolds number
-   el_pt->re_pt() = &Global_Variables::Re;
-  } // end loop over elements
- 
- 
-
- // Now set the first pressure value in element 0 to 0.0
-// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
-
- // Setup equation numbering scheme
- oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
- for(unsigned e=0;e<n_element;e++)
-  {
-   // Get pointer to the bulk element that is adjacent to boundary b
-   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
-    Bulk_mesh_pt->boundary_element_pt(b,e));
-
-   // Loop through all of the nodes on this element and find and out if
-   // all the y and z coordinates with within [0.5]^2
-   const unsigned nbulk_nod = bulk_elem_pt->nnode();
-   bool within_inflow = true;
-
-   for(unsigned nod_i = 0; (nod_i < nbulk_nod) && within_inflow; nod_i++)
-   {
-     Node* bulk_nod_pt = bulk_elem_pt->node_pt(nod_i);
-     const double y = bulk_nod_pt->x(1);
-     const double z = bulk_nod_pt->x(2);
-     if((y <= 0.5) || (z <= 0.5))
-     {
-       within_inflow = false;
-     }
-   }
-   
-   if(within_inflow)
-   {
-     //What is the index of the face of element e along boundary b
-     int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
-
-     // Build the corresponding prescribed-flux element
-     NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
-       NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
-
-     //Add the prescribed-flux element to the surface mesh
-     Surface_mesh_pt->add_element_pt(flux_element_pt);
-
-     // Set the pointer to the prescribed traction function
-     flux_element_pt->traction_fct_pt() 
-       = &Global_Variables::inflow_prescribed_traction;
-   }
-   
-  } //end of loop over bulk elements adjacent to boundary b
-
- // Now rebuild the global mesh
- rebuild_global_mesh();
-
- // Reassign equation numbers
- oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
-} // end of create_traction_elements
+//Template<class ELEMENT>
+//Void FpTestProblem<ELEMENT>::create_inflow_traction_elements(
+//    const unsigned &b, 
+//    Mesh* const &bulk_mesh_pt, 
+//    Mesh* const &surface_mesh_pt)
+//{
+// // How many bulk elements are adjacent to boundary b?
+// unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
+//
+// // Loop over the bulk elements adjacent to boundary b?   // Set the boundary conditions for this problem: All nodes are
+//   // free by default -- just pin the ones that have Dirichlet conditions
+//   // here. 
+//   unsigned num_bound = Bulk_mesh_pt->nboundary();
+//   for(unsigned ibound=0;ibound<num_bound;ibound++)
+//    {
+//     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//     for (unsigned inod=0;inod<num_nod;inod++)
+//      {
+//       // Loop over values (u, v and w velocities)
+//       for (unsigned i=0;i<3;i++)
+//        {
+//         Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
+//        }
+//      }
+//    } // end loop over boundaries
+//
+// 
+//
+//   // OUTFLOW ONLY, for inflow, check out the before solve
+//// if (Problem_id==Global_Variables::Through_flow)
+//  {
+//   unsigned ibound=Outflow_boundary;
+//   unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//   for (unsigned inod=0;inod<num_nod;inod++)
+//    {
+//     Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//     // Only free if node is ONLY on a single boundary
+//     std::set<unsigned>* bnd_pt=0;
+//     nod_pt->get_boundaries_pt(bnd_pt);
+//     if (bnd_pt!=0)
+//      {
+//       if (bnd_pt->size()<2)
+//        {
+//         if (!(nod_pt->is_on_boundary(0)))
+//          {
+//           if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
+//          }
+//        }
+//      }
+//    }
+//  }
+//
+// // Complete the build of all elements so they are fully functional
+//
+// //Find number of elements in mesh
+// unsigned n_element = Bulk_mesh_pt->nelement();
+//
+// // Loop over the elements to set up element-specific 
+// // things that cannot be handled by constructor
+// for(unsigned e=0;e<n_element;e++)
+//  {
+//   // Upcast from GeneralisedElement to the present element
+//   NavierStokesEquations<3>* el_pt = 
+//    dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
+//   
+//   //Set the Reynolds number
+//   el_pt->re_pt() = &Global_Variables::Re;
+//  } // end loop over elements
+// 
+// 
+//
+// // Now set the first pressure value in element 0 to 0.0
+//// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
+//
+// // Setup equation numbering scheme
+// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+// for(unsigned e=0;e<n_element;e++)
+//  {
+//   // Get pointer to the bulk element that is adjacent to boundary b
+//   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
+//    Bulk_mesh_pt->boundary_element_pt(b,e));
+//
+//   // Loop through all of the nodes on this element and find and out if
+//   // all the y and z coordinates with within [0.5]^2
+//   const unsigned nbulk_nod = bulk_elem_pt->nnode();
+//   bool within_inflow = true;
+//
+//   for(unsigned nod_i = 0; (nod_i < nbulk_nod) && within_inflow; nod_i++)
+//   {
+//     Node* bulk_nod_pt = bulk_elem_pt->node_pt(nod_i);
+//     const double y = bulk_nod_pt->x(1);
+//     const double z = bulk_nod_pt->x(2);
+//     if((y <= 0.5) || (z <= 0.5))
+//     {
+//       within_inflow = false;
+//     }
+//   }
+//   
+//   if(within_inflow)
+//   {
+//     //What is the index of the face of element e along boundary b
+//     int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
+//
+//     // Build the corresponding prescribed-flux element
+//     NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
+//       NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
+//
+//     //Add the prescribed-flux element to the surface mesh
+//     Surface_mesh_pt->add_element_pt(flux_element_pt);
+//
+//     // Set the pointer to the prescribed traction function
+//     flux_element_pt->traction_fct_pt() 
+//       = &Global_Variables::inflow_prescribed_traction;
+//   }
+//   
+//  } //end of loop over bulk elements adjacent to boundary b
+//
+// // Now rebuild the global mesh
+// rebuild_global_mesh();
+//
+// // Reassign equation numbers
+// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+//
+//} // end of create_traction_elements
 
 
 //==start_of_doc_solution=================================================
@@ -782,8 +777,7 @@ int main(int argc, char **argv)
            unsigned nel_1d = 4;
            
           // Build the problem 
-          FpTestProblem problem(
-           nel_1d);
+          FpTestProblem <QTaylorHoodElement<2> >problem(nel_1d);
            
           
           
