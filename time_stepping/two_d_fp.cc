@@ -603,7 +603,7 @@ int main(int argc, char **argv)
  DocInfo doc_info;
  
  //Set output directory
- doc_info.set_directory("RESLT");
+ doc_info.set_directory("RESLT_two_d_fp");
  
  //Doc number of gmres iterations
  ofstream out_file;
@@ -614,8 +614,10 @@ int main(int argc, char **argv)
  bool use_hypre_for_momentum_diagonals=false;
 
  // Outermost loop over stress divergence or simple form
- for (unsigned do_stress_div=0;do_stress_div<2;do_stress_div++) 
-  {
+// for (unsigned do_stress_div=0;do_stress_div<2;do_stress_div++) 
+  
+  {unsigned do_stress_div = 0;
+
    if (do_stress_div)
     {     
      oomph_info << "Doing stress divergence form\n";
@@ -631,8 +633,8 @@ int main(int argc, char **argv)
    
    //Loop over problems: Driven cavity and step
    //unsigned problem_id=Global_Variables::Step;
-   for (unsigned problem_id=0;problem_id<2;problem_id++) 
-   {
+//   for (unsigned problem_id=0;problem_id<2;problem_id++) 
+   {unsigned problem_id = Global_Variables::Step;
     
     if (problem_id==Global_Variables::Driven_cavity)
      {
@@ -676,8 +678,8 @@ int main(int argc, char **argv)
     //                            iprec=2: Fp without Robin
     bool use_lsc=true;
     bool use_robin=true;
-    for (unsigned iprec=0;iprec<2;iprec++)
-     {
+    //for (unsigned iprec=0;iprec<2;iprec++)
+     {unsigned iprec = 0;
       
       // Loop over three cases (triangles, non-refineable/refineable quads)
       unsigned icase_lo=0;
@@ -688,8 +690,9 @@ int main(int argc, char **argv)
         icase_lo=1;
         icase_hi=2; 
        }
-      for (unsigned icase=icase_lo;icase<=icase_hi;icase++) 
+//      for (unsigned icase=icase_lo;icase<=icase_hi;icase++) 
        {
+         unsigned icase = 1;
         bool use_triangles=false;
         bool use_adaptivity=false;
         
@@ -749,10 +752,11 @@ int main(int argc, char **argv)
         out_file << header;
                  
         // Number of elements in x/y directions (reduced for validaton)
-        unsigned max_nel_1d=32; 
-        if (argc>1) max_nel_1d=2;
-        for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
+//        unsigned max_nel_1d=32; 
+//        if (argc>1) max_nel_1d=2;
+//        for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
          {
+           unsigned nel_1d = 4;
            
           // Build the problem 
           FpTestProblem problem(
@@ -760,64 +764,14 @@ int main(int argc, char **argv)
            use_hypre_for_pressure,use_block_diagonal_for_momentum,
            use_hypre_for_momentum_diagonals,problem_id);
            
-          // Refine a few times
-          if (use_adaptivity)
-           {
-            Vector<unsigned> elements_to_be_refined;
-            unsigned nel=problem.mesh_pt()->nelement();
-            unsigned e=0;
-            while (e<nel)
-             {
-              elements_to_be_refined.push_back(e);
-              e+=7;
-             }
-            problem.refine_selected_elements(elements_to_be_refined); 
-            elements_to_be_refined.clear();
-            elements_to_be_refined.push_back(1);
-            problem.refine_selected_elements(elements_to_be_refined); 
-            elements_to_be_refined.clear();
-            elements_to_be_refined.push_back(4);
-            problem.refine_selected_elements(elements_to_be_refined); 
- 
-           }
-
-//            DocInfo my_doc_info;           
-//            switch(icase)
-//             {
-             
-//             case 0:
-             
-//              problem.validate_fp<TTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             case 1:
-             
-//              problem.validate_fp<QTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             case 2:
-             
-
-//              problem.validate_fp<RefineableQTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             default:
-//              break;
-//             }
-           
 
           // Loop over Reynolds numbers (limited during validation)
-          double start_re = 50.0; 
-          if (argc>1) start_re=50;
-          double end_re = 50.0; 
-          for (double re = start_re; re <= end_re; re+=50.0)
+//          double start_re = 50.0; 
+//          if (argc>1) start_re=50;
+//          double end_re = 50.0; 
+//          for (double re = start_re; re <= end_re; re+=50.0)
            {
+             double re = 100.0;
             
             // Set Reynolds
             Global_Variables::Re=re;
