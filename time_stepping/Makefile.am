@@ -3,6 +3,7 @@ sq_lgr \
 rayleigh_channel \
 rayleigh_traction_channel \
 three_d_fp \
+two_d_fp \
 unstructured_three_d_fluid
 
 #------------------------------------------------------------------------
@@ -22,6 +23,11 @@ three_d_fp_SOURCES = three_d_fp.cc
 
 three_d_fp_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
+two_d_fp_SOURCES = two_d_fp.cc
+
+two_d_fp_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+
 unstructured_three_d_fluid_SOURCES = unstructured_three_d_fluid.cc
 
 unstructured_three_d_fluid_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)

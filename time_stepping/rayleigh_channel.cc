@@ -46,6 +46,7 @@ namespace Global_Parameters
 {
  /// Reynolds number
  double Re;
+ double Delta_t;
 
  /// Womersley = Reynolds times Strouhal
  double ReSt;
@@ -165,6 +166,16 @@ public:
  /// to specified function. 
  void set_initial_condition();
 
+ void dump_jacobian(std::string& jac_str)
+ {
+   DoubleVector res;
+   CRDoubleMatrix jac;
+
+   this->get_jacobian(res,jac);
+
+   jac.sparse_indexed_output(jac_str,15,true);
+ }
+
 private:
 
  ///Fix pressure in element e at pressure dof pdof and set to pvalue
@@ -179,6 +190,17 @@ private:
  /// Trace file
  ofstream Trace_file;
 
+ /// Solver
+ IterativeLinearSolver* Solver_pt;
+
+ /// Solver
+ Preconditioner* Prec_pt;
+
+ /// Inexact solver for P block
+ Preconditioner* P_matrix_preconditioner_pt;
+
+ /// Inexact solver for F block
+ Preconditioner* F_matrix_preconditioner_pt;
 }; // end of problem_class
 
 
@@ -242,6 +264,79 @@ RayleighProblem<ELEMENT,TIMESTEPPER>::RayleighProblem
 
  //Assgn equation numbers
  cout << assign_eqn_numbers() << std::endl; 
+
+
+ // Set the preconditioner.
+ // Build preconditoner
+ NavierStokesSchurComplementPreconditioner* prec_pt = 
+  new NavierStokesSchurComplementPreconditioner(this);
+ Prec_pt=prec_pt;
+
+ // Create internal preconditioners used on Schur block
+ P_matrix_preconditioner_pt=0;
+// if (use_hypre_for_pressure)
+  {
+#ifdef OOMPH_HAS_HYPRE
+
+    oomph_info << "Using HYPRE for pressure block" << std::endl; 
+    
+   // Create preconditioner
+   P_matrix_preconditioner_pt = new HyprePreconditioner;
+   
+   // Set parameters for use as preconditioner on Poisson-type problem
+   Hypre_default_settings::set_defaults_for_3D_poisson_problem(
+    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
+   
+   // Use Hypre for the Schur complement block
+   prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
+   
+   // Shut up!
+//   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
+//    disable_doc_time();
+   
+#endif
+  }
+
+   // Create block-diagonal preconditioner used on momentum block
+ F_matrix_preconditioner_pt=0;   
+// if (use_block_diagonal_for_momentum)
+  {
+   
+#ifdef OOMPH_HAS_HYPRE
+   F_matrix_preconditioner_pt = new HyprePreconditioner;
+
+   Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+       static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
+#endif       
+   
+   // Use Hypre for momentum block 
+   prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
+  }
+
+     prec_pt->use_lsc();
+
+        prec_pt->set_navier_stokes_mesh(mesh_pt());   
+
+#ifdef OOMPH_HAS_TRILINOS
+
+ // Build iterative linear solver
+ oomph_info << "Using Trilinos GMRES\n"; 
+ TrilinosAztecOOSolver* iterative_linear_solver_pt = 
+  new TrilinosAztecOOSolver;
+
+ Solver_pt=iterative_linear_solver_pt;
+
+#else
+
+ // Build solve and preconditioner
+ Solver_pt = new GMRES<CRDoubleMatrix>;
+ dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+
+#endif
+
+ // Set solver and preconditioner
+ Solver_pt->preconditioner_pt() = Prec_pt;
+ linear_solver_pt() = Solver_pt;
 } // end of constructor
 
 
@@ -333,6 +428,17 @@ void RayleighProblem<ELEMENT,TIMESTEPPER>::set_initial_condition()
 template<class ELEMENT,class TIMESTEPPER>
 void RayleighProblem<ELEMENT,TIMESTEPPER>::doc_solution(DocInfo& doc_info)
 { 
+
+//////////////////////////////////////////////////////////////////////
+const unsigned tmp_soln_number = doc_info.number();
+if(tmp_soln_number==2)
+{
+  std::string jac_str = "rayleigh_jacobian";
+  dump_jacobian(jac_str);
+  pause("Dumped the Jacobian"); 
+  
+}
+//////////////////////////////////////////////////////////////////////
  ofstream some_file;
  char filename[100];
 
@@ -438,7 +544,14 @@ void RayleighProblem<ELEMENT,TIMESTEPPER>::unsteady_run(DocInfo& doc_info)
             << "L2 norm" << ",   " << std::endl;
 
  //Set value of dt
- double dt = 0.025;
+ double dt = Global_Parameters::Delta_t;
+
+ std::cout << "dt is: " << dt << std::endl; 
+ std::cout << "Is this correct?" << std::endl; 
+ pause("DONE!!!"); 
+ 
+ 
+ 
 
  if (Global_Parameters::Impulsive_start_flag==1)
   {
@@ -497,20 +610,23 @@ void RayleighProblem<ELEMENT,TIMESTEPPER>::unsteady_run(DocInfo& doc_info)
 //======================================================================
 int main(int argc, char* argv[]) 
 {
-
+#ifdef OOMPH_HAS_MPI
+ MPI_Helpers::init(argc,argv);
+#endif
  /// Convert command line arguments (if any) into flags:
  if (argc==1)
   {
    cout << "No command line arguments specified -- using defaults." 
         << std::endl;
   }
- else if (argc==3)
+ else if (argc==4)
   {
    cout << "Two command line arguments specified:" << std::endl;
    // Flag for long run
    Global_Parameters::Long_run_flag=atoi(argv[1]);
    /// Flag for impulsive start
    Global_Parameters::Impulsive_start_flag=atoi(argv[2]);
+   Global_Parameters::Delta_t=atof(argv[3]);
   }
  else
   {
@@ -534,7 +650,7 @@ int main(int argc, char* argv[])
  // Set physical parameters:
 
  // Womersley number = Reynolds number (St = 1)
- Global_Parameters::ReSt = 10.0;
+ Global_Parameters::ReSt = 200.0;
  Global_Parameters::Re = Global_Parameters::ReSt;
 
  //Horizontal length of domain
@@ -544,24 +660,27 @@ int main(int argc, char* argv[])
  double ly = 1.0;
 
  // Number of elements in x-direction
+// unsigned nel_scaling = 5;
  unsigned nx=5;
+// unsigned nx=5 * nel_scaling;
 
  // Number of elements in y-direction
  unsigned ny=10;
+// unsigned ny=10 * nel_scaling;
 
- // Solve with Crouzeix-Raviart elements
- {
-  // Set up doc info
-  DocInfo doc_info;
-  doc_info.number()=0;
-  doc_info.set_directory("RESLT_CR");
-  
-  //Set up problem
-  RayleighProblem<QCrouzeixRaviartElement<2>,BDF<2> > problem(nx,ny,lx,ly);
-  
-  // Run the unsteady simulation
-  problem.unsteady_run(doc_info);
- }
+// // Solve with Crouzeix-Raviart elements
+// {
+//  // Set up doc info
+//  DocInfo doc_info;
+//  doc_info.number()=0;
+//  doc_info.set_directory("RESLT_CR");
+//  
+//  //Set up problem
+//  RayleighProblem<QCrouzeixRaviartElement<2>,BDF<2> > problem(nx,ny,lx,ly);
+//  
+//  // Run the unsteady simulation
+//  problem.unsteady_run(doc_info);
+// }
 
 
 
@@ -579,4 +698,7 @@ int main(int argc, char* argv[])
   problem.unsteady_run(doc_info);
  }
 
+#ifdef OOMPH_HAS_MPI
+   MPI_Helpers::finalize();
+#endif
 } // end of main

@@ -76,6 +76,10 @@ namespace Global_Variables
  /// Enumeration for the problem ids
  enum {Driven_cavity, Step};
 
+ double Time_start = 0.0;
+ double Time_end = 1.0;
+ double Delta_t = 0.0;
+
  /// Reynolds number
  double Re=50.0;
 
@@ -137,7 +141,27 @@ public:
   } // end of fix_pressure
 
 
- 
+ void actions_before_implicit_timestep()
+ {
+
+   {  
+     // Inflow on boundary 3
+     unsigned ibound=3; 
+     unsigned num_nod= mesh_pt()->nboundary_node(ibound);
+     const double time=time_pt()->time();
+     const double velocity_scaling = time / Global_Variables::Time_end;
+
+     for (unsigned inod=0;inod<num_nod;inod++)
+     {
+       Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
+       double x=nod_pt->x(1);
+       double u=-(4.0*(2.0-x)*(x-1.0))*velocity_scaling;
+       nod_pt->set_value(0,u);
+       nod_pt->set_value(1,0.0);
+     }
+   }
+ }
+
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
  void actions_after_adapt()
   {
@@ -166,6 +190,9 @@ public:
     linear_solver_pt()->linear_solver_solution_time());
   }  
 
+ /// Run an unsteady simulation
+ void unsteady_run(DocInfo& doc_info); 
+ 
 
  /// Update the after solve (empty)
  void actions_after_newton_solve(){}
@@ -177,54 +204,6 @@ public:
   // Initialise counter for iterations
   Global_Variables::Iterations.clear();
   Global_Variables::Linear_solver_time.clear();
-
-  // Driven cavity bcs
-  //------------------
-  if (Problem_id==Global_Variables::Driven_cavity)
-   {
-    // Setup tangential flow along boundary 0:
-    unsigned ibound=0; 
-    unsigned num_nod= mesh_pt()->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-     {
-      // Tangential flow
-      mesh_pt()->boundary_node_pt(ibound,inod)->set_value(0,1.0);
-      // No penetration
-      mesh_pt()->boundary_node_pt(ibound,inod)->set_value(1,0.0);
-     }
-    
-    // Overwrite with no flow along the other boundaries
-    unsigned num_bound = mesh_pt()->nboundary();
-    for(unsigned ibound=1;ibound<num_bound;ibound++)
-     {
-      unsigned num_nod= mesh_pt()->nboundary_node(ibound);
-      for (unsigned inod=0;inod<num_nod;inod++)
-       {
-        for (unsigned i=0;i<2;i++)
-         {
-          mesh_pt()->boundary_node_pt(ibound,inod)->set_value(i,0.0);
-         }
-       }
-     }
-   }
-  // Step
-  //-----
-  else if (Problem_id==Global_Variables::Step)
-   {
-    // Inflow on boundary 3
-    unsigned ibound=3; 
-    unsigned num_nod= mesh_pt()->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-     {
-      Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
-      double x=nod_pt->x(1);
-      double u=-4.0*(2.0-x)*(x-1.0);
-      nod_pt->set_value(0,u);
-      nod_pt->set_value(1,0.0);
-     }
-   }
-
-
  } // end_of_actions_before_newton_solve
 
 
@@ -277,89 +256,15 @@ FpTestProblem::FpTestProblem(
  const bool& use_hypre_for_momentum_diagonals,
  const int& problem_id)
 { 
+   add_time_stepper_pt(new BDF<2>);
+
  // Allow for poor initial guess
  Problem::Max_residuals=1.0e10;
 
  // Which problem?
  Problem_id=problem_id;
 
- // Build preconditoner
- NavierStokesSchurComplementPreconditioner* prec_pt 
-  = new NavierStokesSchurComplementPreconditioner(this);
- Prec_pt=prec_pt;
- 
- // By default, the LSC Preconditioner uses SuperLU as
- // an exact preconditioner (i.e. a solver) for the
- // momentum and Schur complement blocks. 
- // Can overwrite this by passing pointers to 
- // other preconditioners that perform the (approximate)
- // solves of these blocks.
 
-
- // Create internal preconditioners used on Schur block
- P_matrix_preconditioner_pt=0;
- if (use_hypre_for_pressure)
-  {
-#ifdef OOMPH_HAS_HYPRE
-
-   // Create preconditioner
-   P_matrix_preconditioner_pt = new HyprePreconditioner;
-   
-   // Set parameters for use as preconditioner on Poisson-type problem
-   Hypre_default_settings::set_defaults_for_2D_poisson_problem(
-    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
-   
-   // Use Hypre for the Schur complement block
-   prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
-   
-   // Shut up!
-   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
-    disable_doc_time();
-   
-#endif
-  }
- 
- // Create block-diagonal preconditioner used on momentum block
- F_matrix_preconditioner_pt=0;   
- if (use_block_diagonal_for_momentum)
-  {
-   
-   F_matrix_preconditioner_pt = 
-    new BlockDiagonalPreconditioner<CRDoubleMatrix>;
-   
-   // Use Hypre as block preconditioner
-   if (use_hypre_for_pressure)
-    {
-#ifdef OOMPH_HAS_HYPRE
-     dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
-      (F_matrix_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
-#endif       
-    }
-   
-   // Use Hypre for momentum block 
-   prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
-  }
- 
- 
- 
- // Use LSC?
- if (use_lsc)
-  {
-   prec_pt->use_lsc();
-  }
- else
-  {
-   prec_pt->use_fp();
-   if (use_robin)
-    {
-     prec_pt->enable_robin_for_fp();
-    }
-   else
-    {
-     prec_pt->disable_robin_for_fp();
-    }
-  }
 
 
  // Setup mesh
@@ -417,14 +322,14 @@ FpTestProblem::FpTestProblem(
      unsigned ny_cut_out=1*n_el;
      if (use_adaptivity)
       {
-       mesh_pt()=new 
-        RefineableBackwardStepQuadMesh<RefineableQTaylorHoodElement<2> >
-        (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y);
+//       mesh_pt()=new 
+//        RefineableBackwardStepQuadMesh<RefineableQTaylorHoodElement<2> >
+//        (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y);
       }
      else
       {
        mesh_pt()=new BackwardStepQuadMesh<QTaylorHoodElement<2> >
-        (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y);
+        (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y,time_stepper_pt());
       }
     }
    // Square domain
@@ -447,12 +352,6 @@ FpTestProblem::FpTestProblem(
   }
  
  
- // Set Navier Stokes mesh
- prec_pt->set_navier_stokes_mesh(mesh_pt());
- 
-
-
-
 
  // In/outflow bcs
  //---------------
@@ -515,18 +414,69 @@ FpTestProblem::FpTestProblem(
   } // end loop over elements
  
  
- // Pin redundant pressure dofs
- if (use_adaptivity)
-  {
-   RefineableNavierStokesEquations<2>::
-    pin_redundant_nodal_pressures(mesh_pt()->element_pt());
-  }
 
- // Now set the first pressure value in element 0 to 0.0
- if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
- 
  // Setup equation numbering scheme
  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+
+ // Build preconditoner
+ NavierStokesSchurComplementPreconditioner* prec_pt 
+  = new NavierStokesSchurComplementPreconditioner(this);
+ Prec_pt=prec_pt;
+ 
+ // By default, the LSC Preconditioner uses SuperLU as
+ // an exact preconditioner (i.e. a solver) for the
+ // momentum and Schur complement blocks. 
+ // Can overwrite this by passing pointers to 
+ // other preconditioners that perform the (approximate)
+ // solves of these blocks.
+
+
+ // Create internal preconditioners used on Schur block
+ P_matrix_preconditioner_pt=0;
+  {
+#ifdef OOMPH_HAS_HYPRE
+    oomph_info << "Using HYPRE for pressure block" << std::endl; 
+   // Create preconditioner
+   P_matrix_preconditioner_pt = new HyprePreconditioner;
+   
+   // Set parameters for use as preconditioner on Poisson-type problem
+   Hypre_default_settings::set_defaults_for_2D_poisson_problem(
+    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
+   
+   // Use Hypre for the Schur complement block
+   prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
+   
+   // Shut up!
+   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
+    disable_doc_time();
+   
+#endif
+  }
+ 
+ // Create block-diagonal preconditioner used on momentum block
+ F_matrix_preconditioner_pt=0;   
+// if (use_block_diagonal_for_momentum)
+  {
+   
+#ifdef OOMPH_HAS_HYPRE
+   F_matrix_preconditioner_pt = new HyprePreconditioner;
+   oomph_info << "Using HYPRE for momentum block" << std::endl;  
+   Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+       static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
+#endif       
+   
+   // Use Hypre for momentum block 
+   prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
+  }
+ 
+ 
+ 
+
+  {
+   prec_pt->use_lsc();
+  }
+
+prec_pt->set_navier_stokes_mesh(mesh_pt());  
 
 #ifdef OOMPH_HAS_TRILINOS
 
@@ -555,7 +505,47 @@ FpTestProblem::FpTestProblem(
  
 } // end_of_constructor
 
+//template<class ELEMENT>
+void FpTestProblem::unsteady_run(DocInfo& doc_info)
+{
 
+ //Set value of dt
+ double dt = Global_Variables::Delta_t;
+
+   // Initialise all history values for an impulsive start
+   assign_initial_values_impulsive(dt);
+   cout << "IC = impulsive start" << std::endl;
+
+ //Now do many timesteps
+ unsigned ntsteps = Global_Variables::Time_end / dt;
+ std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
+ 
+
+ // Doc initial condition
+ doc_solution(doc_info);
+ 
+ // increment counter
+ doc_info.number()++;
+
+ //Loop over the timesteps
+ for(unsigned t=1;t<=ntsteps;t++)
+  {
+   cout << "TIMESTEP " << t << std::endl;
+   
+   //Take one fixed timestep
+   unsteady_newton_solve(dt);
+
+   //Output the time
+   cout << "Time is now " << time_pt()->time() << std::endl;
+
+   // Doc solution
+   doc_solution(doc_info);
+
+   // increment counter
+   doc_info.number()++;
+  }
+
+} // end of unsteady run
 
 //==start_of_doc_solution=================================================
 /// Doc the solution
@@ -598,6 +588,8 @@ int main(int argc, char **argv)
  MPI_Helpers::init(argc,argv);
 #endif
 
+
+ Global_Variables::Delta_t = atof(argv[1]);
 
  //Label for output
  DocInfo doc_info;
@@ -756,7 +748,7 @@ int main(int argc, char **argv)
 //        if (argc>1) max_nel_1d=2;
 //        for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
          {
-           unsigned nel_1d = 4;
+           unsigned nel_1d = 16;
            
           // Build the problem 
           FpTestProblem problem(
@@ -777,7 +769,8 @@ int main(int argc, char **argv)
             Global_Variables::Re=re;
 
             // Solve the problem 
-            problem.newton_solve();
+            //problem.newton_solve();
+            problem.unsteady_run(doc_info);
            
             // Doc solution
             problem.doc_solution(doc_info);

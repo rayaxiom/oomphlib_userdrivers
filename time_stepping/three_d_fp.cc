@@ -78,7 +78,8 @@ namespace Global_Variables
  enum {Driven_cavity, Through_flow};
 
  double Time_start = 0.0;
- double Time_end = 40.0;
+ double Time_end = 1.0;
+ double Delta_t = 0.0;
 
  /// Reynolds number
  double Re=50.0;
@@ -89,17 +90,17 @@ namespace Global_Variables
  /// Storage for linear solver times during Newton steps 
  Vector<double> Linear_solver_time;
 
- /// Traction at the outflow boundary
- void prescribed_traction(const double& t,
-                          const Vector<double>& x,
-                          const Vector<double> &n,
-                          Vector<double>& traction)
- {
-  traction.resize(3);
-  traction[0]=1.0;
-  traction[1]=0.0;
-  traction[2]=0.0;
- } 
+// /// Traction at the outflow boundary
+// void prescribed_traction(const double& t,
+//                          const Vector<double>& x,
+//                          const Vector<double> &n,
+//                          Vector<double>& traction)
+// {
+//  traction.resize(3);
+//  traction[0]=1.0;
+//  traction[1]=0.0;
+//  traction[2]=0.0;
+// } 
 
 // /// Traction at the outflow boundary
 // void get_prescribed_inflow(const double& t,
@@ -431,6 +432,7 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
    
    //Set the Reynolds number
    el_pt->re_pt() = &Global_Variables::Re;
+   el_pt->re_st_pt() = &Global_Variables::Re;
   } // end loop over elements
  
  
@@ -541,7 +543,7 @@ void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 {
 
  //Set value of dt
- double dt = 1e-2;
+ double dt = Global_Variables::Delta_t;
 
    // Initialise all history values for an impulsive start
    assign_initial_values_impulsive(dt);
@@ -841,7 +843,19 @@ int main(int argc, char **argv)
         // Write tecplot header
         string header="ZONE T=\""+header1+header2+"\"\n";
         out_file << header;
+
+        Global_Variables::Delta_t = atof(argv[1]);
                  
+
+     NavierStokesEquations<3>::Gamma[0]=1.0;
+     NavierStokesEquations<3>::Gamma[1]=1.0;
+     NavierStokesEquations<3>::Gamma[2]=1.0;
+
+
+
+
+
+
         // Number of elements in x/y directions (reduced for validaton)
         //if (argc>1) max_nel_1d=2;
         //for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
@@ -864,7 +878,7 @@ int main(int argc, char **argv)
 //          double end_re = 50.0; 
 //          for (double re = start_re; re <= end_re; re+=50.0)
            {
-             double re = 50.0;
+             double re = 200.0;
             
             // Set Reynolds
             Global_Variables::Re=re;
