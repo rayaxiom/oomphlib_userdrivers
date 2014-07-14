@@ -109,15 +109,7 @@ public:
 
 
  /// Constructor
- FpTestProblem(const unsigned& n_element,
-               const bool& use_triangles,
-               const bool& use_adaptivity, 
-               const bool& use_lsc,
-               const bool& use_robin,
-               const bool& use_hypre_for_pressure,
-               const bool& use_block_diagonal_for_momentum,
-               const bool& use_hypre_for_momentum_diagonals,
-               const int& problem_id);
+ FpTestProblem(const unsigned& n_element);
 
  
  /// Destructor: Cleanup
@@ -174,7 +166,7 @@ public:
     pin_redundant_nodal_pressures(mesh_pt()->element_pt());
    
    // Now set the first pressure dof in the first element to 0.0
-   if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
+//   if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
   } // end_of_actions_after_adapt
 
  
@@ -211,15 +203,6 @@ public:
  /// Doc the solution
  void doc_solution(DocInfo& doc_info);
 
- /// Validate fp
- template<class FP_ELEMENT>
- void validate_fp()
-  {
-   DocInfo my_doc_info;
-   dynamic_cast<NavierStokesSchurComplementPreconditioner*>(
-    Prec_pt)->template validate<FP_ELEMENT>(my_doc_info,this);
-   pause("done validation");
-  }
 
 private:
 
@@ -235,9 +218,6 @@ private:
  /// Inexact solver for F block
  Preconditioner* F_matrix_preconditioner_pt;
 
- /// Problem id
- unsigned Problem_id;
-
 }; // end_of_problem_class
 
 
@@ -246,303 +226,231 @@ private:
 /// Constructor 
 //========================================================================
 FpTestProblem::FpTestProblem(
- const unsigned& n_el,
- const bool& use_triangles,
- const bool& use_adaptivity,
- const bool& use_lsc,
- const bool& use_robin,
- const bool& use_hypre_for_pressure,
- const bool& use_block_diagonal_for_momentum,
- const bool& use_hypre_for_momentum_diagonals,
- const int& problem_id)
+ const unsigned& n_el)
 { 
-   add_time_stepper_pt(new BDF<2>);
+  add_time_stepper_pt(new BDF<2>);
 
- // Allow for poor initial guess
- Problem::Max_residuals=1.0e10;
-
- // Which problem?
- Problem_id=problem_id;
+  // Allow for poor initial guess
+  Problem::Max_residuals=1.0e10;
 
 
+  // Setup mesh
+
+  // # of elements in x-direction
+  unsigned n_x=n_el;
+
+  // # of elements in y-direction
+  unsigned n_y=n_el;
+
+  // Domain length in x-direction
+  double l_x=1.0;
+
+  // Domain length in y-direction
+  double l_y=1.0;
 
 
- // Setup mesh
- 
- // # of elements in x-direction
- unsigned n_x=n_el;
- 
- // # of elements in y-direction
- unsigned n_y=n_el;
- 
- // Domain length in x-direction
- double l_x=1.0;
- 
- // Domain length in y-direction
- double l_y=1.0;
- 
- 
- // Build and assign meshes 
-
- // Triangular meshes
- //------------------
- if (use_triangles)
+  // Build and assign meshes 
+  // Backward step domain
+  //---------------------
   {
-   // Backward step domain
-   //---------------------
-   if (Problem_id==Global_Variables::Step)
+    l_x=6.0;
+    l_y=2.0;
+    n_x=6*n_el; // These are appropriate for n_el = number of elements across
+    n_y=2*n_el; // inflow, as in David's book
+    unsigned nx_cut_out=5*n_el;
+    unsigned ny_cut_out=1*n_el;
     {
-     oomph_info << "Can't do backward step with triangles\n";
-     exit(1);
-    }
-   // Square domain
-   //--------------
-   else
-    {
-     mesh_pt() = new SimpleRectangularTriMesh<TTaylorHoodElement<2> >
-      (n_x,n_y,l_x,l_y);
-     
-     dynamic_cast<SimpleRectangularTriMesh<TTaylorHoodElement<2> >*>(mesh_pt())
-      ->setup_boundary_element_info();
-    }
-  }
- // Quad meshes
- //-----------
- else
-  {
-   // Backward step domain
-   //---------------------
-   if (Problem_id==Global_Variables::Step)
-    {
-     l_x=6.0;
-     l_y=2.0;
-     n_x=6*n_el; // These are appropriate for n_el = number of elements across
-     n_y=2*n_el; // inflow, as in David's book
-     unsigned nx_cut_out=5*n_el;
-     unsigned ny_cut_out=1*n_el;
-     if (use_adaptivity)
-      {
-//       mesh_pt()=new 
-//        RefineableBackwardStepQuadMesh<RefineableQTaylorHoodElement<2> >
-//        (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y);
-      }
-     else
-      {
-       mesh_pt()=new BackwardStepQuadMesh<QTaylorHoodElement<2> >
+      mesh_pt()=new BackwardStepQuadMesh<QTaylorHoodElement<2> >
         (n_x,n_y,nx_cut_out,ny_cut_out,l_x,l_y,time_stepper_pt());
-      }
     }
-   // Square domain
-   //--------------
-   else
-    {
-     if (use_adaptivity)
-      {
-       mesh_pt() = new 
-        RefineableRectangularQuadMesh<RefineableQTaylorHoodElement<2> >
-        (n_x,n_y,l_x,l_y);     
-      }
-     else
-      {
-       mesh_pt() = 
-        new SimpleRectangularQuadMesh<QTaylorHoodElement<2> >
-        (n_x,n_y,l_x,l_y);
-      }
-    } 
   }
- 
- 
 
- // In/outflow bcs
- //---------------
 
- // Set the boundary conditions for this problem: All nodes are
- // free by default -- just pin the ones that have Dirichlet conditions
- // here. 
- unsigned num_bound = mesh_pt()->nboundary();
- for(unsigned ibound=0;ibound<num_bound;ibound++)
+
+
+  // In/outflow bcs
+  //---------------
+
+  // Set the boundary conditions for this problem: All nodes are
+  // free by default -- just pin the ones that have Dirichlet conditions
+  // here. 
+  unsigned num_bound = mesh_pt()->nboundary();
+  for(unsigned ibound=0;ibound<num_bound;ibound++)
   {
-   unsigned num_nod= mesh_pt()->nboundary_node(ibound);
-   for (unsigned inod=0;inod<num_nod;inod++)
+    unsigned num_nod= mesh_pt()->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
     {
-     // Loop over values (u and v velocities)
-     for (unsigned i=0;i<2;i++)
+      // Loop over values (u and v velocities)
+      for (unsigned i=0;i<2;i++)
       {
-       mesh_pt()->boundary_node_pt(ibound,inod)->pin(i); 
+        mesh_pt()->boundary_node_pt(ibound,inod)->pin(i); 
       }
     }
   } // end loop over boundaries
- 
- 
- // Backward step: Unpin outflow on boundary 5
- if (Problem_id==Global_Variables::Step)
+
+
+  // Backward step: Unpin outflow on boundary 5
   {
-   unsigned ibound=5;
-   unsigned num_nod= mesh_pt()->nboundary_node(ibound);
-   for (unsigned inod=0;inod<num_nod;inod++)
+    unsigned ibound=5;
+    unsigned num_nod= mesh_pt()->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
     {
-     Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
-     if ( (!(nod_pt->is_on_boundary(4))) &&
+      Node* nod_pt=mesh_pt()->boundary_node_pt(ibound,inod);
+      if ( (!(nod_pt->is_on_boundary(4))) &&
           (!(nod_pt->is_on_boundary(0))) )
       {
-       nod_pt->unpin(0);
-       // Unpin transverse velocity if non-stress divergence form
-       if (NavierStokesEquations<2>::Gamma[0]==0.0)
+        nod_pt->unpin(0);
+        // Unpin transverse velocity if non-stress divergence form
+        if (NavierStokesEquations<2>::Gamma[0]==0.0)
         {
-         nod_pt->unpin(1);
+          nod_pt->unpin(1);
         }
       }
     }
   }
- 
- 
- // Complete the build of all elements so they are fully functional
 
- //Find number of elements in mesh
- unsigned n_element = mesh_pt()->nelement();
 
- // Loop over the elements to set up element-specific 
- // things that cannot be handled by constructor
- for(unsigned e=0;e<n_element;e++)
+  // Complete the build of all elements so they are fully functional
+
+  //Find number of elements in mesh
+  unsigned n_element = mesh_pt()->nelement();
+
+  // Loop over the elements to set up element-specific 
+  // things that cannot be handled by constructor
+  for(unsigned e=0;e<n_element;e++)
   {
-   // Upcast from GeneralisedElement to the present element
-   NavierStokesEquations<2>* el_pt = 
-    dynamic_cast<NavierStokesEquations<2>*>(mesh_pt()->element_pt(e));
-   
-   //Set the Reynolds number
-   el_pt->re_pt() = &Global_Variables::Re;
+    // Upcast from GeneralisedElement to the present element
+    NavierStokesEquations<2>* el_pt = 
+      dynamic_cast<NavierStokesEquations<2>*>(mesh_pt()->element_pt(e));
+
+    //Set the Reynolds number
+    el_pt->re_pt() = &Global_Variables::Re;
   } // end loop over elements
- 
- 
-
- // Setup equation numbering scheme
- oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
- // Build preconditoner
- NavierStokesSchurComplementPreconditioner* prec_pt 
-  = new NavierStokesSchurComplementPreconditioner(this);
- Prec_pt=prec_pt;
- 
- // By default, the LSC Preconditioner uses SuperLU as
- // an exact preconditioner (i.e. a solver) for the
- // momentum and Schur complement blocks. 
- // Can overwrite this by passing pointers to 
- // other preconditioners that perform the (approximate)
- // solves of these blocks.
 
 
- // Create internal preconditioners used on Schur block
- P_matrix_preconditioner_pt=0;
+
+  // Setup equation numbering scheme
+  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+
+  // Build preconditoner
+  NavierStokesSchurComplementPreconditioner* prec_pt 
+    = new NavierStokesSchurComplementPreconditioner(this);
+  Prec_pt=prec_pt;
+
+  // By default, the LSC Preconditioner uses SuperLU as
+  // an exact preconditioner (i.e. a solver) for the
+  // momentum and Schur complement blocks. 
+  // Can overwrite this by passing pointers to 
+  // other preconditioners that perform the (approximate)
+  // solves of these blocks.
+
+
+  // Create internal preconditioners used on Schur block
+  P_matrix_preconditioner_pt=0;
   {
 #ifdef OOMPH_HAS_HYPRE
     oomph_info << "Using HYPRE for pressure block" << std::endl; 
-   // Create preconditioner
-   P_matrix_preconditioner_pt = new HyprePreconditioner;
-   
-   // Set parameters for use as preconditioner on Poisson-type problem
-   Hypre_default_settings::set_defaults_for_2D_poisson_problem(
-    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
-   
-   // Use Hypre for the Schur complement block
-   prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
-   
-   // Shut up!
-   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
-    disable_doc_time();
-   
+    // Create preconditioner
+    P_matrix_preconditioner_pt = new HyprePreconditioner;
+
+    // Set parameters for use as preconditioner on Poisson-type problem
+    Hypre_default_settings::set_defaults_for_2D_poisson_problem(
+        static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
+
+    // Use Hypre for the Schur complement block
+    prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
+
+    // Shut up!
+    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
+      disable_doc_time();
+
 #endif
   }
- 
- // Create block-diagonal preconditioner used on momentum block
- F_matrix_preconditioner_pt=0;   
-// if (use_block_diagonal_for_momentum)
-  {
-   
+
+  // Create block-diagonal preconditioner used on momentum block
+  F_matrix_preconditioner_pt=0;   
+  {   
 #ifdef OOMPH_HAS_HYPRE
-   F_matrix_preconditioner_pt = new HyprePreconditioner;
-   oomph_info << "Using HYPRE for momentum block" << std::endl;  
-   Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
-       static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
+    F_matrix_preconditioner_pt = new HyprePreconditioner;
+    oomph_info << "Using HYPRE for momentum block" << std::endl;  
+    Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+        static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
 #endif       
-   
-   // Use Hypre for momentum block 
-   prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
-  }
- 
- 
- 
 
-  {
-   prec_pt->use_lsc();
+    // Use Hypre for momentum block 
+    prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
   }
 
-prec_pt->set_navier_stokes_mesh(mesh_pt());  
+
+
+  prec_pt->use_lsc();
+
+  prec_pt->set_navier_stokes_mesh(mesh_pt());  
 
 #ifdef OOMPH_HAS_TRILINOS
 
- // Build iterative linear solver
- oomph_info << "Using Trilinos GMRES\n"; 
- TrilinosAztecOOSolver* iterative_linear_solver_pt = 
-  new TrilinosAztecOOSolver;
+  // Build iterative linear solver
+  oomph_info << "Using Trilinos GMRES\n"; 
+  TrilinosAztecOOSolver* iterative_linear_solver_pt = 
+    new TrilinosAztecOOSolver;
 
- Solver_pt=iterative_linear_solver_pt;
+  Solver_pt=iterative_linear_solver_pt;
 
 #else
 
- // Build solve and preconditioner
- Solver_pt = new GMRES<CRDoubleMatrix>;
- dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+  // Build solve and preconditioner
+  Solver_pt = new GMRES<CRDoubleMatrix>;
+  dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
 
 #endif
 
- // Limit max. number of iterations
- Solver_pt->max_iter()=200;
- //Solver_pt->tolerance()=1.0e-10;
+  // Limit max. number of iterations
+  Solver_pt->max_iter()=200;
+  //Solver_pt->tolerance()=1.0e-10;
 
- // Set solver and preconditioner
- Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt;
- 
+  // Set solver and preconditioner
+  Solver_pt->preconditioner_pt() = Prec_pt;
+  linear_solver_pt() = Solver_pt;
+
 } // end_of_constructor
 
-//template<class ELEMENT>
 void FpTestProblem::unsteady_run(DocInfo& doc_info)
 {
 
- //Set value of dt
- double dt = Global_Variables::Delta_t;
+  //Set value of dt
+  double dt = Global_Variables::Delta_t;
 
-   // Initialise all history values for an impulsive start
-   assign_initial_values_impulsive(dt);
-   cout << "IC = impulsive start" << std::endl;
+  // Initialise all history values for an impulsive start
+  assign_initial_values_impulsive(dt);
+  cout << "IC = impulsive start" << std::endl;
 
- //Now do many timesteps
- unsigned ntsteps = Global_Variables::Time_end / dt;
- std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
- 
+  //Now do many timesteps
+  unsigned ntsteps = Global_Variables::Time_end / dt;
+  std::cout << "Total number of time steps: " << ntsteps << std::endl;
+  std::cout << "dt is: " << dt << std::endl;
 
- // Doc initial condition
- doc_solution(doc_info);
- 
- // increment counter
- doc_info.number()++;
+  // Doc initial condition
+  doc_solution(doc_info);
 
- //Loop over the timesteps
- for(unsigned t=1;t<=ntsteps;t++)
+  // increment counter
+  doc_info.number()++;
+
+  //Loop over the timesteps
+  for(unsigned t=1;t<=ntsteps;t++)
   {
-   cout << "TIMESTEP " << t << std::endl;
-   
-   //Take one fixed timestep
-   unsteady_newton_solve(dt);
+    cout << "TIMESTEP: " << t << std::endl;
 
-   //Output the time
-   cout << "Time is now " << time_pt()->time() << std::endl;
+    //Take one fixed timestep
+    unsteady_newton_solve(dt);
 
-   // Doc solution
-   doc_solution(doc_info);
+    //Output the time
+    cout << "Time is now " << time_pt()->time() << std::endl;
 
-   // increment counter
-   doc_info.number()++;
+    // Doc solution
+    doc_solution(doc_info);
+
+    // increment counter
+    doc_info.number()++;
   }
 
 } // end of unsteady run
@@ -600,15 +508,11 @@ int main(int argc, char **argv)
  //Doc number of gmres iterations
  ofstream out_file;
  
- // Set flags
- bool use_hypre_for_pressure=true;
- bool use_block_diagonal_for_momentum=false;
- bool use_hypre_for_momentum_diagonals=false;
 
  // Outermost loop over stress divergence or simple form
 // for (unsigned do_stress_div=0;do_stress_div<2;do_stress_div++) 
-  
-  {unsigned do_stress_div = 0;
+  {
+   unsigned do_stress_div = 0;
 
    if (do_stress_div)
     {     
@@ -751,10 +655,7 @@ int main(int argc, char **argv)
            unsigned nel_1d = 16;
            
           // Build the problem 
-          FpTestProblem problem(
-           nel_1d,use_triangles,use_adaptivity,use_lsc,use_robin,
-           use_hypre_for_pressure,use_block_diagonal_for_momentum,
-           use_hypre_for_momentum_diagonals,problem_id);
+          FpTestProblem problem(nel_1d);
            
 
           // Loop over Reynolds numbers (limited during validation)
@@ -763,7 +664,7 @@ int main(int argc, char **argv)
 //          double end_re = 50.0; 
 //          for (double re = start_re; re <= end_re; re+=50.0)
            {
-             double re = 100.0;
+             double re = 200.0;
             
             // Set Reynolds
             Global_Variables::Re=re;
