@@ -279,6 +279,9 @@ public:
 //                                      Mesh* const &bulk_mesh_pt,
 //                                      Mesh* const &surface_mesh_pt);
 
+ void create_parall_outflow_lagrange_elements(const unsigned &b,
+                                              Mesh* const &bulk_mesh_pt,
+                                              Mesh* const &surface_mesh_pt);
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
 
@@ -296,8 +299,12 @@ private:
  /// Inexact solver for F block
  Preconditioner* F_matrix_preconditioner_pt;
 
- /// ID of driven boundary
- unsigned Driven_boundary;
+ unsigned Left_boundary;
+ unsigned Right_boundary;
+ unsigned Front_boundary;
+ unsigned Back_boundary;
+ unsigned Bottom_boundary;
+ unsigned Top_boundary;
 
  /// ID of inflow boundary
  unsigned Inflow_boundary;
@@ -344,6 +351,16 @@ private:
 CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 { 
 
+  Left_boundary = 4;
+  Right_boundary = 2;
+  Front_boundary = 5;
+  Back_boundary = 0;
+  Bottom_boundary = 1;
+  Top_boundary = 3; 
+
+  Inflow_boundary=Left_boundary;
+  Outflow_boundary=Right_boundary;
+
   add_time_stepper_pt(new BDF<2>);
   // Setup mesh
 
@@ -366,14 +383,9 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   double l_z=1.0;
 
 
-  {
-    Bulk_mesh_pt = 
-      new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
+  Bulk_mesh_pt = 
+    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
 
-    Driven_boundary=0;
-    Inflow_boundary=4;
-    Outflow_boundary=2;
-  } 
 
   // Create "surface mesh" that will contain only the prescribed-traction 
   // elements.
@@ -585,6 +597,65 @@ void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
   }
 
 } // end of unsteady run
+
+//============start_of_fluid_traction_elements==============================
+/// Create fluid traction elements 
+//=======================================================================
+template<class ELEMENT>
+void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
+(const unsigned &b, Mesh* const &bulk_mesh_pt, Mesh* const &surface_mesh_pt)
+{
+ // How many bulk elements are adjacent to boundary b?
+ unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
+   
+ // Loop over the bulk elements adjacent to boundary b
+ for(unsigned e=0;e<n_element;e++)
+  {
+   // Get pointer to the bulk element that is adjacent to boundary b
+   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
+    Bulk_mesh_pt->boundary_element_pt(b,e));
+     
+   //What is the index of the face of the element e along boundary b
+   int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
+
+   // Set the pointer to the prescribed traction function
+   {
+    // Build the corresponding impose_impenetrability_element
+    ImposeParallelOutflowElement<ELEMENT>* flux_element_pt = new
+     ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,
+                                           face_index);
+
+//    flux_element_pt->set_tangent_direction(&Tangent_direction);
+    Surface_mesh_pt->add_element_pt(flux_element_pt);
+
+    // Loop over the nodes
+    unsigned nnod=flux_element_pt->nnode();
+    for (unsigned j=0;j<nnod;j++)
+     {
+      Node* nod_pt = flux_element_pt->node_pt(j);
+           
+      // Determine which outflow boundary it is, left or right?
+           
+      if (  (nod_pt->is_on_boundary(7))||(nod_pt->is_on_boundary(8))
+            ||(nod_pt->is_on_boundary(9))||(nod_pt->is_on_boundary(10))
+            ||(nod_pt->is_on_boundary(11))||(nod_pt->is_on_boundary(12))
+            ||(nod_pt->is_on_boundary(13))||(nod_pt->is_on_boundary(14)))
+       {
+        // How many nodal values were used by the "bulk" element
+        // that originally created this node?
+        unsigned n_bulk_value=flux_element_pt->nbulk_value(j);
+
+        // The remaining ones are Lagrange multipliers and we pin them.
+        unsigned nval=nod_pt->nvalue();
+        for (unsigned j=n_bulk_value;j<nval;j++)
+         {
+          nod_pt->pin(j);
+         }
+       }
+     }
+   }
+  }
+} // end of create_parall_outflow_lagrange_elements
 
 
 //============start_of_create_traction_elements==========================
