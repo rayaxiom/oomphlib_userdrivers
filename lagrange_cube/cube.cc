@@ -73,10 +73,6 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 //==================================================
 namespace Global_Variables
 {
-
- /// Enumeration for the problem ids
- enum {Driven_cavity, Through_flow};
-
  double Time_start = 0.0;
  double Time_end = 1.0;
  double Delta_t = 0.0;
@@ -371,8 +367,6 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
  build_global_mesh();
 
 
-
-
    // Set the boundary conditions for this problem: All nodes are
    // free by default -- just pin the ones that have Dirichlet conditions
    // here. 
@@ -393,7 +387,6 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
  
 
    // OUTFLOW ONLY, for inflow, check out the before solve
-// if (Problem_id==Global_Variables::Through_flow)
   {
    unsigned ibound=Outflow_boundary;
    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
@@ -435,15 +428,12 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
    el_pt->re_st_pt() = &Global_Variables::Re;
   } // end loop over elements
  
- 
 
  // Now set the first pressure value in element 0 to 0.0
 // if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
 
  // Setup equation numbering scheme
  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
-
 
 
 
@@ -502,12 +492,7 @@ FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
    prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
   }
  
- 
-   
-   // Use LSC?
-    {
      prec_pt->use_lsc();
-    }
    
    // Set Navier Stokes mesh
    prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);    
@@ -790,141 +775,47 @@ int main(int argc, char **argv)
 
 
 #ifdef OOMPH_HAS_MPI
- MPI_Helpers::init(argc,argv);
+  MPI_Helpers::init(argc,argv);
 #endif
 
 
- //Label for output
- DocInfo doc_info;
- 
- //Set output directory
- doc_info.set_directory("RESLT");
- 
- //Doc number of gmres iterations
- ofstream out_file;
- 
-   
-     out_file.open("three_d_iter_through_flow.dat");
-   
-   out_file
-    << "VARIABLES=\"nel_1d\","
-    << "\"ndof\"," 
-    << "\"Re\"," 
-    << "\" Newton iteration\","
-    << "\"GMRES iterations\","
-    << "\"Linear solver time\","
-    << "\"doc number\""
-    << std::endl;
-   
-   std::string header1;
-   std::string header2;
-   
-     
-   // Loop over preconditioners: iprec=0: LSC
-   //                            iprec=1: Fp
-   //bool use_robin=true;
-//   for (unsigned iprec=0;iprec<2;iprec++)
-    {
-     
-     // Loop over three cases (tets, non-refineable/refineable bricks)
-//     for (unsigned icase=0;icase<=2;icase++) 
-      {
-       
+  //Label for output
+  DocInfo doc_info;
 
-         
-         header1=" Bricks";
-       
-       oomph_info << "Doing it with " << header1 << std::endl;
-       
-         header2=", LSC";
-
-        oomph_info << "Doing it with " << header2 << " preconditioner\n";
-
-        // Write tecplot header
-        string header="ZONE T=\""+header1+header2+"\"\n";
-        out_file << header;
-
-        Global_Variables::Delta_t = atof(argv[1]);
-                 
-
-     NavierStokesEquations<3>::Gamma[0]=1.0;
-     NavierStokesEquations<3>::Gamma[1]=1.0;
-     NavierStokesEquations<3>::Gamma[2]=1.0;
+  //Set output directory
+  doc_info.set_directory("RESLT");
 
 
 
+  Global_Variables::Delta_t = atof(argv[1]);
 
+  NavierStokesEquations<3>::Gamma[0]=1.0;
+  NavierStokesEquations<3>::Gamma[1]=1.0;
+  NavierStokesEquations<3>::Gamma[2]=1.0;
 
+  unsigned nel_1d = 4;
 
-        // Number of elements in x/y directions (reduced for validaton)
-        //if (argc>1) max_nel_1d=2;
-        //for (unsigned nel_1d = 2; nel_1d <= max_nel_1d; nel_1d*=2) 
-         {
-           unsigned nel_1d = 4;
-           
-          // Build the problem 
-          FpTestProblem <QTaylorHoodElement<3> >problem(nel_1d);
-           
-          
-          
-          // Attach traction elements now with the problem in its
-          // most refined state
-//         problem.create_traction_elements<QTaylorHoodElement<3> >();
-          
-          
-          // Loop over Reynolds numbers (limited during validation)
-//          double start_re = 0.0; 
-//          if (argc>1) start_re=50;
-//          double end_re = 50.0; 
-//          for (double re = start_re; re <= end_re; re+=50.0)
-           {
-             double re = 200.0;
-            
-            // Set Reynolds
-            Global_Variables::Re=re;
-            
-            // Solve the problem 
-//            problem.newton_solve();
-            problem.unsteady_run(doc_info);
-            
-            // Doc solution
-//            problem.doc_solution(doc_info);
-//            doc_info.number()++;
-            
-            // Doc iteration counts for each Newton iteration
-            unsigned ndof = problem.ndof();
-            unsigned iter = Global_Variables::Iterations.size();
+  // Build the problem 
+  FpTestProblem <QTaylorHoodElement<3> >problem(nel_1d);
 
-            // Doc for all Newton iterations or only the last one?
-            unsigned j_lo=0;
-            //j_lo=iter-1;
-            for (unsigned j = j_lo; j < iter; j++)
-             {
-              out_file
-               << nel_1d << " "
-               << ndof << " "
-               << re << " " 
-               << j << " "
-               << Global_Variables::Iterations[j] << " "
-               << Global_Variables::Linear_solver_time[j] << " "
-               << doc_info.number()-1 << " "
-               << std::endl;
-             }
-            
-           }
-         }     
-      }
-     }
-   
-   out_file.close();
-   
- 
+  double re = 200.0;
+
+  // Set Reynolds
+  Global_Variables::Re=re;
+
+  // Solve the problem 
+  //            problem.newton_solve();
+  problem.unsteady_run(doc_info);
+
+  problem.doc_solution(doc_info);
+  doc_info.number()++;
+
 
 #ifdef OOMPH_HAS_MPI
-   MPI_Helpers::finalize();
+  MPI_Helpers::finalize();
 #endif
-   
-   
+
+
 } // end_of_main
 
 
