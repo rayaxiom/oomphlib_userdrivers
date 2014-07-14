@@ -152,6 +152,30 @@ namespace Global_Variables
 //     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
    }
  } 
+
+
+ void get_prescribed_inflow_full(const double& t,
+                            const double& y,
+                            const double& z,
+                            double& ux)
+ {
+   // For the velocity profile in the x direction.
+   // 1) First form the parabolic profile
+   ux = 0.0;
+   {
+     // 2) Now make it move in time
+//     const double trig_scaling = 0.025;
+//     const double ux_scaling = (1.0 
+//                               - cos(trig_scaling
+//                                     *MathematicalConstants::Pi
+//                                     *t)) * 2.0;
+
+     const double ux_scaling = t / Time_end;
+     ux = (y-0.0)*(1.0-y)*(z-0.0)*(1.0-z) * ux_scaling;
+//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+   }
+ } 
+
 } // end_of_namespace
 
 
@@ -212,7 +236,7 @@ public:
       const double time=time_pt()->time();
       double ux = 0.0;
 
-      Global_Variables::get_prescribed_inflow(time,y,z,ux);
+      Global_Variables::get_prescribed_inflow_full(time,y,z,ux);
 
       nod_pt->set_value(0,ux);
       nod_pt->set_value(1,0.0);
@@ -229,13 +253,6 @@ public:
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
  void actions_after_adapt()
   {
-   // Unpin all pressure dofs
-   RefineableNavierStokesEquations<3>::
-    unpin_all_pressure_dofs(Bulk_mesh_pt->element_pt());
-   
-   // Pin redundant pressure dofs
-   RefineableNavierStokesEquations<3>::
-    pin_redundant_nodal_pressures(Bulk_mesh_pt->element_pt());
    
    // Now set the first pressure dof in the first element to 0.0
 //   if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
@@ -245,12 +262,12 @@ public:
  /// Actions after Newton step record number of iterations
  void actions_after_newton_step() 
   {                               
-   Global_Variables::Iterations.push_back(
-    dynamic_cast<IterativeLinearSolver*>
-    (this->linear_solver_pt())->iterations());
-   
-   Global_Variables::Linear_solver_time.push_back(
-    linear_solver_pt()->linear_solver_solution_time());
+//   Global_Variables::Iterations.push_back(
+//    dynamic_cast<IterativeLinearSolver*>
+//    (this->linear_solver_pt())->iterations());
+//   
+//   Global_Variables::Linear_solver_time.push_back(
+//    linear_solver_pt()->linear_solver_solution_time());
   }  
 
  /// Update the after solve (empty)
@@ -260,8 +277,8 @@ public:
  void actions_before_newton_solve()
  {
   // Initialise counter for iterations
-  Global_Variables::Iterations.clear();
-  Global_Variables::Linear_solver_time.clear();
+//  Global_Variables::Iterations.clear();
+//  Global_Variables::Linear_solver_time.clear();
   
  } // end_of_actions_before_newton_solve
 
@@ -391,12 +408,16 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   // elements.
   Surface_mesh_pt = new Mesh;
 
-  // create_inflow_traction_elements(Inflow_boundary,
-  //                                 Bulk_mesh_pt,Surface_mesh_pt);
 
+//   create_inflow_traction_elements(Inflow_boundary,
+//                                   Bulk_mesh_pt,Surface_mesh_pt);
+
+//  create_parall_outflow_lagrange_elements(Inflow_boundary,
+//                                          Bulk_mesh_pt,
+//                                          Surface_mesh_pt);
   // Add the two sub meshes to the problem
   add_sub_mesh(Bulk_mesh_pt);
-  // add_sub_mesh(Surface_mesh_pt);
+//  add_sub_mesh(Surface_mesh_pt);
 
   // Combine all submeshes into a single Mesh
   build_global_mesh();
@@ -436,7 +457,12 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 //          if (!(nod_pt->is_on_boundary(0)) ||
 //              !(nod_pt->is_on_boundary(1)) )
           {
-            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
+//            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5)
+            {
+              nod_pt->unpin(0);
+//              nod_pt->unpin(1);
+//              nod_pt->unpin(2);
+            }
           }
         }
       }
@@ -551,8 +577,9 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 #endif
 
   // Set solver and preconditioner
-  Solver_pt->preconditioner_pt() = Prec_pt;
-  linear_solver_pt() = Solver_pt;
+//  Solver_pt->preconditioner_pt() = Prec_pt;
+
+//  linear_solver_pt() = Solver_pt;
 
 } // end_of_constructor
 
@@ -626,24 +653,21 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
                                            face_index);
 
 //    flux_element_pt->set_tangent_direction(&Tangent_direction);
-    Surface_mesh_pt->add_element_pt(flux_element_pt);
+    surface_mesh_pt->add_element_pt(flux_element_pt);
 
+ {
     // Loop over the nodes
     unsigned nnod=flux_element_pt->nnode();
-    for (unsigned j=0;j<nnod;j++)
+    for (unsigned inod=0;inod<nnod;inod++)
      {
-      Node* nod_pt = flux_element_pt->node_pt(j);
-           
-      // Determine which outflow boundary it is, left or right?
-           
-      if (  (nod_pt->is_on_boundary(7))||(nod_pt->is_on_boundary(8))
-            ||(nod_pt->is_on_boundary(9))||(nod_pt->is_on_boundary(10))
-            ||(nod_pt->is_on_boundary(11))||(nod_pt->is_on_boundary(12))
-            ||(nod_pt->is_on_boundary(13))||(nod_pt->is_on_boundary(14)))
+      Node* nod_pt = flux_element_pt->node_pt(inod);
+
+      if (  (nod_pt->is_on_boundary(1))||(nod_pt->is_on_boundary(5))
+            ||(nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(0)))
        {
         // How many nodal values were used by the "bulk" element
         // that originally created this node?
-        unsigned n_bulk_value=flux_element_pt->nbulk_value(j);
+        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
 
         // The remaining ones are Lagrange multipliers and we pin them.
         unsigned nval=nod_pt->nvalue();
@@ -652,9 +676,50 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
           nod_pt->pin(j);
          }
        }
+
+//      // First, pin all the nodes on two boundaries
+//      std::set<unsigned>* bnd_pt=0;
+//      nod_pt->get_boundaries_pt(bnd_pt);
+//      if (bnd_pt!=0)
+//      {
+//        if (bnd_pt->size()>=2)
+//        {
+//        // How many nodal values were used by the "bulk" element
+//        // that originally created this node?
+//        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+//
+//        // The remaining ones are Lagrange multipliers and we pin them.
+//        unsigned nval=nod_pt->nvalue();
+//        for (unsigned j=n_bulk_value;j<nval;j++)
+//         {
+//          nod_pt->pin(j);
+//         }
+//
+//        }
+//      } // multiple boundaries
+//
+//      // Now do the rest
+//      if ((nod_pt->x(1) >= 0.5) || (nod_pt->x(2) >= 0.5))
+//       {
+//        // How many nodal values were used by the "bulk" element
+//        // that originally created this node?
+//        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+//
+//        // The remaining ones are Lagrange multipliers and we pin them.
+//        unsigned nval=nod_pt->nvalue();
+//        for (unsigned j=n_bulk_value;j<nval;j++)
+//         {
+//          nod_pt->pin(j);
+//         }
+//       }
+//      
      }
-   }
-  }
+ } // Encapsulation
+
+   } // Encapsulation
+
+  } // Loop over all elements on boundary b
+
 } // end of create_parall_outflow_lagrange_elements
 
 
