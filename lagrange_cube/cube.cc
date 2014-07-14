@@ -166,18 +166,18 @@ namespace Global_Variables
 /// Test problem for Fp/PCD preconditioner
 //====================================================================
 template<class ELEMENT>
-class FpTestProblem : public Problem
+class CubeProblem : public Problem
 {
 
 public:
 
 
  /// Constructor
- FpTestProblem(const unsigned& n_element);
+ CubeProblem(const unsigned& n_element);
 
  
  /// Destructor: Cleanup
- ~FpTestProblem()
+ ~CubeProblem()
   {
    delete Solver_pt;
    delete Prec_pt;
@@ -313,254 +313,275 @@ private:
 
 }; // end_of_problem_class
 
-
 //==start_of_constructor==================================================
-/// Constructor for DrivenCavity problem 
+/// Constructor for cube problem
+//        
+//        y
+//        |
+//        |
+//        |
+//        |____________ x
+//        /
+//       /
+//      /
+//     /
+//    z
+//        --------------
+//       /|            /      Left = 4 (Inflow)
+//      / |           / |     Right = 2 (Outflow)
+//     /  |          /  |     Front = 5
+//    /   |         /   |     Back = 0
+//    --------------    |     Bottom = 1
+//    |   |--------|----|     Top = 3
+//    |   /        |   /
+//    |  /         |  /
+//    | /          | /
+//    |/           |/
+//    --------------
+// 
 //========================================================================
-template<class ELEMENT>
-FpTestProblem<ELEMENT>::FpTestProblem(const unsigned& n_el)
+  template<class ELEMENT>
+CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 { 
- 
- add_time_stepper_pt(new BDF<2>);
- // Setup mesh
- 
- // # of elements in x-direction
- unsigned n_x=n_el;
- 
- // # of elements in y-direction
- unsigned n_y=n_el;
 
- // # of elements in z-direction
- unsigned n_z=n_el;
- 
- // Domain length in x-direction
- double l_x=1.0;
- 
- // Domain length in y-direction
- double l_y=1.0;
- 
- // Domain length in y-direction
- double l_z=1.0;
- 
+  add_time_stepper_pt(new BDF<2>);
+  // Setup mesh
+
+  // # of elements in x-direction
+  unsigned n_x=n_el;
+
+  // # of elements in y-direction
+  unsigned n_y=n_el;
+
+  // # of elements in z-direction
+  unsigned n_z=n_el;
+
+  // Domain length in x-direction
+  double l_x=1.0;
+
+  // Domain length in y-direction
+  double l_y=1.0;
+
+  // Domain length in y-direction
+  double l_z=1.0;
+
 
   {
-     Bulk_mesh_pt = 
+    Bulk_mesh_pt = 
       new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
-     
-     Driven_boundary=0;
-     Inflow_boundary=4;
-     Outflow_boundary=2;
+
+    Driven_boundary=0;
+    Inflow_boundary=4;
+    Outflow_boundary=2;
   } 
 
- // Create "surface mesh" that will contain only the prescribed-traction 
- // elements.
- Surface_mesh_pt = new Mesh;
+  // Create "surface mesh" that will contain only the prescribed-traction 
+  // elements.
+  Surface_mesh_pt = new Mesh;
 
-// create_inflow_traction_elements(Inflow_boundary,
-//                                 Bulk_mesh_pt,Surface_mesh_pt);
+  // create_inflow_traction_elements(Inflow_boundary,
+  //                                 Bulk_mesh_pt,Surface_mesh_pt);
 
- // Add the two sub meshes to the problem
- add_sub_mesh(Bulk_mesh_pt);
-// add_sub_mesh(Surface_mesh_pt);
+  // Add the two sub meshes to the problem
+  add_sub_mesh(Bulk_mesh_pt);
+  // add_sub_mesh(Surface_mesh_pt);
 
- // Combine all submeshes into a single Mesh
- build_global_mesh();
+  // Combine all submeshes into a single Mesh
+  build_global_mesh();
 
 
-   // Set the boundary conditions for this problem: All nodes are
-   // free by default -- just pin the ones that have Dirichlet conditions
-   // here. 
-   unsigned num_bound = Bulk_mesh_pt->nboundary();
-   for(unsigned ibound=0;ibound<num_bound;ibound++)
-    {
-     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-     for (unsigned inod=0;inod<num_nod;inod++)
-      {
-       // Loop over values (u, v and w velocities)
-       for (unsigned i=0;i<3;i++)
-        {
-         Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
-        }
-      }
-    } // end loop over boundaries
-
- 
-
-   // OUTFLOW ONLY, for inflow, check out the before solve
+  // Set the boundary conditions for this problem: All nodes are
+  // free by default -- just pin the ones that have Dirichlet conditions
+  // here. 
+  unsigned num_bound = Bulk_mesh_pt->nboundary();
+  for(unsigned ibound=0;ibound<num_bound;ibound++)
   {
-   unsigned ibound=Outflow_boundary;
-   unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-   for (unsigned inod=0;inod<num_nod;inod++)
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
     {
-     Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-     // Only free if node is ONLY on a single boundary
-     std::set<unsigned>* bnd_pt=0;
-     nod_pt->get_boundaries_pt(bnd_pt);
-     if (bnd_pt!=0)
+      // Loop over values (u, v and w velocities)
+      for (unsigned i=0;i<3;i++)
       {
-       if (bnd_pt->size()<2)
+        Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
+      }
+    }
+  } // end loop over boundaries!
+
+
+  {
+    unsigned ibound=Outflow_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+      // Only free if node is ONLY on a single boundary
+      std::set<unsigned>* bnd_pt=0;
+      nod_pt->get_boundaries_pt(bnd_pt);
+      if (bnd_pt!=0)
+      {
+        if (bnd_pt->size()<2)
         {
-         if (!(nod_pt->is_on_boundary(0)))
+//          if (!(nod_pt->is_on_boundary(0)) ||
+//              !(nod_pt->is_on_boundary(1)) )
           {
-           if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
+            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
           }
         }
       }
     }
   }
 
+  // Complete the build of all elements so they are fully functional
 
- // Complete the build of all elements so they are fully functional
+  //Find number of elements in mesh
+  unsigned n_element = Bulk_mesh_pt->nelement();
 
- //Find number of elements in mesh
- unsigned n_element = Bulk_mesh_pt->nelement();
-
- // Loop over the elements to set up element-specific 
- // things that cannot be handled by constructor
- for(unsigned e=0;e<n_element;e++)
+  // Loop over the elements to set up element-specific 
+  // things that cannot be handled by constructor
+  for(unsigned e=0;e<n_element;e++)
   {
-   // Upcast from GeneralisedElement to the present element
-   NavierStokesEquations<3>* el_pt = 
-    dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
-   
-   //Set the Reynolds number
-   el_pt->re_pt() = &Global_Variables::Re;
-   el_pt->re_st_pt() = &Global_Variables::Re;
+    // Upcast from GeneralisedElement to the present element
+    NavierStokesEquations<3>* el_pt = 
+      dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
+
+    //Set the Reynolds number
+    el_pt->re_pt() = &Global_Variables::Re;
+    el_pt->re_st_pt() = &Global_Variables::Re;
   } // end loop over elements
- 
-
- // Now set the first pressure value in element 0 to 0.0
-// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
-
- // Setup equation numbering scheme
- oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
+  // Now set the first pressure value in element 0 to 0.0
+  // if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
 
- // Build preconditoner
- NavierStokesSchurComplementPreconditioner* prec_pt = 
-  new NavierStokesSchurComplementPreconditioner(this);
- Prec_pt=prec_pt;
-   
- 
- // By default, the Schur Complement Preconditioner uses SuperLU as
- // an exact preconditioner (i.e. a solver) for the
- // momentum and Schur complement blocks. 
- // Can overwrite this by passing pointers to 
- // other preconditioners that perform the (approximate)
- // solves of these blocks.
+  // Setup equation numbering scheme
+  oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
- // Create internal preconditioners used on Schur block
- P_matrix_preconditioner_pt=0;
-// if (use_hypre_for_pressure)
+
+  // Build preconditoner
+  NavierStokesSchurComplementPreconditioner* prec_pt = 
+    new NavierStokesSchurComplementPreconditioner(this);
+  Prec_pt=prec_pt;
+
+
+  // By default, the Schur Complement Preconditioner uses SuperLU as
+  // an exact preconditioner (i.e. a solver) for the
+  // momentum and Schur complement blocks. 
+  // Can overwrite this by passing pointers to 
+  // other preconditioners that perform the (approximate)
+  // solves of these blocks.
+
+
+  // Create internal preconditioners used on Schur block
+  P_matrix_preconditioner_pt=0;
+  // if (use_hypre_for_pressure)
   {
 #ifdef OOMPH_HAS_HYPRE
 
     oomph_info << "Using HYPRE for pressure block" << std::endl; 
-    
-   // Create preconditioner
-   P_matrix_preconditioner_pt = new HyprePreconditioner;
-   
-   // Set parameters for use as preconditioner on Poisson-type problem
-   Hypre_default_settings::set_defaults_for_3D_poisson_problem(
-    static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
-   
-   // Use Hypre for the Schur complement block
-   prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
-   
-   // Shut up!
-//   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
-//    disable_doc_time();
-   
+
+    // Create preconditioner
+    P_matrix_preconditioner_pt = new HyprePreconditioner;
+
+    // Set parameters for use as preconditioner on Poisson-type problem
+    Hypre_default_settings::set_defaults_for_3D_poisson_problem(
+        static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
+
+    // Use Hypre for the Schur complement block
+    prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
+
+    // Shut up!
+    //   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
+    //    disable_doc_time();
+
 #endif
   }
- 
- // Create block-diagonal preconditioner used on momentum block
- F_matrix_preconditioner_pt=0;   
-// if (use_block_diagonal_for_momentum)
-  {
-   
-#ifdef OOMPH_HAS_HYPRE
-   F_matrix_preconditioner_pt = new HyprePreconditioner;
 
-   Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
-       static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
+  // Create block-diagonal preconditioner used on momentum block
+  F_matrix_preconditioner_pt=0;   
+  // if (use_block_diagonal_for_momentum)
+  {
+
+#ifdef OOMPH_HAS_HYPRE
+    F_matrix_preconditioner_pt = new HyprePreconditioner;
+
+    Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+        static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
 #endif       
-   
-   // Use Hypre for momentum block 
-   prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
+
+    // Use Hypre for momentum block 
+    prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
   }
- 
-     prec_pt->use_lsc();
-   
-   // Set Navier Stokes mesh
-   prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);    
-   
-   
+
+  prec_pt->use_lsc();
+
+  // Set Navier Stokes mesh
+  prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);    
+
+
 
 
 #ifdef OOMPH_HAS_TRILINOS
 
- // Build iterative linear solver
- oomph_info << "Using Trilinos GMRES\n"; 
- TrilinosAztecOOSolver* iterative_linear_solver_pt = 
-  new TrilinosAztecOOSolver;
+  // Build iterative linear solver
+  oomph_info << "Using Trilinos GMRES\n"; 
+  TrilinosAztecOOSolver* iterative_linear_solver_pt = 
+    new TrilinosAztecOOSolver;
 
- Solver_pt=iterative_linear_solver_pt;
+  Solver_pt=iterative_linear_solver_pt;
 
 #else
 
- // Build solve and preconditioner
- Solver_pt = new GMRES<CRDoubleMatrix>;
- dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+  // Build solve and preconditioner
+  Solver_pt = new GMRES<CRDoubleMatrix>;
+  dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
 
 #endif
 
- // Set solver and preconditioner
- Solver_pt->preconditioner_pt() = Prec_pt;
- linear_solver_pt() = Solver_pt;
- 
+  // Set solver and preconditioner
+  Solver_pt->preconditioner_pt() = Prec_pt;
+  linear_solver_pt() = Solver_pt;
+
 } // end_of_constructor
 
-template<class ELEMENT>
-void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
+  template<class ELEMENT>
+void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 {
 
- //Set value of dt
- double dt = Global_Variables::Delta_t;
+  //Set value of dt
+  double dt = Global_Variables::Delta_t;
 
-   // Initialise all history values for an impulsive start
-   assign_initial_values_impulsive(dt);
-   cout << "IC = impulsive start" << std::endl;
+  // Initialise all history values for an impulsive start
+  assign_initial_values_impulsive(dt);
+  cout << "IC = impulsive start" << std::endl;
 
- //Now do many timesteps
- unsigned ntsteps = Global_Variables::Time_end / dt;
- std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
- 
+  //Now do many timesteps
+  unsigned ntsteps = Global_Variables::Time_end / dt;
+  std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
 
- // Doc initial condition
- doc_solution(doc_info);
- 
- // increment counter
- doc_info.number()++;
 
- //Loop over the timesteps
- for(unsigned t=1;t<=ntsteps;t++)
+  // Doc initial condition
+  doc_solution(doc_info);
+
+  // increment counter
+  doc_info.number()++;
+
+  //Loop over the timesteps
+  for(unsigned t=1;t<=ntsteps;t++)
   {
-   cout << "TIMESTEP " << t << std::endl;
-   
-   //Take one fixed timestep
-   unsteady_newton_solve(dt);
+    cout << "TIMESTEP " << t << std::endl;
 
-   //Output the time
-   cout << "Time is now " << time_pt()->time() << std::endl;
+    //Take one fixed timestep
+    unsteady_newton_solve(dt);
 
-   // Doc solution
-   doc_solution(doc_info);
+    //Output the time
+    cout << "Time is now " << time_pt()->time() << std::endl;
 
-   // increment counter
-   doc_info.number()++;
+    // Doc solution
+    doc_solution(doc_info);
+
+    // increment counter
+    doc_info.number()++;
   }
 
 } // end of unsteady run
@@ -570,7 +591,7 @@ void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 /// Create Navier-Stokes traction elements on outflow boundary
 //=======================================================================
 //template<class ELEMENT>
-//void FpTestProblem::create_traction_elements()
+//void CubeProblem::create_traction_elements()
 //{
 //
 // unsigned b=Outflow_boundary;
@@ -610,7 +631,7 @@ void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 
 
 //Template<class ELEMENT>
-//Void FpTestProblem<ELEMENT>::create_inflow_traction_elements(
+//Void CubeProblem<ELEMENT>::create_inflow_traction_elements(
 //    const unsigned &b, 
 //    Mesh* const &bulk_mesh_pt, 
 //    Mesh* const &surface_mesh_pt)
@@ -739,7 +760,7 @@ void FpTestProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 /// Doc the solution
 //========================================================================
 template<class ELEMENT>
-void FpTestProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
+void CubeProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 { 
  ofstream some_file;
  char filename[100];
@@ -796,7 +817,7 @@ int main(int argc, char **argv)
   unsigned nel_1d = 4;
 
   // Build the problem 
-  FpTestProblem <QTaylorHoodElement<3> >problem(nel_1d);
+  CubeProblem <QTaylorHoodElement<3> >problem(nel_1d);
 
   double re = 200.0;
 
