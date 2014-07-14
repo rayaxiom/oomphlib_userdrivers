@@ -236,7 +236,7 @@ public:
       const double time=time_pt()->time();
       double ux = 0.0;
 
-      Global_Variables::get_prescribed_inflow_full(time,y,z,ux);
+      Global_Variables::get_prescribed_inflow(time,y,z,ux);
 
       nod_pt->set_value(0,ux);
       nod_pt->set_value(1,0.0);
@@ -486,7 +486,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 //          if (!(nod_pt->is_on_boundary(0)) ||
 //              !(nod_pt->is_on_boundary(1)) )
           {
-//            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5)
+            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5)
             {
               nod_pt->unpin(0);
               nod_pt->unpin(1);
@@ -708,44 +708,9 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
      {
       Node* nod_pt = flux_element_pt->node_pt(inod);
 
-      if (  (nod_pt->is_on_boundary(1))||(nod_pt->is_on_boundary(5))
-            ||(nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(0)))
-       {
-        // How many nodal values were used by the "bulk" element
-        // that originally created this node?
-        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
-
-        // The remaining ones are Lagrange multipliers and we pin them.
-        unsigned nval=nod_pt->nvalue();
-        for (unsigned j=n_bulk_value;j<nval;j++)
-         {
-          nod_pt->pin(j);
-         }
-       }
-
-//      // First, pin all the nodes on two boundaries
-//      std::set<unsigned>* bnd_pt=0;
-//      nod_pt->get_boundaries_pt(bnd_pt);
-//      if (bnd_pt!=0)
-//      {
-//        if (bnd_pt->size()>=2)
-//        {
-//        // How many nodal values were used by the "bulk" element
-//        // that originally created this node?
-//        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
-//
-//        // The remaining ones are Lagrange multipliers and we pin them.
-//        unsigned nval=nod_pt->nvalue();
-//        for (unsigned j=n_bulk_value;j<nval;j++)
-//         {
-//          nod_pt->pin(j);
-//         }
-//
-//        }
-//      } // multiple boundaries
-//
-//      // Now do the rest
-//      if ((nod_pt->x(1) >= 0.5) || (nod_pt->x(2) >= 0.5))
+      ///////// THIS IS FOR FULL FLOW
+//      if (  (nod_pt->is_on_boundary(1))||(nod_pt->is_on_boundary(5))
+//            ||(nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(0)))
 //       {
 //        // How many nodal values were used by the "bulk" element
 //        // that originally created this node?
@@ -758,7 +723,43 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 //          nod_pt->pin(j);
 //         }
 //       }
-//      
+
+      // First, pin all the nodes on two boundaries
+      std::set<unsigned>* bnd_pt=0;
+      nod_pt->get_boundaries_pt(bnd_pt);
+      if (bnd_pt!=0)
+      {
+        if (bnd_pt->size()>=2)
+        {
+        // How many nodal values were used by the "bulk" element
+        // that originally created this node?
+        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+
+        // The remaining ones are Lagrange multipliers and we pin them.
+        unsigned nval=nod_pt->nvalue();
+        for (unsigned j=n_bulk_value;j<nval;j++)
+         {
+          nod_pt->pin(j);
+         }
+
+        }
+      } // multiple boundaries
+
+      // Now do the rest
+      if ((nod_pt->x(1) >= 0.5) || (nod_pt->x(2) >= 0.5))
+       {
+        // How many nodal values were used by the "bulk" element
+        // that originally created this node?
+        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+
+        // The remaining ones are Lagrange multipliers and we pin them.
+        unsigned nval=nod_pt->nvalue();
+        for (unsigned j=n_bulk_value;j<nval;j++)
+         {
+          nod_pt->pin(j);
+         }
+       }
+      
      }
  } // Encapsulation
 
