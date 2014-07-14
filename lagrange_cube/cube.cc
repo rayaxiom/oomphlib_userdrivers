@@ -271,11 +271,38 @@ public:
   }  
 
  /// Update the after solve (empty)
- void actions_after_newton_solve(){}
+ void actions_after_newton_solve()
+ {
+
+
+ }
 
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
+
+   {
+    // Inflow in upper half of inflow boundary
+    const unsigned ibound=Inflow_boundary; 
+    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+     {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+      const double y=nod_pt->x(1);
+      const double z=nod_pt->x(2);
+      const double time=1.0;
+
+      double ux = 0.0;
+
+      Global_Variables::get_prescribed_inflow_full(time,y,z,ux);
+
+      nod_pt->set_value(0,ux);
+      nod_pt->set_value(1,0.0);
+      nod_pt->set_value(2,0.0);
+     }
+   }
+
+
   // Initialise counter for iterations
 //  Global_Variables::Iterations.clear();
 //  Global_Variables::Linear_solver_time.clear();
@@ -378,7 +405,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;
 
-  add_time_stepper_pt(new BDF<2>);
+//  add_time_stepper_pt(new BDF<2>);
   // Setup mesh
 
   // # of elements in x-direction
@@ -400,8 +427,10 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   double l_z=1.0;
 
 
+//  Bulk_mesh_pt = 
+//    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
   Bulk_mesh_pt = 
-    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
+    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
 
 
   // Create "surface mesh" that will contain only the prescribed-traction 
@@ -412,12 +441,12 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 //   create_inflow_traction_elements(Inflow_boundary,
 //                                   Bulk_mesh_pt,Surface_mesh_pt);
 
-//  create_parall_outflow_lagrange_elements(Inflow_boundary,
-//                                          Bulk_mesh_pt,
-//                                          Surface_mesh_pt);
+  create_parall_outflow_lagrange_elements(Outflow_boundary,
+                                          Bulk_mesh_pt,
+                                          Surface_mesh_pt);
   // Add the two sub meshes to the problem
   add_sub_mesh(Bulk_mesh_pt);
-//  add_sub_mesh(Surface_mesh_pt);
+  add_sub_mesh(Surface_mesh_pt);
 
   // Combine all submeshes into a single Mesh
   build_global_mesh();
@@ -460,8 +489,8 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 //            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5)
             {
               nod_pt->unpin(0);
-//              nod_pt->unpin(1);
-//              nod_pt->unpin(2);
+              nod_pt->unpin(1);
+              nod_pt->unpin(2);
             }
           }
         }
@@ -962,7 +991,9 @@ int main(int argc, char **argv)
 
   // Solve the problem 
   //            problem.newton_solve();
-  problem.unsteady_run(doc_info);
+//  problem.unsteady_run(doc_info);
+
+  problem.newton_solve();
 
   problem.doc_solution(doc_info);
   doc_info.number()++;
