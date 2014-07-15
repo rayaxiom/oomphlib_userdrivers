@@ -120,8 +120,6 @@ public:
    }
  }
 
- void delete_flux_elements(Mesh* const &surface_mesh_pt);
-
  void actions_before_distribute()
  {
    namespace NSPP = NavierStokesProblemParameters;
@@ -131,7 +129,8 @@ public:
    {
      if(NSPP::Prob_id == SL::PID_SQ_PO)
      {
-      delete_flux_elements(Surface_mesh_P_pt);
+       GenericProblemSetup::delete_flux_elements(Surface_mesh_P_pt);
+
       rebuild_global_mesh();
      }
      else
@@ -244,16 +243,16 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
       /// Setup the mesh
     // # of elements in x-direction
-    unsigned nx=SL::Noel;
+    const unsigned nx=SL::Noel;
     
     // # of elements in y-direction
-    unsigned ny=SL::Noel;
+    const unsigned ny=SL::Noel;
     
     // Domain length in x-direction
-    double lx=SL::Lx;
+    const double lx=SL::Lx;
 
     // Domain length in y-direction
-    double ly=SL::Ly;
+    const double ly=SL::Ly;
   // First we set the mesh.
   if((NSPP::Prob_id == SL::PID_SQ_TMP) ||
      (NSPP::Prob_id == SL::PID_SQ_PO)  ||
@@ -842,25 +841,6 @@ set_inflow_BC(const unsigned &b,
     nod_pt->set_value(1,u1); 
    }
 }
-
-
-template<class ELEMENT>
-void TiltedCavityProblem<ELEMENT>::
-delete_flux_elements(Mesh* const &surface_mesh_pt)
-{
-  // How many surface elements are there in the mesh?
-  unsigned n_element = surface_mesh_pt->nelement();
-
-  // Loop over the surface elements
-  for(unsigned e=0;e<n_element;e++)
-  {
-    // Kill surface elements
-    delete surface_mesh_pt->element_pt(e);
-  }
-
-  // Wipe the mesh
-  surface_mesh_pt->flush_element_and_node_storage();
-} //  end of delete_flux_elements
 
 
 //============start_of_create_parall_outflow_lagrange_elements===========

@@ -375,25 +375,12 @@ public:
 
 
 ////////////////////////////////
- void delete_flux_elements(Mesh* const &surface_mesh_pt)
- {
-  // How many surface elements are there in the mesh?
-  const unsigned n_element = surface_mesh_pt->nelement();
 
-  // Loop over the surface elements
-  for(unsigned e=0;e<n_element;e++)
-  {
-    // Kill surface elements
-    delete surface_mesh_pt->element_pt(e);
-  }
-
-  // Wipe the mesh
-  surface_mesh_pt->flush_element_and_node_storage();
- }
 
  void actions_before_distribute()
  {
-   delete_flux_elements(Surface_mesh_pt);
+   
+   GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
    rebuild_global_mesh();
  }
  
@@ -550,13 +537,18 @@ private:
   template<class ELEMENT>
 CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 { 
+  // Alias the namespace for convenience
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
+  namespace CL = CubeLagrange;
 
-  Left_boundary = 4;
-  Right_boundary = 2;
-  Front_boundary = 5;
-  Back_boundary = 0;
-  Bottom_boundary = 1;
-  Top_boundary = 3; 
+  // Assign boundary IDs defined in rayheader.h
+  Left_boundary = CL::Left_boundary;
+  Right_boundary = CL::Right_boundary;
+  Front_boundary = CL::Front_boundary;
+  Back_boundary = CL::Back_boundary;
+  Bottom_boundary = CL::Bottom_boundary;
+  Top_boundary = CL::Top_boundary; 
 
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;

@@ -210,7 +210,7 @@ public:
  void actions_before_adapt()
  {
    // Kill the flux elements and wipe the surface mesh
-   delete_impenetrable_lagrange_elements(Surface_mesh_T_pt);
+   GenericProblemSetup::delete_flux_elements(Surface_mesh_T_pt);
  
  // Rebuild the Problem's global mesh from its various sub-meshes
  rebuild_global_mesh(); 
@@ -220,8 +220,6 @@ public:
                                             Mesh* const &bulk_mesh_pt,
                                             Mesh* const &surface_mesh_pt); 
 
- void delete_impenetrable_lagrange_elements(Mesh* const &surface_mesh_pt);
- 
  /// Doc the solution
  void doc_solution();
  
@@ -582,30 +580,6 @@ create_impenetrable_lagrange_elements(const unsigned &b,
     }
   }
 }
-
-//============start_of_delete_flux_elements==============================
-/// Delete Poisson Flux Elements and wipe the surface mesh
-//=======================================================================
-template<class ELEMENT>
-void QuarterCircleProblem<ELEMENT>::
-delete_impenetrable_lagrange_elements(Mesh* const &surface_mesh_pt)
-{
- // How many surface elements are in the surface mesh
- unsigned n_element = surface_mesh_pt->nelement();
- 
- std::cout << "No. elements on surface mesh: " << n_element << std::endl; 
- // Loop over the surface elements
- for(unsigned e=0;e<n_element;e++)
-  {
-   // Kill surface element
-   delete surface_mesh_pt->element_pt(e);
-  }
-
- // Wipe the mesh
- surface_mesh_pt->flush_element_and_node_storage();
-} // end of delete_flux_elements
-
-
 
 
 //==start_of_doc_solution=================================================
