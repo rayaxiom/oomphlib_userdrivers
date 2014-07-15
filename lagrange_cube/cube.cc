@@ -34,13 +34,123 @@
 #include "navier_stokes.h"
 
 #include "meshes/simple_cubic_mesh.h"
-#include "meshes/simple_cubic_tet_mesh.h"
+//#include "meshes/simple_cubic_tet_mesh.h"
 
+// My own header
+#include "./../rayheader.h"
 using namespace std;
 
 using namespace oomph;
 
+// Rx = [1 0   0
+//       0 cx -sx
+//       0 sx  cx];
+//
+// Ry = [cy 0 sy
+//       0  1 0
+//      -sy 0 cy];
+//
+// Rz = [cz -sz 0
+//       sz  cz  0
+//       0   0  1];
+//
+// R = Rz*Ry*Rx
+//
+// Rx = x_new
+void rotate_forward(const double& x, const double& y, const double z,
+    const double& phix, const double& phiy, const double& phiz,
+    Vector<double>& x_new)
+{
+  x_new.resize(3,0);
+  x_new[0] = (cos(phiy)*cos(phiz))*x 
+    + (cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))*y 
+    + (sin(phix)*sin(phiz) + cos(phix)*cos(phiz)*sin(phiy))*z;
 
+  x_new[1] = (cos(phiy)*sin(phiz))*x 
+    + (cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz))*y 
+    + (cos(phix)*sin(phiy)*sin(phiz) - cos(phiz)*sin(phix))*z;
+
+  x_new[2] = (-sin(phiy))*x 
+    + (cos(phiy)*sin(phix))*y
+    + ( cos(phix)*cos(phiy))*z;
+}
+// Rx = [1 0   0
+//       0 cx -sx
+//       0 sx  cx];
+//
+// Ry = [cy 0 sy
+//       0  1 0
+//      -sy 0 cy];
+//
+// Rz = [cz -sz 0
+//       sz  cz  0
+//       0   0  1];
+//
+// R = Rx*Ry*Rz (note the ordering)
+//
+// Rx = x_new
+void rotate_backward(const double& x, const double& y, const double z,
+    const double& phix, const double& phiy, const double& phiz,
+    Vector<double>& x_new)
+{
+  x_new.resize(3,0);
+
+  x_new[0] = (cos(phiy)*cos(phiz))*x 
+    -(cos(phiy)*sin(phiz))*y 
+    + (sin(phiy))*z;
+  x_new[1] = (cos(phix)*sin(phiz) + cos(phiz)*sin(phix)*sin(phiy))*x 
+    + (cos(phix)*cos(phiz) - sin(phix)*sin(phiy)*sin(phiz))*y 
+    -(cos(phiy)*sin(phix))*z;
+  x_new[2] = (sin(phix)*sin(phiz) - cos(phix)*cos(phiz)*sin(phiy))*x 
+    + (cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))*y 
+    + (cos(phix)*cos(phiy))*z;
+}
+
+namespace oomph
+{
+//========================================================================
+/// \short A Sloping Mesh  class.
+///
+/// derived from RectangularQuadMesh:
+/// the same mesh rotated with an angle phi
+//========================================================================
+ template<class ELEMENT>
+ class SlopingCubicMesh : public SimpleCubicMesh<ELEMENT>
+ {
+ public:
+
+  /// Constructor.
+  SlopingCubicMesh(const unsigned& nx, const unsigned& ny, const unsigned& nz,
+                   const double& lx,  const double& ly, const double& lz,
+                   const double& phix, const double& phiy, const double& phiz,
+                   TimeStepper* time_stepper_pt=&Mesh::Default_TimeStepper) :
+   SimpleCubicMesh<ELEMENT>(nx,ny,nz,lx,ly,lz,time_stepper_pt)
+   {
+    // Find out how many nodes there are
+    unsigned n_node=this->nnode();
+
+    // Loop over all nodes
+    for (unsigned n=0;n<n_node;n++)
+     {
+      // Pointer to node:
+      Node* nod_pt=this->node_pt(n);
+
+      // Get the x/y coordinates
+      const double x=nod_pt->x(0);
+      const double y=nod_pt->x(1);
+      const double z=nod_pt->x(2);
+
+      Vector<double> x_new;
+      rotate_forward(x,y,z,phix,phiy,phiz,x_new);
+
+      // Set new nodal coordinates
+      nod_pt->x(0)=x_new[0];
+      nod_pt->x(1)=x_new[1];
+      nod_pt->x(2)=x_new[2];
+     }
+   }
+ };
+} // end of namespace oomph
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -76,6 +186,10 @@ namespace Global_Variables
  double Time_start = 0.0;
  double Time_end = 1.0;
  double Delta_t = 0.0;
+
+ double Ang_deg = 45;
+
+ double Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
 
  /// Reynolds number
  double Re=50.0;
@@ -223,6 +337,8 @@ public:
 
  void actions_before_implicit_timestep()
   {
+    const double ang = Global_Variables::Ang;
+    const double minus_ang = -ang;
 
    {
     // Inflow in upper half of inflow boundary
@@ -231,16 +347,27 @@ public:
     for (unsigned inod=0;inod<num_nod;inod++)
      {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+      const double x=nod_pt->x(0);
       const double y=nod_pt->x(1);
       const double z=nod_pt->x(2);
+
       const double time=time_pt()->time();
+
+      // Rotate x y and z back
+      Vector<double>x_new;
+      rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_new);
+
       double ux = 0.0;
 
-      Global_Variables::get_prescribed_inflow(time,y,z,ux);
+      Global_Variables::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
 
-      nod_pt->set_value(0,ux);
-      nod_pt->set_value(1,0.0);
-      nod_pt->set_value(2,0.0);
+      // Now rotate the velocity profile
+      Vector<double>u_new;
+      rotate_forward(ux,0,0,ang,ang,ang,u_new);
+
+      nod_pt->set_value(0,u_new[0]);
+      nod_pt->set_value(1,u_new[1]);
+      nod_pt->set_value(2,u_new[2]);
      }
    }
   } // end of actions_before_implicit_timestep
@@ -248,8 +375,37 @@ public:
 
 
 ////////////////////////////////
+ void delete_flux_elements(Mesh* const &surface_mesh_pt)
+ {
+  // How many surface elements are there in the mesh?
+  const unsigned n_element = surface_mesh_pt->nelement();
 
+  // Loop over the surface elements
+  for(unsigned e=0;e<n_element;e++)
+  {
+    // Kill surface elements
+    delete surface_mesh_pt->element_pt(e);
+  }
+
+  // Wipe the mesh
+  surface_mesh_pt->flush_element_and_node_storage();
+ }
+
+ void actions_before_distribute()
+ {
+   delete_flux_elements(Surface_mesh_pt);
+   rebuild_global_mesh();
+ }
  
+ void actions_after_distribute()
+ {
+     create_parall_outflow_lagrange_elements(Outflow_boundary,
+                                             Bulk_mesh_pt,
+                                             Surface_mesh_pt);
+     rebuild_global_mesh();
+ }
+
+
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
  void actions_after_adapt()
   {
@@ -427,8 +583,17 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   double l_z=1.0;
 
 
+//  Bulk_mesh_pt = 
+//    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
+
+  const double ang = Global_Variables::Ang;
+
   Bulk_mesh_pt = 
-    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
+    new SlopingCubicMesh<ELEMENT>(n_x,n_y,n_z,
+                                  l_x,l_y,l_z,
+                                  ang,ang,ang,
+                                  time_stepper_pt());
+
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
 
@@ -444,6 +609,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   create_parall_outflow_lagrange_elements(Outflow_boundary,
                                           Bulk_mesh_pt,
                                           Surface_mesh_pt);
+
   // Add the two sub meshes to the problem
   add_sub_mesh(Bulk_mesh_pt);
   add_sub_mesh(Surface_mesh_pt);
@@ -471,6 +637,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 
 
   {
+    const double minus_ang = -Global_Variables::Ang;
     unsigned ibound=Outflow_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
@@ -486,7 +653,15 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 //          if (!(nod_pt->is_on_boundary(0)) ||
 //              !(nod_pt->is_on_boundary(1)) )
           {
-            if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5)
+            // We need to rotate the coordinates back
+            Vector<double> x_old;
+            const double x = nod_pt->x(0);
+            const double y = nod_pt->x(1);
+            const double z = nod_pt->x(2);
+            
+            rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_old);
+
+            if ((x_old[1]<0.5)&&x_old[2]<0.5)
             {
               nod_pt->unpin(0);
               nod_pt->unpin(1);
@@ -701,67 +876,75 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 //    flux_element_pt->set_tangent_direction(&Tangent_direction);
     surface_mesh_pt->add_element_pt(flux_element_pt);
 
- {
-    // Loop over the nodes
-    unsigned nnod=flux_element_pt->nnode();
-    for (unsigned inod=0;inod<nnod;inod++)
-     {
-      Node* nod_pt = flux_element_pt->node_pt(inod);
-
-      ///////// THIS IS FOR FULL FLOW
-//      if (  (nod_pt->is_on_boundary(1))||(nod_pt->is_on_boundary(5))
-//            ||(nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(0)))
-//       {
-//        // How many nodal values were used by the "bulk" element
-//        // that originally created this node?
-//        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
-//
-//        // The remaining ones are Lagrange multipliers and we pin them.
-//        unsigned nval=nod_pt->nvalue();
-//        for (unsigned j=n_bulk_value;j<nval;j++)
-//         {
-//          nod_pt->pin(j);
-//         }
-//       }
-
-      // First, pin all the nodes on two boundaries
-      std::set<unsigned>* bnd_pt=0;
-      nod_pt->get_boundaries_pt(bnd_pt);
-      if (bnd_pt!=0)
+    {
+      const double minus_ang = -Global_Variables::Ang;
+      // Loop over the nodes
+      unsigned nnod=flux_element_pt->nnode();
+      for (unsigned inod=0;inod<nnod;inod++)
       {
-        if (bnd_pt->size()>=2)
+        Node* nod_pt = flux_element_pt->node_pt(inod);
+
+        ///////// THIS IS FOR FULL FLOW
+        //      if (  (nod_pt->is_on_boundary(1))||(nod_pt->is_on_boundary(5))
+        //            ||(nod_pt->is_on_boundary(3))||(nod_pt->is_on_boundary(0)))
+        //       {
+        //        // How many nodal values were used by the "bulk" element
+        //        // that originally created this node?
+        //        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+        //
+        //        // The remaining ones are Lagrange multipliers and we pin them.
+        //        unsigned nval=nod_pt->nvalue();
+        //        for (unsigned j=n_bulk_value;j<nval;j++)
+        //         {
+        //          nod_pt->pin(j);
+        //         }
+        //       }
+
+        // First, pin all the nodes on two boundaries
+        std::set<unsigned>* bnd_pt=0;
+        nod_pt->get_boundaries_pt(bnd_pt);
+        if (bnd_pt!=0)
         {
-        // How many nodal values were used by the "bulk" element
-        // that originally created this node?
-        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+          if (bnd_pt->size()>=2)
+          {
+            // How many nodal values were used by the "bulk" element
+            // that originally created this node?
+            unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
 
-        // The remaining ones are Lagrange multipliers and we pin them.
-        unsigned nval=nod_pt->nvalue();
-        for (unsigned j=n_bulk_value;j<nval;j++)
-         {
-          nod_pt->pin(j);
-         }
+            // The remaining ones are Lagrange multipliers and we pin them.
+            unsigned nval=nod_pt->nvalue();
+            for (unsigned j=n_bulk_value;j<nval;j++)
+            {
+              nod_pt->pin(j);
+            }
 
+          }
+        } // multiple boundaries
+
+        // Now do the rest
+        const double x = nod_pt->x(0);
+        const double y = nod_pt->x(1);
+        const double z = nod_pt->x(2);
+
+        Vector<double>x_old;
+        rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_old);
+
+        if ((x_old[1] >= 0.5) || (x_old[2] >= 0.5))
+        {
+          // How many nodal values were used by the "bulk" element
+          // that originally created this node?
+          unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
+
+          // The remaining ones are Lagrange multipliers and we pin them.
+          unsigned nval=nod_pt->nvalue();
+          for (unsigned j=n_bulk_value;j<nval;j++)
+          {
+            nod_pt->pin(j);
+          }
         }
-      } // multiple boundaries
 
-      // Now do the rest
-      if ((nod_pt->x(1) >= 0.5) || (nod_pt->x(2) >= 0.5))
-       {
-        // How many nodal values were used by the "bulk" element
-        // that originally created this node?
-        unsigned n_bulk_value=flux_element_pt->nbulk_value(inod);
-
-        // The remaining ones are Lagrange multipliers and we pin them.
-        unsigned nval=nod_pt->nvalue();
-        for (unsigned j=n_bulk_value;j<nval;j++)
-         {
-          nod_pt->pin(j);
-         }
-       }
-      
-     }
- } // Encapsulation
+      }
+    } // Encapsulation
 
    } // Encapsulation
 
@@ -976,8 +1159,6 @@ void CubeProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 //=====================================================================
 int main(int argc, char **argv)
 {
-
-
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::init(argc,argv);
 #endif
@@ -1010,6 +1191,7 @@ int main(int argc, char **argv)
   // Solve the problem 
 //              problem.newton_solve();
 
+  problem.distribute();
   problem.unsteady_run(doc_info);
 
   problem.doc_solution(doc_info);
