@@ -267,7 +267,7 @@ public:
 
 
  /// Constructor
- CubeProblem(const unsigned& n_element);
+ CubeProblem();
 
  
  /// Destructor: Cleanup
@@ -361,17 +361,6 @@ public:
   } // end_of_actions_after_adapt
  
 
- /// Actions after Newton step record number of iterations
- void actions_after_newton_step() 
-  {                               
-//   Global_Variables::Iterations.push_back(
-//    dynamic_cast<IterativeLinearSolver*>
-//    (this->linear_solver_pt())->iterations());
-//   
-//   Global_Variables::Linear_solver_time.push_back(
-//    linear_solver_pt()->linear_solver_solution_time());
-  }  
-
  /// Update the after solve (empty)
  void actions_after_newton_solve()
  {
@@ -382,7 +371,11 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
-
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+    // Initialise counters for each newton solve.
+    Doc_linear_solver_info_pt->setup_new_time_step();
+   }
 //   {
 //    // Inflow in upper half of inflow boundary
 //    const unsigned ibound=Inflow_boundary; 
@@ -410,12 +403,18 @@ public:
 //  Global_Variables::Linear_solver_time.clear();
   
  } // end_of_actions_before_newton_solve
-
+ void actions_after_newton_step()
+ {
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+     NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
+   }
+ }
  /// Run an unsteady simulation
- void unsteady_run(DocInfo& doc_info); 
+ void unsteady_run(); 
  
  /// Doc the solution
- void doc_solution(DocInfo& doc_info);
+ void doc_solution(const unsigned& nt);
 
  /// Create traction elements on outflow boundary
 // template<class ELEMENT>
@@ -444,6 +443,10 @@ private:
 
  /// Inexact solver for F block
  Preconditioner* F_matrix_preconditioner_pt;
+
+ DocLinearSolverInfo* Doc_linear_solver_info_pt;
+
+
 
  unsigned Left_boundary;
  unsigned Right_boundary;
@@ -494,7 +497,7 @@ private:
 // 
 //========================================================================
   template<class ELEMENT>
-CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
+CubeProblem<ELEMENT>::CubeProblem()
 { 
   // Assign boundary IDs defined in rayheader.h
   Left_boundary = CL::Left_boundary;
@@ -506,7 +509,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;
-
+  Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
   add_time_stepper_pt(new BDF<2>);
   // Setup mesh
 
@@ -643,116 +646,10 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
  GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
                                    solver_tol,newton_tol,
                                    NSPP::Solver_type,this,Prec_pt);
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-//
-//  LagrangeEnforcedflowPreconditioner* lgr_prec_pt
-//      = new LagrangeEnforcedflowPreconditioner;
-//
-//  Vector<Mesh*> tmp_mesh_pt(2,0);
-//  tmp_mesh_pt[0] = Bulk_mesh_pt;
-//  tmp_mesh_pt[1] = Surface_mesh_pt;
-//
-//  lgr_prec_pt->set_meshes(tmp_mesh_pt);
-//
-//
-//
-//  // Build preconditoner
-//  NavierStokesSchurComplementPreconditioner* ns_prec_pt = 
-//    new NavierStokesSchurComplementPreconditioner(this);
-////  Prec_pt=prec_pt;
-//
-//
-//
-//  // By default, the Schur Complement Preconditioner uses SuperLU as
-//  // an exact preconditioner (i.e. a solver) for the
-//  // momentum and Schur complement blocks. 
-//  // Can overwrite this by passing pointers to 
-//  // other preconditioners that perform the (approximate)
-//  // solves of these blocks.
-//
-//
-//  // Create internal preconditioners used on Schur block
-//  P_matrix_preconditioner_pt=0;
-//  // if (use_hypre_for_pressure)
-//  {
-//#ifdef OOMPH_HAS_HYPRE
-//
-//    oomph_info << "Using HYPRE for pressure block" << std::endl; 
-//
-//    // Create preconditioner
-//    P_matrix_preconditioner_pt = new HyprePreconditioner;
-//
-//    // Set parameters for use as preconditioner on Poisson-type problem
-//    Hypre_default_settings::set_defaults_for_3D_poisson_problem(
-//        static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
-//
-//    // Use Hypre for the Schur complement block
-//    ns_prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
-//
-//
-//    // Shut up!
-//    //   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
-//    //    disable_doc_time();
-//
-//#endif
-//  }
-//
-//  // Create block-diagonal preconditioner used on momentum block
-//  F_matrix_preconditioner_pt=0;   
-//  // if (use_block_diagonal_for_momentum)
-//  {
-//
-//#ifdef OOMPH_HAS_HYPRE
-//    F_matrix_preconditioner_pt = new HyprePreconditioner;
-//
-//    Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
-//        static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
-//#endif       
-//
-//    // Use Hypre for momentum block 
-//    ns_prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
-//  }
-//
-//  ns_prec_pt->use_lsc();
-//
-//  // Set Navier Stokes mesh
-//  ns_prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
-//
-//  lgr_prec_pt->set_navier_stokes_lsc_preconditioner(ns_prec_pt);
-//
-//  Prec_pt = lgr_prec_pt;
-//
-//
-//
-//
-//#ifdef OOMPH_HAS_TRILINOS
-//
-//  // Build iterative linear solver
-//  oomph_info << "Using Trilinos GMRES\n"; 
-//  TrilinosAztecOOSolver* iterative_linear_solver_pt = 
-//    new TrilinosAztecOOSolver;
-//
-//  Solver_pt=iterative_linear_solver_pt;
-//
-//#else
-//
-//  // Build solve and preconditioner
-//  Solver_pt = new GMRES<CRDoubleMatrix>;
-//  dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
-//
-//#endif
-//
-//  // Set solver and preconditioner
-//  Solver_pt->preconditioner_pt() = Prec_pt;
-//
-//  linear_solver_pt() = Solver_pt;
-
 } // end_of_constructor
 
   template<class ELEMENT>
-void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
+void CubeProblem <ELEMENT>::unsteady_run()
 {
 
   //Set value of dt
@@ -769,10 +666,12 @@ void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 
 
   // Doc initial condition
-  doc_solution(doc_info);
+  if(NSPP::Doc_soln)
+  {
+  doc_solution(0);
+  }
 
   // increment counter
-  doc_info.number()++;
 
   //Loop over the timesteps
   for(unsigned t=1;t<=ntsteps;t++)
@@ -783,13 +682,13 @@ void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
     unsteady_newton_solve(dt);
 
     //Output the time
-    cout << "Time is now " << time_pt()->time() << std::endl;
+    oomph_info << "Time is now " << time_pt()->time() << std::endl;
 
+    if(NSPP::Doc_soln)
+    {
     // Doc solution
-    doc_solution(doc_info);
-
-    // increment counter
-    doc_info.number()++;
+    doc_solution(t);
+    }
   }
 } // end of unsteady run
 
@@ -1072,26 +971,60 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 /// Doc the solution
 //========================================================================
 template<class ELEMENT>
-void CubeProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
+void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
 { 
- ofstream some_file;
- char filename[100];
 
- // Number of plot points
- unsigned npts;
- npts=5; 
+  std::ofstream some_file;
+  std::stringstream filename;
+  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
 
- // Output solution 
- sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
-         doc_info.number());
- some_file.open(filename);
- Bulk_mesh_pt->output(some_file,npts);
- some_file.close();
+  // Number of plot points
+  unsigned npts=5;
+
+  // Output solution
+  some_file.open(filename.str().c_str());
+  Bulk_mesh_pt->output(some_file,npts);
+  some_file.close();
+
+
+
+
+// ofstream some_file;
+// char filename[100];
+//
+// // Number of plot points
+// unsigned npts;
+// npts=5; 
+//
+// // Output solution 
+// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
+//         doc_info.number());
+// some_file.open(filename);
+// Bulk_mesh_pt->output(some_file,npts);
+// some_file.close();
 
 } // end_of_doc_solution
 
 
-
+std::string create_label()
+{
+  // We want the unique problem label, then the generic problem label, then
+  // preconditioner used.
+  //
+  // Because the unique problem label contains a label for the problem
+  // and parameters such as angle/noel, we want the unique problem 
+  // identifier to be first, then the parameters last, with the generic
+  // problem stuff in between.
+  //
+  // i.e.
+  // SqPo + NSPP::label + LPH::label Ang Noel.
+  
+  std::string label = CL::prob_str()
+                      + NSPP::create_label() 
+                      + LPH::create_label() 
+                      + CL::ang_deg_str() + CL::noel_str();
+  return label;
+}
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -1155,18 +1088,8 @@ int main(int argc, char **argv)
 
   //////////////////////////////////////  
 
-
-  //Label for output
-  DocInfo doc_info;
-
-  //Set output directory
-  doc_info.set_directory("RESLT");
-
-
-  unsigned nel_1d = 4;
-
   // Build the problem 
-  CubeProblem <QTaylorHoodElement<3> >problem(nel_1d);
+  CubeProblem <QTaylorHoodElement<3> >problem;
 
 
   // Solve the problem 
@@ -1176,13 +1099,116 @@ int main(int argc, char **argv)
   {
     problem.distribute();
   }
-  problem.unsteady_run(doc_info);
 
-  problem.doc_solution(doc_info);
+  NSPP::Label_str = create_label();
 
-  
-  doc_info.number()++;
-  
+  time_t rawtime;
+  time(&rawtime);
+
+  std::cout << "RAYDOING: "
+    << NSPP::Label_str
+    << " on " << ctime(&rawtime) << std::endl;
+
+  problem.unsteady_run();
+
+
+  //////////////////////////////////////////////////////////////////////////
+  ////////////// Outputting results ////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
+
+  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+  {
+    // Get the global oomph-lib communicator 
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+
+    // my rank and number of processors. 
+    // This is used later for putting the data.
+    const unsigned my_rank = comm_pt->my_rank();
+    const unsigned nproc = comm_pt->nproc();
+
+    // Variable to indicate if we want to output to a file or not.
+    bool output_to_file = false;
+
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
+    {
+      output_to_file = true;
+      std::ostringstream filename_stream;
+      filename_stream << NSPP::Itstime_dir_str<<"/"
+        << NSPP::Label_str
+        <<"NP"<<nproc<<"R"<<my_rank;
+      outfile.open(filename_stream.str().c_str());
+    }
+
+    // Stringstream to hold the results. We do not output the results
+    // (timing/iteration counts) as we get it since it will interlace with the
+    // other processors and becomes hard to read.
+    std::ostringstream results_stream;
+
+    // Get the 3D vector which holds the iteration counts and timing results.
+    Vector<Vector<Vector<double> > > iters_times
+      = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
+
+    // Since this is a steady state problem, there is only
+    // one "time step", thus it is essentially a 2D vector 
+    // (the outer-most vector is of size 1).
+
+    // Loop over the time steps and output the iterations, prec setup time and
+    // linear solver time.
+    unsigned ntimestep = iters_times.size();
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+    }
+    
+    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
+    
+    // Now doing the preconditioner setup time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+    }
+
+    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
+
+    // Now doing the linear solver time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+    }
+    
+    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
+    
+    // Print the result to oomph_info one processor at a time...
+    // This still doesn't seem to always work, since there are other calls
+    // to oomph_info before this one...
+    for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
+    {
+      if(proc_i == my_rank)
+      {
+        oomph_info << "\n" 
+          << "========================================================\n"
+          << results_stream.str()
+          << "========================================================\n"
+          << "\n" << std::endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    if(output_to_file)
+    {
+      outfile << "\n" << results_stream.str();
+      outfile.close();
+    }
+  }
+
+
+
+
+
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();

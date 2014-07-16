@@ -4534,6 +4534,43 @@ namespace ResultsFormat
       (*results_stream_pt) << std::setprecision(std::cout.precision());
   }
 
+  inline void format_rayavgits(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+    // Loop through all the time steps
+    const unsigned ntimestep = iters_times_pt->size();
+    unsigned total_its = 0;
+    unsigned n_total_its = 0;
+
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+
+      // Loop through the Newton Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_its += (*iters_times_pt)[intimestep][innewtonstep][0];
+        n_total_its++;
+      }
+    }
+
+    double average_its = ((double)total_its)
+      / ((double)n_total_its);
+    
+    (*results_stream_pt) << "RAYAVGITS:\t";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    ((unsigned(average_its*10))%10)?
+      (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
+      << average_its << "(" << n_total_its << ")" << "\n":
+      (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
+
+    // reset the precision
+    (*results_stream_pt) << std::setprecision(std::cout.precision());
+  }
+
   inline void format_prectime(
       const unsigned& intimestep,      
       const Vector<Vector<Vector<double> > >* iters_times_pt,
@@ -4557,6 +4594,39 @@ namespace ResultsFormat
       // integer. Otherwise we print normally.
       (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
+
+  inline void format_avgprectime(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+
+    // Loop through all the time steps
+    const unsigned ntimestep = iters_times_pt->size();
+    double total_time = 0.0;
+    unsigned n_total_time = 0;
+
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      // New timestep:
+      //      (*results_stream_pt) << "RAYAVGPRECSETUP:\t" << intimestep << "\t";
+      // Loop through the Newtom Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_time += (*iters_times_pt)[intimestep][innewtonstep][1];
+        n_total_time++;
+      }
+    }
+    (*results_stream_pt) << "RAYAVGPRECSETUP:\t";
+    double average_time = ((double)total_time)
+      / ((double)n_total_time);
+
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
+  }
+
 
   inline void format_solvertime(
       const unsigned& intimestep,      
@@ -4582,7 +4652,37 @@ namespace ResultsFormat
       (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
 
+  inline void format_avgsolvertime(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+      // New timestep:
+//      (*results_stream_pt) << "RAYLINSOLVER:\t" << intimestep << "\t";
+         // Loop through all the time steps
+    const unsigned ntimestep = iters_times_pt->size();
+    double total_time = 0.0;
+    unsigned n_total_time = 0;
 
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    { 
+    
+      // Loop through the Newtom Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_time += (*iters_times_pt)[intimestep][innewtonstep][2];
+        n_total_time++;
+      }
+    }
+(*results_stream_pt) << "RAYAVGLINSOLVER:\t";
+      double average_time = ((double)total_time)
+        / ((double)n_total_time);
+
+      // Print to one decimal place if the average is not an exact
+      // integer. Otherwise we print normally.
+      (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
+  }
 } // namespace ResultsFormat
 
 
