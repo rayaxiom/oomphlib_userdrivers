@@ -42,6 +42,11 @@ using namespace std;
 
 using namespace oomph;
 
+// Alias the namespace for convenience.
+namespace NSPP = NavierStokesProblemParameters;
+namespace LPH = LagrangianPreconditionerHelpers;
+namespace CL = CubeLagrange;
+
 // Rx = [1 0   0
 //       0 cx -sx
 //       0 sx  cx];
@@ -156,43 +161,15 @@ namespace oomph
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef OOMPH_HAS_HYPRE
-
-//=============================================================================
-/// helper method for the block diagonal F block preconditioner to allow 
-/// hypre to be used for as a subsidiary block preconditioner
-//=============================================================================
-namespace Hypre_Subsidiary_Preconditioner_Helper
-{
- Preconditioner* set_hypre_preconditioner()
- {
-  return new HyprePreconditioner;
- }
-}
-
-#endif
-
- 
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////
-
 
 //==start_of_namespace==============================
 /// Namespace for physical parameters
 //==================================================
 namespace Global_Variables
 {
- double Time_start = 0.0;
- double Time_end = 1.0;
- double Delta_t = 0.0;
-
- double Ang_deg = 45;
+ double Ang_deg = 30;
 
  double Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
-
- /// Reynolds number
- double Re=50.0;
 
  /// Storage for number of iterations during Newton steps 
  Vector<unsigned> Iterations;
@@ -244,51 +221,30 @@ namespace Global_Variables
 //  presc_inflow[2]=0.0;
 // } 
 
- void get_prescribed_inflow(const double& t,
-                            const double& y,
-                            const double& z,
-                            double& ux)
- {
-   // For the velocity profile in the x direction.
-   // 1) First form the parabolic profile
-   ux = 0.0;
-   if((y > 0.5)&&(z > 0.5))
-   {
-     // 2) Now make it move in time
-//     const double trig_scaling = 0.025;
-//     const double ux_scaling = (1.0 
-//                               - cos(trig_scaling
-//                                     *MathematicalConstants::Pi
-//                                     *t)) * 2.0;
-
-     const double ux_scaling = t / Time_end;
-     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
-//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
-   }
- } 
 
 
- void get_prescribed_inflow_full(const double& t,
-                            const double& y,
-                            const double& z,
-                            double& ux)
- {
-   // For the velocity profile in the x direction.
-   // 1) First form the parabolic profile
-   ux = 0.0;
-   {
-     // 2) Now make it move in time
-//     const double trig_scaling = 0.025;
-//     const double ux_scaling = (1.0 
-//                               - cos(trig_scaling
-//                                     *MathematicalConstants::Pi
-//                                     *t)) * 2.0;
 
-     const double ux_scaling = t / Time_end;
-     ux = (y-0.0)*(1.0-y)*(z-0.0)*(1.0-z) * ux_scaling;
-//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
-   }
- } 
+// void get_prescribed_inflow_full(const double& t,
+//                            const double& y,
+//                            const double& z,
+//                            double& ux)
+// {
+//   // For the velocity profile in the x direction.
+//   // 1) First form the parabolic profile
+//   ux = 0.0;
+//   {
+//     // 2) Now make it move in time
+////     const double trig_scaling = 0.025;
+////     const double ux_scaling = (1.0 
+////                               - cos(trig_scaling
+////                                     *MathematicalConstants::Pi
+////                                     *t)) * 2.0;
+//
+//     const double ux_scaling = t / Time_end;
+//     ux = (y-0.0)*(1.0-y)*(z-0.0)*(1.0-z) * ux_scaling;
+////     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+//   }
+// } 
 
 } // end_of_namespace
 
@@ -317,10 +273,10 @@ public:
  /// Destructor: Cleanup
  ~CubeProblem()
   {
-   delete Solver_pt;
-   delete Prec_pt;
-   delete P_matrix_preconditioner_pt;
-   delete F_matrix_preconditioner_pt;
+//   delete Solver_pt;
+//   delete Prec_pt;
+//   delete P_matrix_preconditioner_pt;
+//   delete F_matrix_preconditioner_pt;
   }
 
  ///Fix pressure in element e at pressure dof pdof and set to pvalue
@@ -337,9 +293,6 @@ public:
 
  void actions_before_implicit_timestep()
   {
-    const double ang = Global_Variables::Ang;
-    const double minus_ang = -ang;
-
    {
     // Inflow in upper half of inflow boundary
     const unsigned ibound=Inflow_boundary; 
@@ -355,15 +308,15 @@ public:
 
       // Rotate x y and z back
       Vector<double>x_new;
-      rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_new);
+      rotate_backward(x,y,z,-CL::Angx,-CL::Angy,-CL::Angz,x_new);
 
       double ux = 0.0;
 
-      Global_Variables::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
+      CL::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
 
       // Now rotate the velocity profile
       Vector<double>u_new;
-      rotate_forward(ux,0,0,ang,ang,ang,u_new);
+      rotate_forward(ux,0,0,CL::Angx,CL::Angy,CL::Angz,u_new);
 
       nod_pt->set_value(0,u_new[0]);
       nod_pt->set_value(1,u_new[1]);
@@ -379,17 +332,23 @@ public:
 
  void actions_before_distribute()
  {
-   
-   GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
-   rebuild_global_mesh();
+
+   if(NSPP::Distribute_problem)
+   {
+     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
+     rebuild_global_mesh();
+   }
  }
- 
+
  void actions_after_distribute()
  {
+   if(NSPP::Distribute_problem)
+   {
      create_parall_outflow_lagrange_elements(Outflow_boundary,
-                                             Bulk_mesh_pt,
-                                             Surface_mesh_pt);
+         Bulk_mesh_pt,
+         Surface_mesh_pt);
      rebuild_global_mesh();
+   }
  }
 
 
@@ -537,11 +496,6 @@ private:
   template<class ELEMENT>
 CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 { 
-  // Alias the namespace for convenience
-  namespace NSPP = NavierStokesProblemParameters;
-  namespace LPH = LagrangianPreconditionerHelpers;
-  namespace CL = CubeLagrange;
-
   // Assign boundary IDs defined in rayheader.h
   Left_boundary = CL::Left_boundary;
   Right_boundary = CL::Right_boundary;
@@ -556,34 +510,14 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   add_time_stepper_pt(new BDF<2>);
   // Setup mesh
 
-  // # of elements in x-direction
-  unsigned n_x=n_el;
-
-  // # of elements in y-direction
-  unsigned n_y=n_el;
-
-  // # of elements in z-direction
-  unsigned n_z=n_el;
-
-  // Domain length in x-direction
-  double l_x=1.0;
-
-  // Domain length in y-direction
-  double l_y=1.0;
-
-  // Domain length in y-direction
-  double l_z=1.0;
-
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
 
-  const double ang = Global_Variables::Ang;
-
   Bulk_mesh_pt = 
-    new SlopingCubicMesh<ELEMENT>(n_x,n_y,n_z,
-                                  l_x,l_y,l_z,
-                                  ang,ang,ang,
+    new SlopingCubicMesh<ELEMENT>(CL::Noel,CL::Noel,CL::Noel,
+                                  CL::Lx, CL::Ly, CL::Lz,
+                                  CL::Angx,CL::Angy,CL::Angz,
                                   time_stepper_pt());
 
 //  Bulk_mesh_pt = 
@@ -629,7 +563,6 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
 
 
   {
-    const double minus_ang = -Global_Variables::Ang;
     unsigned ibound=Outflow_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
@@ -651,7 +584,7 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
             const double y = nod_pt->x(1);
             const double z = nod_pt->x(2);
             
-            rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_old);
+            rotate_backward(x,y,z,-CL::Angx,-CL::Angy,-CL::Angz,x_old);
 
             if ((x_old[1]<0.5)&&x_old[2]<0.5)
             {
@@ -679,8 +612,8 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
       dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
 
     //Set the Reynolds number
-    el_pt->re_pt() = &Global_Variables::Re;
-    el_pt->re_st_pt() = &Global_Variables::Re;
+    el_pt->re_pt() = &NSPP::Rey;
+    el_pt->re_st_pt() = &NSPP::Rey;
   } // end loop over elements
 
 
@@ -690,109 +623,131 @@ CubeProblem<ELEMENT>::CubeProblem(const unsigned& n_el)
   // Setup equation numbering scheme
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
-
-
-  LagrangeEnforcedflowPreconditioner* lgr_prec_pt
-      = new LagrangeEnforcedflowPreconditioner;
-
-  Vector<Mesh*> tmp_mesh_pt(2,0);
-  tmp_mesh_pt[0] = Bulk_mesh_pt;
-  tmp_mesh_pt[1] = Surface_mesh_pt;
-
-  lgr_prec_pt->set_meshes(tmp_mesh_pt);
-
-
-
-  // Build preconditoner
-  NavierStokesSchurComplementPreconditioner* ns_prec_pt = 
-    new NavierStokesSchurComplementPreconditioner(this);
-//  Prec_pt=prec_pt;
-
-
-
-  // By default, the Schur Complement Preconditioner uses SuperLU as
-  // an exact preconditioner (i.e. a solver) for the
-  // momentum and Schur complement blocks. 
-  // Can overwrite this by passing pointers to 
-  // other preconditioners that perform the (approximate)
-  // solves of these blocks.
-
-
-  // Create internal preconditioners used on Schur block
-  P_matrix_preconditioner_pt=0;
-  // if (use_hypre_for_pressure)
+  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
   {
-#ifdef OOMPH_HAS_HYPRE
+    Vector<Mesh*> mesh_pt;
+    if(NSPP::Prob_id == CL::PID_CU_PO_QUARTER)
+    {
+      mesh_pt.resize(2,0);
+      mesh_pt[0] = Bulk_mesh_pt;
+      mesh_pt[1] = Surface_mesh_pt;
+    }
 
-    oomph_info << "Using HYPRE for pressure block" << std::endl; 
-
-    // Create preconditioner
-    P_matrix_preconditioner_pt = new HyprePreconditioner;
-
-    // Set parameters for use as preconditioner on Poisson-type problem
-    Hypre_default_settings::set_defaults_for_3D_poisson_problem(
-        static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
-
-    // Use Hypre for the Schur complement block
-    ns_prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
-
-
-    // Shut up!
-    //   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
-    //    disable_doc_time();
-
-#endif
+    LPH::Mesh_pt = mesh_pt;
+    LPH::Problem_pt = this;
+    Prec_pt = LPH::get_preconditioner();
   }
 
-  // Create block-diagonal preconditioner used on momentum block
-  F_matrix_preconditioner_pt=0;   
-  // if (use_block_diagonal_for_momentum)
-  {
+ const double solver_tol = 1.0e-6;
+ const double newton_tol = 1.0e-6;
+ GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
+                                   solver_tol,newton_tol,
+                                   NSPP::Solver_type,this,Prec_pt);
 
-#ifdef OOMPH_HAS_HYPRE
-    F_matrix_preconditioner_pt = new HyprePreconditioner;
-
-    Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
-        static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
-#endif       
-
-    // Use Hypre for momentum block 
-    ns_prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
-  }
-
-  ns_prec_pt->use_lsc();
-
-  // Set Navier Stokes mesh
-  ns_prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
-
-  lgr_prec_pt->set_navier_stokes_lsc_preconditioner(ns_prec_pt);
-
-  Prec_pt = lgr_prec_pt;
-
-
-
-
-#ifdef OOMPH_HAS_TRILINOS
-
-  // Build iterative linear solver
-  oomph_info << "Using Trilinos GMRES\n"; 
-  TrilinosAztecOOSolver* iterative_linear_solver_pt = 
-    new TrilinosAztecOOSolver;
-
-  Solver_pt=iterative_linear_solver_pt;
-
-#else
-
-  // Build solve and preconditioner
-  Solver_pt = new GMRES<CRDoubleMatrix>;
-  dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
-
-#endif
-
-  // Set solver and preconditioner
-  Solver_pt->preconditioner_pt() = Prec_pt;
-
-  linear_solver_pt() = Solver_pt;
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//
+//  LagrangeEnforcedflowPreconditioner* lgr_prec_pt
+//      = new LagrangeEnforcedflowPreconditioner;
+//
+//  Vector<Mesh*> tmp_mesh_pt(2,0);
+//  tmp_mesh_pt[0] = Bulk_mesh_pt;
+//  tmp_mesh_pt[1] = Surface_mesh_pt;
+//
+//  lgr_prec_pt->set_meshes(tmp_mesh_pt);
+//
+//
+//
+//  // Build preconditoner
+//  NavierStokesSchurComplementPreconditioner* ns_prec_pt = 
+//    new NavierStokesSchurComplementPreconditioner(this);
+////  Prec_pt=prec_pt;
+//
+//
+//
+//  // By default, the Schur Complement Preconditioner uses SuperLU as
+//  // an exact preconditioner (i.e. a solver) for the
+//  // momentum and Schur complement blocks. 
+//  // Can overwrite this by passing pointers to 
+//  // other preconditioners that perform the (approximate)
+//  // solves of these blocks.
+//
+//
+//  // Create internal preconditioners used on Schur block
+//  P_matrix_preconditioner_pt=0;
+//  // if (use_hypre_for_pressure)
+//  {
+//#ifdef OOMPH_HAS_HYPRE
+//
+//    oomph_info << "Using HYPRE for pressure block" << std::endl; 
+//
+//    // Create preconditioner
+//    P_matrix_preconditioner_pt = new HyprePreconditioner;
+//
+//    // Set parameters for use as preconditioner on Poisson-type problem
+//    Hypre_default_settings::set_defaults_for_3D_poisson_problem(
+//        static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt));
+//
+//    // Use Hypre for the Schur complement block
+//    ns_prec_pt->set_p_preconditioner(P_matrix_preconditioner_pt);
+//
+//
+//    // Shut up!
+//    //   static_cast<HyprePreconditioner*>(P_matrix_preconditioner_pt)->
+//    //    disable_doc_time();
+//
+//#endif
+//  }
+//
+//  // Create block-diagonal preconditioner used on momentum block
+//  F_matrix_preconditioner_pt=0;   
+//  // if (use_block_diagonal_for_momentum)
+//  {
+//
+//#ifdef OOMPH_HAS_HYPRE
+//    F_matrix_preconditioner_pt = new HyprePreconditioner;
+//
+//    Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+//        static_cast<HyprePreconditioner*>(F_matrix_preconditioner_pt));
+//#endif       
+//
+//    // Use Hypre for momentum block 
+//    ns_prec_pt->set_f_preconditioner(F_matrix_preconditioner_pt);
+//  }
+//
+//  ns_prec_pt->use_lsc();
+//
+//  // Set Navier Stokes mesh
+//  ns_prec_pt->set_navier_stokes_mesh(Bulk_mesh_pt);
+//
+//  lgr_prec_pt->set_navier_stokes_lsc_preconditioner(ns_prec_pt);
+//
+//  Prec_pt = lgr_prec_pt;
+//
+//
+//
+//
+//#ifdef OOMPH_HAS_TRILINOS
+//
+//  // Build iterative linear solver
+//  oomph_info << "Using Trilinos GMRES\n"; 
+//  TrilinosAztecOOSolver* iterative_linear_solver_pt = 
+//    new TrilinosAztecOOSolver;
+//
+//  Solver_pt=iterative_linear_solver_pt;
+//
+//#else
+//
+//  // Build solve and preconditioner
+//  Solver_pt = new GMRES<CRDoubleMatrix>;
+//  dynamic_cast<GMRES<CRDoubleMatrix>*>(Solver_pt)->set_preconditioner_RHS();
+//
+//#endif
+//
+//  // Set solver and preconditioner
+//  Solver_pt->preconditioner_pt() = Prec_pt;
+//
+//  linear_solver_pt() = Solver_pt;
 
 } // end_of_constructor
 
@@ -801,14 +756,15 @@ void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
 {
 
   //Set value of dt
-  double dt = Global_Variables::Delta_t;
+  const double dt = NSPP::Delta_t;
+
 
   // Initialise all history values for an impulsive start
   assign_initial_values_impulsive(dt);
   cout << "IC = impulsive start" << std::endl;
 
   //Now do many timesteps
-  unsigned ntsteps = Global_Variables::Time_end / dt;
+  unsigned ntsteps = NSPP::Time_end / dt;
   std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
 
 
@@ -835,7 +791,6 @@ void CubeProblem <ELEMENT>::unsteady_run(DocInfo& doc_info)
     // increment counter
     doc_info.number()++;
   }
-
 } // end of unsteady run
 
 //============start_of_fluid_traction_elements==============================
@@ -869,7 +824,6 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
     surface_mesh_pt->add_element_pt(flux_element_pt);
 
     {
-      const double minus_ang = -Global_Variables::Ang;
       // Loop over the nodes
       unsigned nnod=flux_element_pt->nnode();
       for (unsigned inod=0;inod<nnod;inod++)
@@ -919,7 +873,7 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
         const double z = nod_pt->x(2);
 
         Vector<double>x_old;
-        rotate_backward(x,y,z,minus_ang,minus_ang,minus_ang,x_old);
+        rotate_backward(x,y,z,-CL::Angx,-CL::Angy,-CL::Angz,x_old);
 
         if ((x_old[1] >= 0.5) || (x_old[2] >= 0.5))
         {
@@ -1155,6 +1109,52 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
+  // Problem dimension.
+  const unsigned dim = 3;
+
+  // Set up doc info - used to store information on solver and iteration time.
+  DocLinearSolverInfo doc_linear_solver_info;
+  // Again, pass this to the NSPP and LPH
+  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+
+  // Set the Label_pt
+  LPH::Label_str_pt = &NSPP::Label_str;
+  LPH::Vis_pt = &NSPP::Vis;
+  CL::Prob_id_pt = &NSPP::Prob_id;
+  CL::Time_start_pt = &NSPP::Time_start;
+  CL::Time_end_pt = &NSPP::Time_end;
+
+  NSPP::Time_start = 0.0;
+  NSPP::Time_end = 1.0; 
+
+
+
+  // Store commandline arguments
+  CommandLineArgs::setup(argc,argv);
+
+  NSPP::setup_commandline_flags();
+  LPH::setup_commandline_flags();
+  CL::setup_commandline_flags(); 
+
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags();
+
+  ////////////////////////////////////////////////////
+  // Now set up the flags/parameters for the problem//
+  ////////////////////////////////////////////////////
+
+  // dim = 3
+  NSPP::generic_problem_setup(dim);
+  LPH::generic_setup();
+  CL::generic_setup(); 
+
+
+
+
+  //////////////////////////////////////  
+
 
   //Label for output
   DocInfo doc_info;
@@ -1163,32 +1163,26 @@ int main(int argc, char **argv)
   doc_info.set_directory("RESLT");
 
 
-
-  Global_Variables::Delta_t = atof(argv[1]);
-
-  NavierStokesEquations<3>::Gamma[0]=1.0;
-  NavierStokesEquations<3>::Gamma[1]=1.0;
-  NavierStokesEquations<3>::Gamma[2]=1.0;
-
-  unsigned nel_1d = atoi(argv[2]);
+  unsigned nel_1d = 4;
 
   // Build the problem 
   CubeProblem <QTaylorHoodElement<3> >problem(nel_1d);
 
-  double re = 200.0;
-
-  // Set Reynolds
-  Global_Variables::Re=re;
 
   // Solve the problem 
-//              problem.newton_solve();
+  //              problem.newton_solve();
 
-  problem.distribute();
+  if(NSPP::Distribute_problem)
+  {
+    problem.distribute();
+  }
   problem.unsteady_run(doc_info);
 
   problem.doc_solution(doc_info);
-  doc_info.number()++;
 
+  
+  doc_info.number()++;
+  
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();

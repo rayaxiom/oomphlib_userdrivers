@@ -2169,8 +2169,6 @@ namespace SquareLagrange
 // 
 namespace CubeLagrange
 {
-
-
   const static unsigned Left_boundary = 4;
   const static unsigned Right_boundary = 2;
   const static unsigned Front_boundary = 5;
@@ -2192,6 +2190,9 @@ namespace CubeLagrange
   
   // Prob id, set by main method
   const int* Prob_id_pt = 0;
+  const double* Dt_pt = 0;
+  const double* Time_start_pt = 0;
+  const double* Time_end_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
@@ -2227,6 +2228,7 @@ namespace CubeLagrange
   double Angx_deg = 0.0; //CL, Angle in degrees
   double Angy_deg = 0.0; //CL, Angle in degrees
   double Angz_deg = 0.0; //CL, Angle in degrees
+  double Ang_deg = 0.0;
   double Angx = 0.0; //CL, Angle in radians
   double Angy = 0.0; //CL, Angle in radians
   double Angz = 0.0; //CL, Angle in radians
@@ -2239,6 +2241,7 @@ namespace CubeLagrange
     CommandLineArgs::specify_command_line_flag("--angx", &Angx_deg);
     CommandLineArgs::specify_command_line_flag("--angy", &Angy_deg);
     CommandLineArgs::specify_command_line_flag("--angz", &Angz_deg);
+    CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
 
     CommandLineArgs::specify_command_line_flag("--noel", &Noel);
   }
@@ -2344,16 +2347,70 @@ namespace CubeLagrange
     else
     // This problem requires tilting, thus we set the Ang and Ang_deg_str.
     {
-      // But first we check that --ang has been set.
-      // Check that Ang has been set.
-      if(!CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      // If --ang has been set, it means we want to use the same angle for
+      // all x, y and z
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
       {
-        std::ostringstream err_msg;
-        err_msg << "Angle has not been set. Set (in degrees) with: \n"
-          << "--ang \n"; 
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angx"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angx, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angy"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angy, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angz"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angz, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+
+        Angx_deg = Ang_deg;
+        Angy_deg = Ang_deg;
+        Angz_deg = Ang_deg;
+      }
+      // all three --angx, --angy and --angz must be set.
+      else
+      {
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angx"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angx (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angy"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angy (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angz"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angz (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
       }
 
       // Now we need to convert Ang_deg into radians.
@@ -2426,7 +2483,25 @@ namespace CubeLagrange
     return label; 
   } // inlined function create_label
 
-} // Namespace SquareLagrange
+
+ void get_prescribed_inflow(const double& t,
+                            const double& y,
+                            const double& z,
+                            double& ux)
+ {
+   const double time_end = *Time_end_pt;
+
+   // For the velocity profile in the x direction.
+   // 1) First form the parabolic profile
+   ux = 0.0;
+   if((y > 0.5)&&(z > 0.5))
+   {
+     const double ux_scaling = t / time_end;
+     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+   }
+ } 
+
+} // Namespace CubeLagrange
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -3916,6 +3991,9 @@ namespace NavierStokesProblemParameters
 
   int Max_solver_iteration = -1;
 
+  double Delta_t = -1.0;
+
+
   std::string Soln_dir_str = "";
   std::string Itstime_dir_str = "";
 
@@ -3926,6 +4004,8 @@ namespace NavierStokesProblemParameters
   // From code:
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
 
+  double Time_start = -1.0;
+  double Time_end = -1.0;
 
   // Additional stuff required for quarter circle, but putting it
   // here since it may be required elsewhere
@@ -3973,7 +4053,7 @@ namespace NavierStokesProblemParameters
     CommandLineArgs::specify_command_line_flag("--solver_type",
         &Solver_type);
 
-
+    CommandLineArgs::specify_command_line_flag("--dt", &Delta_t);
   }
 
   inline void generic_problem_setup(const unsigned& dim)
