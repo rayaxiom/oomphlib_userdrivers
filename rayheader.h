@@ -2503,6 +2503,341 @@ namespace CubeLagrange
 
 } // Namespace CubeLagrange
 
+namespace BifurcationLagrange
+{
+  const static unsigned Left_boundary = 4;
+  const static unsigned Right_boundary = 2;
+  const static unsigned Front_boundary = 5;
+  const static unsigned Back_boundary = 0;
+  const static unsigned Bottom_boundary = 1;
+  const static unsigned Top_boundary = 3;
+
+
+  // Static problem identifiers
+  const static int PID_CU_TMP = 10;
+
+  const static int PID_CU_PO_FULL = 20;
+  const static int PID_CU_PO_QUARTER = 21;
+
+  const static int PID_CU_VAN_FULL = 80;
+  const static int PID_CU_VAN_QUARTER = 81;
+
+  std::map<int,std::string> valid_prob_id_map;
+  
+  // Prob id, set by main method
+  const int* Prob_id_pt = 0;
+  const double* Dt_pt = 0;
+  const double* Time_start_pt = 0;
+  const double* Time_end_pt = 0;
+
+  std::string Prob_str = "";
+  std::string Ang_deg_str = "";
+  std::string Noel_str = "";
+
+
+  ///////////////////////
+  // Domain dimensions.//
+  ///////////////////////
+  //
+  // This is a cubic domain: x,y,z \in [0,1]
+
+  // Min and max x value respectively.
+  static const double X_min = 0.0;
+  static const double X_max = 1.0;
+
+  // Min and max y value respectively.
+  static const double Y_min = 0.0;
+  static const double Y_max = 1.0;
+
+  // Min and max z value respectively.
+  static const double Z_min = 0.0;
+  static const double Z_max = 1.0;
+
+  // The length in the x and y direction respectively.
+  static const double Lx = X_max - X_min;
+  static const double Ly = Y_max - Y_min;
+  static const double Lz = Z_max - Z_min;
+
+  /////////////////////////////////////////////////////////////////////////////
+
+  // These are self explanatory:
+  double Angx_deg = 0.0; //CL, Angle in degrees
+  double Angy_deg = 0.0; //CL, Angle in degrees
+  double Angz_deg = 0.0; //CL, Angle in degrees
+  double Ang_deg = 0.0;
+  double Angx = 0.0; //CL, Angle in radians
+  double Angy = 0.0; //CL, Angle in radians
+  double Angz = 0.0; //CL, Angle in radians
+
+  unsigned Noel = 4; //CL, Number of elements in 1D
+  // the default is the norm of the momentum block.
+
+  inline void setup_commandline_flags()
+  {
+    CommandLineArgs::specify_command_line_flag("--angx", &Angx_deg);
+    CommandLineArgs::specify_command_line_flag("--angy", &Angy_deg);
+    CommandLineArgs::specify_command_line_flag("--angz", &Angz_deg);
+    CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
+
+    CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+  }
+
+  inline void set_prob_str()
+  {
+    std::map<int,std::string>::iterator prob_id_it;
+
+    // Set a problem id to identify the problem.
+    // This is used for book keeping purposes.
+    if(CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+    {
+      if(Prob_id_pt == 0)
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please set Prob_id_pt from NSPP." << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      // The argument immediately after --prob_id is put into SL::Prob_id.
+      // If this begins with "--", then no problem id has been provided.
+
+      // Maybe I should check if SL::Prob_id is a number or a string...
+
+      // We only accept problem IDs as defined below.
+      // Creating a set of acceptable IDs
+      const int prob_id = *Prob_id_pt;
+      prob_id_it = valid_prob_id_map.find(prob_id);
+
+      // Check if they have provided an acceptable ID.
+      // If a new element has been inserted, it means the user has provided an
+      // ID not in the set.
+      if(prob_id_it == valid_prob_id_map.end())
+      {
+        std::ostringstream err_msg;
+        err_msg << "Please provide a problem id to identify the problem after "
+          << "after the argument --prob_id.\n" 
+          << "Acceptable IDs are:\n"
+          << "Please look in the code\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      else
+      {
+        Prob_str = prob_id_it->second;
+      }
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set Prob_id with: \n"
+        << "--prob_id \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  } // set_prob_str
+
+  inline void set_ang_str()
+  {
+    if(Prob_id_pt == 0)
+    {
+      std::ostringstream err_msg;
+      err_msg << "Oh dear, Prob_id_pt is null. Please set this in main().\n"
+        << "This should be stored in NSPP::Prob_id, and set by cmd via\n"
+        << "--prob_id \n"; 
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    
+    const int prob_id = *Prob_id_pt;
+
+    // If this is the vanilla problem, we set the angle as -1 and set the
+    // string as "A_". This would indicate that no angle is used.
+    // Furthermore, we ensure that no --ang is set.
+    if(prob_id == PID_CU_VAN_FULL ||
+       prob_id == PID_CU_VAN_QUARTER)
+    {
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        std::ostringstream err_msg;
+        err_msg << "Doing a vanilla problem but --ang is set.\n"
+                << "Please remove this"; 
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+      Angx = -1.0;
+      Angy = -1.0;
+      Angz = -1.0;
+      // Now we set the Ang_deg_str.
+      std::ostringstream strs;
+      strs << "A_";
+      Ang_deg_str = strs.str();
+    }
+    else
+    // This problem requires tilting, thus we set the Ang and Ang_deg_str.
+    {
+      // If --ang has been set, it means we want to use the same angle for
+      // all x, y and z
+      if(CommandLineArgs::command_line_flag_has_been_set("--ang"))
+      {
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angx"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angx, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angy"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angy, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        // The other angles must not be set.
+        if(CommandLineArgs::command_line_flag_has_been_set("--angz"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "You have set --ang, but also --angz, set one only.\n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+
+        Angx_deg = Ang_deg;
+        Angy_deg = Ang_deg;
+        Angz_deg = Ang_deg;
+      }
+      // all three --angx, --angy and --angz must be set.
+      else
+      {
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angx"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angx (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angy"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angy (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+        if(!CommandLineArgs::command_line_flag_has_been_set("--angz"))
+        {
+          std::ostringstream err_msg;
+          err_msg << "Please set --angz (and the others) or set --ang ONLY \n";
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+
+      // Now we need to convert Ang_deg into radians.
+      Angx = Angx_deg * (MathematicalConstants::Pi / 180.0);
+      Angy = Angy_deg * (MathematicalConstants::Pi / 180.0);
+      Angz = Angz_deg * (MathematicalConstants::Pi / 180.0);
+
+      // Now we set the Ang_deg_str.
+      std::ostringstream strs;
+      strs << "Ax" << Angx_deg<<"y"<<Angy_deg<<"z"<<Angz_deg;
+      Ang_deg_str = strs.str();
+    }
+  } // set_ang_str
+
+  inline void set_noel_str()
+  {
+    // Set Noel_str, used for book keeping.
+    if(CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    {
+      std::ostringstream strs;
+      strs << "N" <<Noel;
+      Noel_str = strs.str();
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please supply the number of elements in 1D using --noel.\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  }
+
+  inline void generic_setup()
+  {
+    // Insert the prob id and string pairs.
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_TMP,"CuTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_PO_FULL,"CuPoF"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_PO_QUARTER,"CuPoQ"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_VAN_FULL,"CuVanF"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_VAN_QUARTER,"CuVanQ"));
+
+    set_prob_str();
+    set_ang_str();
+    set_noel_str();
+  }
+
+  inline std::string prob_str()
+  {
+    set_prob_str();
+    return Prob_str;
+  }
+
+  inline std::string ang_deg_str()
+  {
+    set_ang_str();
+    return Ang_deg_str;
+  }
+
+  inline std::string noel_str()
+  {
+    set_noel_str();
+    return Noel_str;
+  }
+
+  inline std::string create_label()
+  {
+    std::string label = prob_str() + ang_deg_str() + noel_str();
+    return label; 
+  } // inlined function create_label
+
+
+ void get_prescribed_inflow(const double& t,
+                            const double& y,
+                            const double& z,
+                            double& ux)
+ {
+   const double time_end = *Time_end_pt;
+
+   // For the velocity profile in the x direction.
+   // 1) First form the parabolic profile
+   ux = 0.0;
+   if((y > 0.5)&&(z > 0.5))
+   {
+     const double ux_scaling = t / time_end;
+     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+   }
+ } 
+
+} // Namespace CubeLagrange
 
 ////////////////////////////////////////////////////////////////////////////
 //
