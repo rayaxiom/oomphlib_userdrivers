@@ -3883,6 +3883,30 @@ namespace LagrangianPreconditionerHelpers
       //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
 #endif
     }
+    else if(P_solver == 13)
+    {
+ #ifdef OOMPH_HAS_HYPRE
+
+      p_preconditioner_pt = new HyprePreconditioner;
+
+      // Cast it to a Hypre preconditioner so we can set AMG settings.
+      HyprePreconditioner* hypre_preconditioner_pt =
+        static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+
+      Hypre_default_settings::
+        set_defaults_for_3D_poisson_problem(hypre_preconditioner_pt);
+
+      if(Print_hypre)
+      {
+        Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            p_preconditioner_pt);
+      }
+
+      // Set it as the p preconditioner for LSC
+      //     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+#endif
+     
+    }
     else if(P_solver == 96)
     {
 #ifdef OOMPH_HAS_HYPRE
@@ -4178,6 +4202,9 @@ namespace LagrangianPreconditionerHelpers
           break;
         case 1:
           p_str = "Pa";
+          break;
+        case 13:
+          p_str = "Pa3d";
           break;
         case 96:
           p_str = "Pray";
