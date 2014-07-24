@@ -101,6 +101,16 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
+
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+    // Initialise counters for each newton solve.
+    Doc_linear_solver_info_pt->setup_new_time_step();
+   }
+
+
+
+
    if(NSPP::Steady_state)
    {
      // Set the inflow, this is boundary 0
@@ -120,6 +130,14 @@ public:
        nod_pt->set_value(1,0.0);
        nod_pt->set_value(2,uz);
      }
+   }
+ }
+
+ void actions_after_newton_step()
+ {
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+     NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
  }
 
@@ -191,7 +209,7 @@ public:
   template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
-
+Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
   // Add a new time stepper if not doing steady state.
   if(!NSPP::Steady_state)
   {
@@ -673,6 +691,99 @@ int main(int argc, char **argv)
     else
     {
       problem.unsteady_run();
+    }
+  }
+
+  //////////////////////////////////////////////////////////////////////////
+  ////////////// Outputting results ////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
+
+  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+  {
+    // Get the global oomph-lib communicator 
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+
+    // my rank and number of processors. 
+    // This is used later for putting the data.
+    const unsigned my_rank = comm_pt->my_rank();
+    const unsigned nproc = comm_pt->nproc();
+
+    // Variable to indicate if we want to output to a file or not.
+    bool output_to_file = false;
+
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
+    {
+      output_to_file = true;
+      std::ostringstream filename_stream;
+      filename_stream << NSPP::Itstime_dir_str<<"/"
+        << NSPP::Label_str
+        <<"NP"<<nproc<<"R"<<my_rank;
+      outfile.open(filename_stream.str().c_str());
+    }
+
+    // Stringstream to hold the results. We do not output the results
+    // (timing/iteration counts) as we get it since it will interlace with the
+    // other processors and becomes hard to read.
+    std::ostringstream results_stream;
+
+    // Get the 3D vector which holds the iteration counts and timing results.
+    Vector<Vector<Vector<double> > > iters_times
+      = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
+
+    // Since this is a steady state problem, there is only
+    // one "time step", thus it is essentially a 2D vector 
+    // (the outer-most vector is of size 1).
+
+    // Loop over the time steps and output the iterations, prec setup time and
+    // linear solver time.
+    unsigned ntimestep = iters_times.size();
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+    }
+    
+    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
+    
+    // Now doing the preconditioner setup time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+    }
+
+    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
+
+    // Now doing the linear solver time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+    }
+    
+    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
+    
+    // Print the result to oomph_info one processor at a time...
+    // This still doesn't seem to always work, since there are other calls
+    // to oomph_info before this one...
+    for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
+    {
+      if(proc_i == my_rank)
+      {
+        oomph_info << "\n" 
+          << "========================================================\n"
+          << results_stream.str()
+          << "========================================================\n"
+          << "\n" << std::endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    if(output_to_file)
+    {
+      outfile << "\n" << results_stream.str();
+      outfile.close();
     }
   }
 

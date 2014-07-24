@@ -15,8 +15,8 @@ DOC_SOLN="--doc_soln tmp_soln"
 VISC="--visc 0"
 REY="--rey 100"
 MAX_SOLVER_ITER="--max_solver_iter 1000"
-ITSTIMEDIR="" 
-SOLVER_TYPE="--solver_type 0"
+ITSTIMEDIR="--itstimedir tmp_res_its"
+SOLVER_TYPE="--solver_type 2"
 DT="--dt 0.1"
 #DT=""
 MESH_TYPE="--mesh_type 1"
@@ -27,15 +27,16 @@ NSPP="$DIST_PROB $PROB_ID $DOC_SOLN $VISC $REY $MAX_SOLVER_ITER $ITSTIMEDIR $SOL
 PRINT_HYPRE="--print_hypre"
 W_SOLVER="--w_solver 0"
 NS_SOLVER="--ns_solver 1"
-P_SOLVER="--p_solver 1"
-F_SOLVER="--f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668 --f_amg_coarse 1"
-#F_SOLVER="--f_solver 0"
+#P_SOLVER="--p_solver 1"
+P_SOLVER="--p_solver 0"
+#F_SOLVER="--f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668 --f_amg_coarse 1"
+F_SOLVER="--f_solver 0"
 
 LPH="$PRINT_HYPRE $W_SOLVER $NS_SOLVER $P_SOLVER $F_SOLVER"
 
 
 ########
-MESH_AREA="--mesh_area 0.05"
+MESH_AREA="--mesh_area 0.2"
 
 BL="$MESH_AREA"
 
