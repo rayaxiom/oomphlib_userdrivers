@@ -37,7 +37,7 @@
 
 // Get the mesh
 #include "meshes/tetgen_mesh.h"
-
+#include "meshes/brick_from_tet_mesh.h" 
 using namespace std;
 using namespace oomph;
 
@@ -55,6 +55,8 @@ namespace Global_Parameters
 
  /// Default Reynolds number
  double Re=100.0;
+
+ unsigned Mesh_type = 1;
 
 } //end namespace
 
@@ -109,7 +111,8 @@ public:
  //private:
 
  /// Bulk fluid mesh
- TetgenMesh<ELEMENT>* Bulk_mesh_pt;
+// TetgenMesh<ELEMENT>* Bulk_mesh_pt;
+ Mesh* Bulk_mesh_pt;
 
  Mesh* Surface_mesh_pt;
 
@@ -141,18 +144,30 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
  
  //Create fluid bulk mesh, sub-dividing "corner" elements
- string node_file_name="tetgen_files/0d05/fsi_bifurcation_fluid.1.node";
- string element_file_name="tetgen_files/0d05/fsi_bifurcation_fluid.1.ele";
- string face_file_name="tetgen_files/0d05/fsi_bifurcation_fluid.1.face";
+ string node_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.node";
+ string element_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.ele";
+ string face_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.face";
 
 // string node_file_name="fsi_bifurcation_fluid.1.node";
 // string element_file_name="fsi_bifurcation_fluid.1.ele";
 // string face_file_name="fsi_bifurcation_fluid.1.face";
  bool split_corner_elements=true;
+
+ if(Global_Parameters::Mesh_type == 0)
+ {
  Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
                                           element_file_name,
                                           face_file_name,
                                           split_corner_elements);
+ }
+ else if(Global_Parameters::Mesh_type ==1)
+ {
+    Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+                                                  element_file_name,
+                                                  face_file_name,
+                                                  split_corner_elements);
+ }
+
  // Find elements next to boundaries
  Bulk_mesh_pt->setup_boundary_element_info();
  // The following corresponds to the boundaries as specified by
@@ -386,8 +401,8 @@ int main(int argc, char **argv)
   // Output directory
   doc_info.set_directory("RESLT_TH");
   
-  //Set up the problem
-  UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
+    Global_Parameters::Re = 100;
+
   
   //Output initial guess
 //  problem.doc_solution(doc_info);
@@ -397,14 +412,28 @@ int main(int argc, char **argv)
 //  for (unsigned istep=0;istep<nstep;istep++)
    {
 
-    Global_Parameters::Re = 100;
-
+     if(Global_Parameters::Mesh_type == 0)
+     {
+  //Set up the problem
+  UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
     // Solve the problem
     problem.newton_solve();
     
     //Output solution
     problem.doc_solution(doc_info);
     doc_info.number()++;
+     }
+     else if(Global_Parameters::Mesh_type == 1)
+     {
+  //Set up the problem
+  UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
+    // Solve the problem
+    problem.newton_solve();
+    
+    //Output solution
+    problem.doc_solution(doc_info);
+    doc_info.number()++;
+     }
     
     // Bump up Reynolds number (equivalent to increasing the imposed pressure
     // drop)
