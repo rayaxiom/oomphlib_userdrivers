@@ -2505,6 +2505,8 @@ namespace CubeLagrange
 
 namespace BifurcationLagrange
 {
+
+
   const static unsigned Left_boundary = 4;
   const static unsigned Right_boundary = 2;
   const static unsigned Front_boundary = 5;
@@ -4338,6 +4340,12 @@ namespace NavierStokesProblemParameters
 
   // To fill
   std::map<int,std::string> valid_solver_type_map;
+
+///////////////////////////////
+  const static int MeshType_TETRAHEDRAL = 0;
+  const static int MeshType_HEXAHEDRAL = 1;
+
+  bool Steady_state = true;
 
   // From Commandline
   int Solver_type = -1;
