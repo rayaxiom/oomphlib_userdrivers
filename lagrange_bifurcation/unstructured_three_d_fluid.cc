@@ -128,7 +128,8 @@ public:
 
    if(NSPP::Distribute_problem)
    {
-     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
+     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt[0]);
+     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt[1]);
      rebuild_global_mesh();
    }
  }
@@ -144,7 +145,7 @@ public:
        create_parall_outflow_lagrange_elements(current_bound,
            Tangent_direction,
            Bulk_mesh_pt,
-           Surface_mesh_pt);
+           Surface_mesh_pt[ibound]);
      }
      rebuild_global_mesh();
    }
@@ -163,7 +164,8 @@ public:
 // TetgenMesh<ELEMENT>* Bulk_mesh_pt;
  Mesh* Bulk_mesh_pt;
 
- Mesh* Surface_mesh_pt;
+ Vector<Mesh*> Surface_mesh_pt;
+ //Mesh* Surface_mesh_pt;
 
  Vector<double> Tangent_direction;
 
@@ -334,19 +336,23 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   Tangent_direction[1] = 1;
   Tangent_direction[2] = 0;
 
-  Surface_mesh_pt = new Mesh;
+  //Surface_mesh_pt = new Mesh;
+  Surface_mesh_pt.resize(2,0);
+  Surface_mesh_pt[0] = new Mesh;
+  Surface_mesh_pt[1] = new Mesh;
   for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
   {
     const unsigned current_bound = Outflow_boundary_id[ibound];
     create_parall_outflow_lagrange_elements(current_bound,
         Tangent_direction,
         Bulk_mesh_pt,
-        Surface_mesh_pt);
+        Surface_mesh_pt[ibound]);
   }
 
   // Combine all the sub meshes.
   add_sub_mesh(Bulk_mesh_pt);
-  add_sub_mesh(Surface_mesh_pt);
+  add_sub_mesh(Surface_mesh_pt[0]);
+  add_sub_mesh(Surface_mesh_pt[1]);
 
   // Build the global mesh
   build_global_mesh();
@@ -372,9 +378,10 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 
   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
   {
-    Vector<Mesh*> mesh_pt(2,0);
+    Vector<Mesh*> mesh_pt(3,0);
       mesh_pt[0] = Bulk_mesh_pt;
-      mesh_pt[1] = Surface_mesh_pt;
+      mesh_pt[1] = Surface_mesh_pt[0];
+      mesh_pt[2] = Surface_mesh_pt[1];
 
     LPH::Mesh_pt = mesh_pt;
     LPH::Problem_pt = this;
