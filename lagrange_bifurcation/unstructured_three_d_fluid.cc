@@ -354,19 +354,30 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   // Set up equation numbering scheme
   oomph_info << "Number of equations: " << assign_eqn_numbers() << std::endl;
 
-  // Complete the build of the fluid elements so they are fully functional
-  //----------------------------------------------------------------------
+//  // Complete the build of the fluid elements so they are fully functional
+//  //----------------------------------------------------------------------
   const unsigned n_element = Bulk_mesh_pt->nelement();
+//  for(unsigned e=0;e<n_element;e++)
+//  {
+//    // Upcast from GeneralisedElement to the present element
+//    ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
+//
+//    //Set the Reynolds number
+//    el_pt->re_pt() = &NSPP::Rey;
+//  } 
+
+  // Loop over the elements to set up element-specific 
+  // things that cannot be handled by constructor
   for(unsigned e=0;e<n_element;e++)
   {
     // Upcast from GeneralisedElement to the present element
-    ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
+    NavierStokesEquations<3>* el_pt = 
+      dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSPP::Rey;
-  } 
-
-
+    el_pt->re_st_pt() = &NSPP::Rey;
+  } // end loop over elements
 
 
 
