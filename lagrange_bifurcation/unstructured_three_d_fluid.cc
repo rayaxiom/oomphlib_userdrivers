@@ -38,31 +38,23 @@
 // Get the mesh
 #include "meshes/tetgen_mesh.h"
 #include "meshes/brick_from_tet_mesh.h" 
+
+// My own header
+#include "./../rayheader.h"
+
+
+
 using namespace std;
 using namespace oomph;
 
+// Alias the namespace for convenience.
+namespace NSPP = NavierStokesProblemParameters;
+namespace LPH = LagrangianPreconditionerHelpers;
+namespace BL = BifurcationLagrange;
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
-
-
-//=======start_namespace==========================================
-/// Global variables
-//================================================================
-namespace Global_Parameters
-{
-
- /// Default Reynolds number
- double Re=100.0;
-
- unsigned Mesh_type = 1;
-
-} //end namespace
-
-
-
-
 
 
 //======start_problem_class===========================================
@@ -81,28 +73,85 @@ public:
  ~UnstructuredFluidProblem(){}
 
  /// Doc the solution
- void doc_solution(DocInfo& doc_info);
+ void doc_solution(const unsigned& nt);
+
+ void actions_before_implicit_timestep()
+ {
+   if(!NSPP::Steady_state)
+   {
+     const unsigned ibound = Inflow_boundary_id[0];
+     const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod = 0; inod < num_nod; inod++) 
+     {
+       Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+       const double x = nod_pt->x(0);
+       const double y = nod_pt->x(1);
+
+       const double time = time_pt()->time();
+
+       const double uz = BL::get_prescribed_inflow(time,x,y);
+
+       nod_pt->set_value(0,0.0);
+       nod_pt->set_value(1,0.0);
+       nod_pt->set_value(2,uz);
+     }
+   }
+ }
  
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
-   // Set the inflow, this is boundary 0
-   const unsigned ibound = Inflow_boundary_id[0];
-   const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
-   for (unsigned inod = 0; inod < num_nod; inod++) 
+   if(NSPP::Steady_state)
    {
-     Node*  nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-     const double x = nod_pt->x(0);
-     const double y = nod_pt->x(1);
-     //const double z = nod_pt->x(2);
+     // Set the inflow, this is boundary 0
+     const unsigned ibound = Inflow_boundary_id[0];
+     const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod = 0; inod < num_nod; inod++) 
+     {
+       Node*  nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+       const double x = nod_pt->x(0);
+       const double y = nod_pt->x(1);
+       //const double z = nod_pt->x(2);
 
-     // x and y are in the range [-1,1]
-     double uz = (1 - x)*(x - (-1)) * (1-y)*(y - (-1));
-     nod_pt->set_value(0,0.0);
-     nod_pt->set_value(1,0.0);
-     nod_pt->set_value(2,uz);
+       // x and y are in the range [-1,1]
+       const double uz = BL::get_prescribed_inflow(x,y);
+
+       nod_pt->set_value(0,0.0);
+       nod_pt->set_value(1,0.0);
+       nod_pt->set_value(2,uz);
+     }
    }
  }
+
+ void actions_before_distribute()
+ {
+
+   if(NSPP::Distribute_problem)
+   {
+     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
+     rebuild_global_mesh();
+   }
+ }
+
+ void actions_after_distribute()
+ {
+   if(NSPP::Distribute_problem)
+   {
+     const unsigned n_outflow_boundary = Outflow_boundary_id.size();
+     for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
+     {
+       const unsigned current_bound = Outflow_boundary_id[ibound];
+       create_parall_outflow_lagrange_elements(current_bound,
+           Tangent_direction,
+           Bulk_mesh_pt,
+           Surface_mesh_pt);
+     }
+     rebuild_global_mesh();
+   }
+ }
+
+ void unsteady_run();
+
 
  void create_parall_outflow_lagrange_elements(const unsigned &b,
                                               Vector<double> &tangent_direction,
@@ -139,146 +188,206 @@ public:
 //==========start_constructor=============================================
 /// Constructor for unstructured 3D fluid problem
 //========================================================================
-template<class ELEMENT>
+  template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
- 
- //Create fluid bulk mesh, sub-dividing "corner" elements
- string node_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.node";
- string element_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.ele";
- string face_file_name="tetgen_files/0d4/fsi_bifurcation_fluid.1.face";
 
-// string node_file_name="fsi_bifurcation_fluid.1.node";
-// string element_file_name="fsi_bifurcation_fluid.1.ele";
-// string face_file_name="fsi_bifurcation_fluid.1.face";
- bool split_corner_elements=true;
-
- if(Global_Parameters::Mesh_type == 0)
- {
- Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
-                                          element_file_name,
-                                          face_file_name,
-                                          split_corner_elements);
- }
- else if(Global_Parameters::Mesh_type ==1)
- {
-    Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
-                                                  element_file_name,
-                                                  face_file_name,
-                                                  split_corner_elements);
- }
-
- // Find elements next to boundaries
- Bulk_mesh_pt->setup_boundary_element_info();
- // The following corresponds to the boundaries as specified by
- // facets in the tetgen input:
- 
- Inflow_boundary_id.resize(1);
- Inflow_boundary_id[0] = 0;
-
- Outflow_boundary_id.resize(2);
- Outflow_boundary_id[0] = 1;
- Outflow_boundary_id[1] = 2;
-
-
- // First pin all boundary nodes, then we unpin those on the outflow boundary.
- const unsigned num_bound = Bulk_mesh_pt->nboundary();
- for (unsigned ibound = 0; ibound < num_bound; ibound++) 
- {
-   const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
-   for (unsigned inod = 0; inod < num_nod; inod++) 
-   {
-     // Loop over velocity nodes
-     const unsigned n_velocity_nodes = 3;
-     for (unsigned iv = 0; iv < n_velocity_nodes; iv++) 
-     {
-       // Locally cache the node, since we use it more than once.
-       Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-
-       // Pin and (just to be safe!) set the value to zero.
-       nod_pt->pin(iv);
-       nod_pt->set_value(iv,0.0);
-     } // for - loop over the velocity nodes.
-   } // for - loop over the nodes
- } // for - loop over all the boundaries
-
- // Unpin the nodes at the outflow boundary, but only the node which
- // is on a single boundary!
- // Outflow boundaries are one and two
- const unsigned n_outflow_boundary = Outflow_boundary_id.size();
-
- for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++)
- {
-   const unsigned current_bound = Outflow_boundary_id[ibound];
-
-   const unsigned num_nod = Bulk_mesh_pt->nboundary_node(current_bound);
-
-   for (unsigned inod = 0; inod < num_nod; inod++) 
-   {
-     Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(current_bound,inod);
-
-     // Only free if node is ONLY on a single boundary
-     std::set<unsigned>*bnd_pt=0;
-     nod_pt->get_boundaries_pt(bnd_pt);
-     if (bnd_pt != 0) 
-     {
-       if (bnd_pt->size()<2) 
-       {
-         nod_pt->unpin(0);
-         nod_pt->unpin(1);
-         nod_pt->unpin(2);
-       } // if there is less than two boundaries
-     } // if the boundary pointer is not null
-   } // for - loop over nodes
- } // for - loop over outflow boundaries
-
-
- // Create the surface mesh for the parallel outflow elements
- // on boundary 1 and 2. To be safe, we give a general direction for the
- // tangent vector. Recall that now we have two outflow faces which
- // planes intersect. This means that the automatically calculated tangent
- // vector may switch (even within an element if the face is unfortunately
- // aligned with one of the axis).
- Tangent_direction.resize(3,0);
- Tangent_direction[0] = 0;
- Tangent_direction[1] = 1;
- Tangent_direction[2] = 0;
- 
- Surface_mesh_pt = new Mesh;
- for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
- {
-   const unsigned current_bound = Outflow_boundary_id[ibound];
-   create_parall_outflow_lagrange_elements(current_bound,
-                                           Tangent_direction,
-                                           Bulk_mesh_pt,
-                                           Surface_mesh_pt);
- }
-
- // Combine all the sub meshes.
- add_sub_mesh(Bulk_mesh_pt);
- add_sub_mesh(Surface_mesh_pt);
-
- // Build the global mesh
- build_global_mesh();
-
- // Set up equation numbering scheme
- oomph_info << "Number of equations: " << assign_eqn_numbers() << std::endl;
- 
- // Complete the build of the fluid elements so they are fully functional
- //----------------------------------------------------------------------
- const unsigned n_element = Bulk_mesh_pt->nelement();
- for(unsigned e=0;e<n_element;e++)
+  // Add a new time stepper if not doing steady state.
+  if(!NSPP::Steady_state)
   {
-   // Upcast from GeneralisedElement to the present element
-   ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
-   
-   //Set the Reynolds number
-   el_pt->re_pt() = &Global_Parameters::Re;   
+    add_time_stepper_pt(new BDF<2>);
+  }
+
+
+  //Create fluid bulk mesh, sub-dividing "corner" elements
+  string mesh_folder = "tetgen_files/" + BL::Mesh_folder_str +"/";
+
+  string node_file_name=mesh_folder+"fsi_bifurcation_fluid.1.node";
+  string element_file_name=mesh_folder+"fsi_bifurcation_fluid.1.ele";
+  string face_file_name=mesh_folder+"fsi_bifurcation_fluid.1.face";
+  bool split_corner_elements=true;
+
+  // Check if we want the tetrahedral or hexahedral
+  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
+  {
+    if(NSPP::Steady_state)
+    {
+      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements);
+    }
+    else
+    {
+      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements,
+          time_stepper_pt());
+    }
+  }
+  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
+  {
+    if(NSPP::Steady_state)
+    {
+      Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements);
+    }
+    else
+    {
+      Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements,
+          time_stepper_pt());
+    }
+  }
+  else
+  {
+        std::ostringstream err_msg;
+        err_msg << "Please set --mesh_type" << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+  }
+
+  oomph_info << "Calling setup_boundary_element_info()" << std::endl; 
+  // Find elements next to boundaries
+  Bulk_mesh_pt->setup_boundary_element_info();
+  oomph_info << "Done setup_boundary_element_info()" << std::endl; 
+
+
+  // The following corresponds to the boundaries as specified by
+  // facets in the tetgen input:
+
+  Inflow_boundary_id.resize(1);
+  Inflow_boundary_id[0] = 0;
+
+  Outflow_boundary_id.resize(2);
+  Outflow_boundary_id[0] = 1;
+  Outflow_boundary_id[1] = 2;
+
+
+  // First pin all boundary nodes, then we unpin those on the outflow boundary.
+  const unsigned num_bound = Bulk_mesh_pt->nboundary();
+  for (unsigned ibound = 0; ibound < num_bound; ibound++) 
+  {
+    const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod = 0; inod < num_nod; inod++) 
+    {
+      // Loop over velocity nodes
+      const unsigned n_velocity_nodes = 3;
+      for (unsigned iv = 0; iv < n_velocity_nodes; iv++) 
+      {
+        // Locally cache the node, since we use it more than once.
+        Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+
+        // Pin and (just to be safe!) set the value to zero.
+        nod_pt->pin(iv);
+        nod_pt->set_value(iv,0.0);
+      } // for - loop over the velocity nodes.
+    } // for - loop over the nodes
+  } // for - loop over all the boundaries
+
+  // Unpin the nodes at the outflow boundary, but only the node which
+  // is on a single boundary!
+  // Outflow boundaries are one and two
+  const unsigned n_outflow_boundary = Outflow_boundary_id.size();
+
+  for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++)
+  {
+    const unsigned current_bound = Outflow_boundary_id[ibound];
+
+    const unsigned num_nod = Bulk_mesh_pt->nboundary_node(current_bound);
+
+    for (unsigned inod = 0; inod < num_nod; inod++) 
+    {
+      Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(current_bound,inod);
+
+      // Only free if node is ONLY on a single boundary
+      std::set<unsigned>*bnd_pt=0;
+      nod_pt->get_boundaries_pt(bnd_pt);
+      if (bnd_pt != 0) 
+      {
+        if (bnd_pt->size()<2) 
+        {
+          nod_pt->unpin(0);
+          nod_pt->unpin(1);
+          nod_pt->unpin(2);
+        } // if there is less than two boundaries
+      } // if the boundary pointer is not null
+    } // for - loop over nodes
+  } // for - loop over outflow boundaries
+
+
+  // Create the surface mesh for the parallel outflow elements
+  // on boundary 1 and 2. To be safe, we give a general direction for the
+  // tangent vector. Recall that now we have two outflow faces which
+  // planes intersect. This means that the automatically calculated tangent
+  // vector may switch (even within an element if the face is unfortunately
+  // aligned with one of the axis).
+  Tangent_direction.resize(3,0);
+  Tangent_direction[0] = 0;
+  Tangent_direction[1] = 1;
+  Tangent_direction[2] = 0;
+
+  Surface_mesh_pt = new Mesh;
+  for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
+  {
+    const unsigned current_bound = Outflow_boundary_id[ibound];
+    create_parall_outflow_lagrange_elements(current_bound,
+        Tangent_direction,
+        Bulk_mesh_pt,
+        Surface_mesh_pt);
+  }
+
+  // Combine all the sub meshes.
+  add_sub_mesh(Bulk_mesh_pt);
+  add_sub_mesh(Surface_mesh_pt);
+
+  // Build the global mesh
+  build_global_mesh();
+
+  // Set up equation numbering scheme
+  oomph_info << "Number of equations: " << assign_eqn_numbers() << std::endl;
+
+  // Complete the build of the fluid elements so they are fully functional
+  //----------------------------------------------------------------------
+  const unsigned n_element = Bulk_mesh_pt->nelement();
+  for(unsigned e=0;e<n_element;e++)
+  {
+    // Upcast from GeneralisedElement to the present element
+    ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
+
+    //Set the Reynolds number
+    el_pt->re_pt() = &NSPP::Rey;
   } 
 
 
 
- 
+
+
+  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+  {
+    Vector<Mesh*> mesh_pt(2,0);
+      mesh_pt[0] = Bulk_mesh_pt;
+      mesh_pt[1] = Surface_mesh_pt;
+
+    LPH::Mesh_pt = mesh_pt;
+    LPH::Problem_pt = this;
+    Prec_pt = LPH::get_preconditioner();
+  }
+
+ const double solver_tol = 1.0e-6;
+ const double newton_tol = 1.0e-6;
+ GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
+                                   solver_tol,newton_tol,
+                                   NSPP::Solver_type,this,Prec_pt);
+
+
 } // end constructor
 
 //============start_of_fluid_traction_elements==============================
@@ -341,30 +450,95 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 } // end of create_parall_outflow_lagrange_elements
 
 
+  template<class ELEMENT>
+void UnstructuredFluidProblem <ELEMENT>::unsteady_run()
+{
+
+  //Set value of dt
+  const double dt = NSPP::Delta_t;
+
+
+  // Initialise all history values for an impulsive start
+  assign_initial_values_impulsive(dt);
+  oomph_info << "IC = impulsive start" << std::endl;
+
+  //Now do many timesteps
+  unsigned ntsteps = NSPP::Time_end / dt;
+  oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl; 
+
+
+  // Doc initial condition
+  if(NSPP::Doc_soln)
+  {
+        doc_solution(0); 
+  }
+
+  // increment counter
+
+  //Loop over the timesteps
+  for(unsigned t=1;t<=ntsteps;t++)
+  {
+    oomph_info << "TIMESTEP: " << t << std::endl;
+
+    //Take one fixed timestep
+    unsteady_newton_solve(dt);
+
+    //Output the time
+    oomph_info << "Time is now " << time_pt()->time() << std::endl;
+
+    if(NSPP::Doc_soln)
+    {
+      // Doc solution
+          doc_solution(t); 
+    }
+  }
+} // end of unsteady run
+
 //========================================================================
 /// Doc the solution
 //========================================================================
 template<class ELEMENT>
-void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
+void UnstructuredFluidProblem<ELEMENT>::doc_solution(const unsigned&nt)
 { 
 
- ofstream some_file;
- char filename[100];
+  std::ofstream some_file;
+  std::stringstream filename;
+  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
 
- // Number of plot points
- unsigned npts;
- npts=5;
-  
- 
- // Output fluid solution
- sprintf(filename,"%s/fluid_soln%i.dat",doc_info.directory().c_str(),
-         doc_info.number());
- some_file.open(filename);
- Bulk_mesh_pt->output(some_file,npts);
- some_file.close();
+  // Number of plot points
+  unsigned npts=5;
+
+  // Output solution
+  some_file.open(filename.str().c_str());
+  Bulk_mesh_pt->output(some_file,npts);
+  some_file.close();
+
+
+// ofstream some_file;
+// char filename[100];
+//
+// // Number of plot points
+// unsigned npts;
+// npts=5;
+//  
+// 
+// // Output fluid solution
+// sprintf(filename,"%s/fluid_soln%i.dat",doc_info.directory().c_str(),
+//         doc_info.number());
+// some_file.open(filename);
+// Bulk_mesh_pt->output(some_file,npts);
+// some_file.close();
 }
 
-
+std::string create_label()
+{
+  
+  std::string label = BL::prob_str()
+                      + NSPP::create_label() 
+                      + LPH::create_label() 
+                      + BL::mesh_area_str();
+  return label;
+}
 
 
 
@@ -374,78 +548,129 @@ void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 int main(int argc, char **argv)
 {
 #ifdef OOMPH_HAS_MPI
- // Initialise MPI
- MPI_Helpers::init(argc,argv);
+  // Initialise MPI
+  MPI_Helpers::init(argc,argv);
 #endif
 
+  // Problem dimension.
+  const unsigned dim = 3;
+
+  // Set up doc info - used to store information on solver and iteration time.
+  DocLinearSolverInfo doc_linear_solver_info;
+  // Again, pass this to the NSPP and LPH
+  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+
+  // Set the Label_pt
+  LPH::Label_str_pt = &NSPP::Label_str;
+  LPH::Vis_pt = &NSPP::Vis;
+  BL::Prob_id_pt = &NSPP::Prob_id;
+  BL::Time_start_pt = &NSPP::Time_start;
+  BL::Time_end_pt = &NSPP::Time_end;
+
+  NSPP::Time_start = 0.0;
+  NSPP::Time_end = 1.0; 
 
 
- // Store command line arguments
- CommandLineArgs::setup(argc,argv);
-  
- // Label for output
- DocInfo doc_info;
- 
- // Parameter study
- double Re_increment=100.0;
- unsigned nstep=4;
- if (CommandLineArgs::Argc==2)
+
+  // Store command line arguments
+  CommandLineArgs::setup(argc,argv);
+
+  NSPP::setup_commandline_flags();
+  LPH::setup_commandline_flags();
+  BL::setup_commandline_flags();
+
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags(); 
+
+
+
+  ////////////////////////////////////////////////////
+  // Now set up the flags/parameters for the problem//
+  ////////////////////////////////////////////////////
+
+  // dim = 3
+  NSPP::generic_problem_setup(dim);
+  LPH::generic_setup();
+  BL::generic_setup();
+
+
+
+  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
   {
-   std::cout << "Validation -- only doing two steps" << std::endl;
-   nstep=2;
+    //Set up the problem
+    UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
+
+  if(NSPP::Distribute_problem)
+  {
+    problem.distribute();
   }
- 
- 
- //Taylor--Hood
- {
-  // Output directory
-  doc_info.set_directory("RESLT_TH");
-  
-    Global_Parameters::Re = 100;
 
-  
-  //Output initial guess
-//  problem.doc_solution(doc_info);
-//  doc_info.number()++;   
-  
-  // Parameter study: Crank up the pressure drop along the vessel
-//  for (unsigned istep=0;istep<nstep;istep++)
-   {
+  NSPP::Label_str = create_label();
 
-     if(Global_Parameters::Mesh_type == 0)
-     {
-  //Set up the problem
-  UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
+  time_t rawtime;
+  time(&rawtime);
+
+  std::cout << "RAYDOING: "
+    << NSPP::Label_str
+    << " on " << ctime(&rawtime) << std::endl;
+
+
     // Solve the problem
-    problem.newton_solve();
-    
-    //Output solution
-    problem.doc_solution(doc_info);
-    doc_info.number()++;
-     }
-     else if(Global_Parameters::Mesh_type == 1)
-     {
-  //Set up the problem
-  UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
-    // Solve the problem
-    problem.newton_solve();
-    
-    //Output solution
-    problem.doc_solution(doc_info);
-    doc_info.number()++;
-     }
-    
-    // Bump up Reynolds number (equivalent to increasing the imposed pressure
-    // drop)
-   }
- }
+    if(NSPP::Steady_state)
+    {
+      problem.newton_solve();
+
+      //Output solution
+      problem.doc_solution(0);
+    }
+    else
+    {
+      problem.unsteady_run();
+    }
+  }
+  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
+  {
+    //Set up the problem
+    UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
+
+
+  if(NSPP::Distribute_problem)
+  {
+    problem.distribute();
+  }
+
+  NSPP::Label_str = create_label();
+
+  time_t rawtime;
+  time(&rawtime);
+
+  std::cout << "RAYDOING: "
+    << NSPP::Label_str
+    << " on " << ctime(&rawtime) << std::endl;
+
+
+    if(NSPP::Steady_state)
+    {
+      // Solve the problem
+      problem.newton_solve();
+
+      //Output solution
+      problem.doc_solution(0);
+    }
+    else
+    {
+      problem.unsteady_run();
+    }
+  }
 
 
 #ifdef OOMPH_HAS_MPI
-// finalize MPI
-MPI_Helpers::finalize();
+  // finalize MPI
+  MPI_Helpers::finalize();
 #endif
- return(EXIT_SUCCESS); 
+  return(EXIT_SUCCESS); 
 
 } // end_of_main
 
