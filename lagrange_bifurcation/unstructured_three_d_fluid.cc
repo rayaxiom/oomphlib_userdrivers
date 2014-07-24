@@ -375,27 +375,15 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 //  // Complete the build of the fluid elements so they are fully functional
 //  //----------------------------------------------------------------------
   const unsigned n_element = Bulk_mesh_pt->nelement();
-//  for(unsigned e=0;e<n_element;e++)
-//  {
-//    // Upcast from GeneralisedElement to the present element
-//    ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
-//
-//    //Set the Reynolds number
-//    el_pt->re_pt() = &NSPP::Rey;
-//  } 
-
-  // Loop over the elements to set up element-specific 
-  // things that cannot be handled by constructor
   for(unsigned e=0;e<n_element;e++)
   {
     // Upcast from GeneralisedElement to the present element
-    NavierStokesEquations<3>* el_pt = 
-      dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
+    ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSPP::Rey;
-    el_pt->re_st_pt() = &NSPP::Rey;
-  } // end loop over elements
+//    el_pt->re_st_pt() = &NSPP::Rey;
+  } 
 
 
 
@@ -598,7 +586,7 @@ int main(int argc, char **argv)
   BL::Time_end_pt = &NSPP::Time_end;
 
   NSPP::Time_start = 0.0;
-  NSPP::Time_end = 1.0; 
+  NSPP::Time_end = 0.5; 
 
 
 
