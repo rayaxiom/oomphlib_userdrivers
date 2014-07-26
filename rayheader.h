@@ -2507,7 +2507,8 @@ namespace BifurcationLagrange
 {
 
   // Static problem identifiers
-  const static int PID_BI = 0;
+  const static int PID_BI_PRESCINFLOW = 0;
+  const static int PID_BI_TRACTIONINFLOW = 1;
 
   std::map<int,std::string> valid_prob_id_map;
   
@@ -2622,7 +2623,10 @@ namespace BifurcationLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_BI,"Bi"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(
+          PID_BI_PRESCINFLOW,"BiPresc"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(
+          PID_BI_TRACTIONINFLOW,"BiTract"));
 
     set_prob_str();
     set_mesh_area_str();
@@ -2897,6 +2901,12 @@ namespace LagrangianPreconditionerHelpers
 
   // Set to true if --lsc_only is set.
   bool Lsc_only = false;
+
+
+  Preconditioner* Lgr_preconditioner_pt = 0;
+  Preconditioner* NS_preconditioner_pt = 0;
+  Preconditioner* F_preconditioner_pt = 0;
+  Preconditioner* P_preconditioner_pt = 0;
 
 
   inline void setup_commandline_flags()
@@ -3668,6 +3678,8 @@ namespace LagrangianPreconditionerHelpers
 #endif
     }
 
+    F_preconditioner_pt = f_preconditioner_pt;
+
     // Set the preconditioner in the LSC preconditioner.
     ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
 
@@ -3774,6 +3786,7 @@ namespace LagrangianPreconditionerHelpers
       hypre_preconditioner_pt->amg_coarsening() = 1;
 #endif
     }
+    P_preconditioner_pt = P_preconditioner_pt;
 
     ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
 
@@ -3867,8 +3880,9 @@ namespace LagrangianPreconditionerHelpers
     {
 
 
+      NS_preconditioner_pt = get_lsc_preconditioner();
       // Set the NS preconditioner as LSC.
-      prec_pt->set_navier_stokes_lsc_preconditioner(get_lsc_preconditioner());
+      prec_pt->set_navier_stokes_lsc_preconditioner(NS_preconditioner_pt);
 
 
      } // if for using LSC as NS prec.
@@ -3924,6 +3938,8 @@ namespace LagrangianPreconditionerHelpers
 
     prec_pt->set_label_pt(Label_str_pt);
     prec_pt->set_doc_prec_directory_pt(&Doc_prec_dir_str);
+
+    Lgr_preconditioner_pt = prec_pt;
     return prec_pt;
   }
 
@@ -3939,6 +3955,29 @@ namespace LagrangianPreconditionerHelpers
     }
   } // LPH::setup_preconditioner
 
+  inline void clean_up_memory()
+  {
+    if(Lgr_preconditioner_pt != 0)
+    {
+      delete Lgr_preconditioner_pt;
+    }
+
+    if(NS_preconditioner_pt != 0)
+    {
+      delete NS_preconditioner_pt;
+    }
+
+    if(F_preconditioner_pt != 0)
+    {
+      delete F_preconditioner_pt;
+    }
+    if(P_preconditioner_pt != 0)
+    {
+      delete P_preconditioner_pt;
+    }
+
+   
+  }
 
   inline std::string create_lsc_label()
   {
@@ -4660,6 +4699,9 @@ for(int_string_map_it_type iterator = valid_solver_type_map.begin();
 //=============================================================================
 namespace GenericProblemSetup
 {
+
+  IterativeLinearSolver* Solver_pt = 0;
+
   inline void setup_solver(const int& max_solver_iter,
                            const double& solver_tol, const double& newton_tol,
                            const int& solver_type,
@@ -4716,6 +4758,7 @@ namespace GenericProblemSetup
     // Now set everything!
     if(solver_pt != 0)
     {
+      Solver_pt = solver_pt;
       solver_pt->tolerance() = solver_tol;
       solver_pt->max_iter() = max_solver_iter;
       solver_pt->preconditioner_pt() = prec_pt;
@@ -4723,6 +4766,14 @@ namespace GenericProblemSetup
     }
 
     problem_pt->newton_solver_tolerance() = newton_tol;
+  }
+
+  inline void clean_up_solver_memory()
+  {
+    if(Solver_pt  != 0)
+    {
+      delete Solver_pt;
+    }
   }
 
  inline void delete_flux_elements(Mesh* const &surface_mesh_pt)

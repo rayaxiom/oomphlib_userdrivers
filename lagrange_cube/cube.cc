@@ -273,7 +273,8 @@ public:
  /// Destructor: Cleanup
  ~CubeProblem()
   {
-//   delete Solver_pt;
+    GenericProblemSetup::clean_up_solver_memory();
+    LPH::clean_up_memory();
 //   delete Prec_pt;
 //   delete P_matrix_preconditioner_pt;
 //   delete F_matrix_preconditioner_pt;
