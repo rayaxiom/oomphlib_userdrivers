@@ -36,6 +36,10 @@
 #include "meshes/simple_cubic_mesh.h"
 //#include "meshes/simple_cubic_tet_mesh.h"
 
+// Get the mesh
+#include "meshes/tetgen_mesh.h"
+#include "meshes/brick_from_tet_mesh.h"
+
 // My own header
 #include "./../rayheader.h"
 using namespace std;
@@ -46,6 +50,14 @@ using namespace oomph;
 namespace NSPP = NavierStokesProblemParameters;
 namespace LPH = LagrangianPreconditionerHelpers;
 namespace CL = CubeLagrange;
+
+
+
+namespace RaySpace
+{
+  bool Use_tetgen_mesh = false;
+}
+
 
 // Rx = [1 0   0
 //       0 cx -sx
@@ -155,6 +167,15 @@ namespace oomph
      }
    }
  };
+
+
+
+
+
+
+
+
+
 } // end of namespace oomph
 
 ////////////////////////////////////////////////////////////////////////
@@ -521,11 +542,70 @@ CubeProblem<ELEMENT>::CubeProblem()
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
 
+  
+
+  if(RaySpace::Use_tetgen_mesh)
+  {
+
+
+  //Create fluid bulk mesh, sub-dividing "corner" elements
+  string mesh_folder = "tetgen_files/0d00625/";
+
+  string node_file_name=mesh_folder+"cube.1.node";
+  string element_file_name=mesh_folder+"cube.1.ele";
+  string face_file_name=mesh_folder+"cube.1.face";
+  bool split_corner_elements=true;
+
+
+      Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements,
+          time_stepper_pt());
+
+
+//    Bulk_mesh_pt = new TetgenMesh<ELEMENT>(node_file_name,
+//          element_file_name,
+//          face_file_name,
+//          split_corner_elements,
+//          time_stepper_pt());
+//    Bulk_mesh_pt->setup_boundary_element_info();
+  }
+  else
+  {
   Bulk_mesh_pt = 
     new SlopingCubicMesh<ELEMENT>(CL::Noel,CL::Noel,CL::Noel,
                                   CL::Lx, CL::Ly, CL::Lz,
                                   CL::Angx,CL::Angy,CL::Angz,
                                   time_stepper_pt());
+  }
+
+
+
+//  {
+//    const unsigned n_bound = Bulk_mesh_pt->nboundary();
+//    oomph_info << "n_bound = " << n_bound << std::endl;
+//
+//    for(unsigned ibound=0;ibound<n_bound;ibound++)
+//    {
+//      oomph_info << "Boundary no: " << ibound << std::endl; 
+//
+//      unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//      for (unsigned inod=0;inod<num_nod;inod++)
+//      {
+//        // Loop over values (u, v and w velocities)
+//        Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//
+//        const double x = nod_pt->x(0);
+//        const double y = nod_pt->x(1);
+//        const double z = nod_pt->x(2);
+//
+//        oomph_info << x << " " << y << " " << z << std::endl;
+//
+//      }
+//    } // end loop over boundaries!
+//  }
+  
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
@@ -609,6 +689,10 @@ CubeProblem<ELEMENT>::CubeProblem()
 
   //Find number of elements in mesh
   unsigned n_element = Bulk_mesh_pt->nelement();
+  oomph_info << "n_element: " << n_element << std::endl; 
+  pause("DONE!"); 
+  
+  
 
   // Loop over the elements to set up element-specific 
   // things that cannot be handled by constructor
@@ -1064,6 +1148,7 @@ int main(int argc, char **argv)
   NSPP::Time_end = 1.0; 
 
 
+  RaySpace::Use_tetgen_mesh = true;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
@@ -1090,6 +1175,34 @@ int main(int argc, char **argv)
 
   //////////////////////////////////////  
 
+  if(RaySpace::Use_tetgen_mesh)
+  {
+   // Build the problem 
+  CubeProblem <QTaylorHoodElement<3> >problem;
+
+
+  // Solve the problem 
+  //              problem.newton_solve();
+
+  if(NSPP::Distribute_problem)
+  {
+    problem.distribute();
+  }
+
+  NSPP::Label_str = create_label();
+
+  time_t rawtime;
+  time(&rawtime);
+
+  std::cout << "RAYDOING: "
+    << NSPP::Label_str
+    << " on " << ctime(&rawtime) << std::endl;
+
+  problem.unsteady_run(); 
+  
+  }
+  else
+  {
   // Build the problem 
   CubeProblem <QTaylorHoodElement<3> >problem;
 
@@ -1112,7 +1225,7 @@ int main(int argc, char **argv)
     << " on " << ctime(&rawtime) << std::endl;
 
   problem.unsteady_run();
-
+  }
 
   //////////////////////////////////////////////////////////////////////////
   ////////////// Outputting results ////////////////////////////////////////

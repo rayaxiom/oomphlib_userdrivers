@@ -2492,7 +2492,7 @@ namespace CubeLagrange
    ux = 0.0;
    if((y > 0.5)&&(z > 0.5))
    {
-     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2 + 0.5;
+     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
      ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
    }
  } 
@@ -2513,8 +2513,6 @@ namespace BifurcationLagrange
 
   // We need the start and end time to set the inflow.
   const double* Dt_pt = 0;
-  const double* Time_start_pt = 0;
-  const double* Time_end_pt = 0;
 
   std::string Prob_str = "";
   std::string Mesh_folder_str = "";
@@ -2654,7 +2652,7 @@ namespace BifurcationLagrange
                                      const double& x,
                                      const double& y)
  {
-   const double scaling = t / (*Time_end_pt);
+   const double scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
    return (get_prescribed_inflow(x,y) * scaling);
  } 
 

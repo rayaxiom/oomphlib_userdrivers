@@ -1,0 +1,58 @@
+
+#---------------
+# Node list
+#---------------
+
+8 3 0 1  # number of nodes
+
+# Front inflow face
+1 0.0 0.0 0.0 0
+2 1.0 0.0 0.0 0
+3 1.0 0.0 1.0 0
+4 0.0 0.0 1.0 0
+5 0.0 1.0 1.0 0
+6 0.0 1.0 0.0 0
+7 1.0 1.0 0.0 0 
+8 1.0 1.0 1.0 0
+
+
+#---------------
+# Face list
+#---------------
+
+6 1 # number of faces; yes, we do have boundary markers
+
+# Bottom boundary
+1 0 2   # one polygon, zero holes, boundary 2
+4 1 2 3 4  # four vertices and their indices in node list
+
+# Top boundary
+1 0 4  # one polygon, zero holes, boundary 4
+4 5 6 7 8  # four vertices and their indices in node list
+
+# Left boundary (inflow)
+1 0 5  # one polygon, zero holes, boundary 5
+4 1 4 5 6  # four vertices and their indices in node list
+
+# Right boundary (outflow)
+1 0 3  # one polygon, zero holes, boundary 3
+4 2 3 8 7  # four vertices and their indices in node list
+
+# Front boundary 
+1 0 6  # one polygon, zero holes, boundary 6
+4 3 4 5 8  # four vertices and their indices in node list
+
+# Back boundary 
+1 0 1  # one polygon, zero holes, boundary 1
+4 1 2 7 6  # four vertices and their indices in node list
+
+
+#---------------
+# Hole list
+#---------------
+0
+
+#---------------
+# Region list
+#---------------
+0
