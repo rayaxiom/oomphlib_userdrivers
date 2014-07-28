@@ -582,13 +582,6 @@ int main(int argc, char **argv)
   LPH::Label_str_pt = &NSPP::Label_str;
   LPH::Vis_pt = &NSPP::Vis;
   BL::Prob_id_pt = &NSPP::Prob_id;
-  BL::Time_start_pt = &NSPP::Time_start;
-  BL::Time_end_pt = &NSPP::Time_end;
-
-  NSPP::Time_start = 0.0;
-  NSPP::Time_end = 0.5; 
-
-
 
   // Store command line arguments
   CommandLineArgs::setup(argc,argv);

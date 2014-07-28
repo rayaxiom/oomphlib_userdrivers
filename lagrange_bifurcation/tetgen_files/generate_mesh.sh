@@ -16,9 +16,60 @@
 # -a0.2 is in 0d2
 # So d stands for decimal!
 
+
+#HEX = 
+#TET = 
+AREA="0.8"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.7"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.6"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.5"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
 #HEX = 22,763
 #TET = 617
 AREA="0.4"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.3"
 FOLDER=${AREA//./d}
 touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
 tetgen -a$AREA fsi_bifurcation_fluid.poly
@@ -46,6 +97,47 @@ mv fsi_bifurcation_fluid.1.ele $FOLDER
 mv fsi_bifurcation_fluid.1.face $FOLDER
 mv fsi_bifurcation_fluid.1.node $FOLDER
 
+#HEX =
+#TET =
+AREA="0.09"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.08"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.07"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.06"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+
 #HEX = 107,459
 #TET = 3,277
 AREA="0.05"
@@ -55,6 +147,37 @@ tetgen -a$AREA fsi_bifurcation_fluid.poly
 mv fsi_bifurcation_fluid.1.ele $FOLDER
 mv fsi_bifurcation_fluid.1.face $FOLDER
 mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.04"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.03"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
+#HEX =
+#TET =
+AREA="0.02"
+FOLDER=${AREA//./d}
+touch $FOLDER && rm -rf $FOLDER && mkdir $FOLDER
+tetgen -a$AREA fsi_bifurcation_fluid.poly
+mv fsi_bifurcation_fluid.1.ele $FOLDER
+mv fsi_bifurcation_fluid.1.face $FOLDER
+mv fsi_bifurcation_fluid.1.node $FOLDER
+
 
 #HEX = 237,157
 #TET = 7,704

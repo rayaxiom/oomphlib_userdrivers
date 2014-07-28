@@ -2643,7 +2643,7 @@ namespace BifurcationLagrange
  inline double get_prescribed_inflow(const double& x,
                                      const double& y)
  {
-   return (1 - x) * (x- (-1)) * (1 - y) * (y - (-1)) * 0.5;
+   return (1 - x) * (x- (-1)) * (1 - y) * (y - (-1));
  }
 
  // Scale the steady state prescribed velocity inflow above
