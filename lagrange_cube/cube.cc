@@ -665,7 +665,7 @@ void CubeProblem <ELEMENT>::unsteady_run()
   cout << "IC = impulsive start" << std::endl;
 
   //Now do many timesteps
-  unsigned ntsteps = NSPP::Time_end / dt;
+  unsigned ntsteps = (NSPP::Time_end - NSPP::Time_start) / dt;
   std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
 
 
@@ -1059,8 +1059,6 @@ int main(int argc, char **argv)
   LPH::Label_str_pt = &NSPP::Label_str;
   LPH::Vis_pt = &NSPP::Vis;
   CL::Prob_id_pt = &NSPP::Prob_id;
-  CL::Time_start_pt = &NSPP::Time_start;
-  CL::Time_end_pt = &NSPP::Time_end;
 
   NSPP::Time_start = 0.0;
   NSPP::Time_end = 1.0; 

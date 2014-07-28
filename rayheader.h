@@ -2191,8 +2191,6 @@ namespace CubeLagrange
   // Prob id, set by main method
   const int* Prob_id_pt = 0;
   const double* Dt_pt = 0;
-  const double* Time_start_pt = 0;
-  const double* Time_end_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
@@ -2489,14 +2487,12 @@ namespace CubeLagrange
                             const double& z,
                             double& ux)
  {
-   const double time_end = *Time_end_pt;
-
    // For the velocity profile in the x direction.
    // 1) First form the parabolic profile
    ux = 0.0;
    if((y > 0.5)&&(z > 0.5))
    {
-     const double ux_scaling = t / time_end;
+     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2 + 0.5;
      ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
    }
  } 
@@ -4289,6 +4285,8 @@ namespace NavierStokesProblemParameters
         &Solver_type);
 
     CommandLineArgs::specify_command_line_flag("--dt", &Delta_t);
+    CommandLineArgs::specify_command_line_flag("--time_start", &Time_start);
+    CommandLineArgs::specify_command_line_flag("--time_end", &Time_end);
 
     CommandLineArgs::specify_command_line_flag("--mesh_type", &Mesh_type);
   }
@@ -4298,6 +4296,23 @@ namespace NavierStokesProblemParameters
     if(CommandLineArgs::command_line_flag_has_been_set("--dt"))
     {
       Steady_state = false;
+      if(!CommandLineArgs::command_line_flag_has_been_set("--time_start"))
+      {
+      std::ostringstream err_msg;
+      err_msg << "Please set --time_start" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+      }
+
+      if(!CommandLineArgs::command_line_flag_has_been_set("--time_end"))
+      {
+      std::ostringstream err_msg;
+      err_msg << "Please set --time_end" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+      }
     }
 
     if(CommandLineArgs::command_line_flag_has_been_set("--mesh_type"))
