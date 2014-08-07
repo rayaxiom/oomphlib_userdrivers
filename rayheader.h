@@ -4974,12 +4974,70 @@ namespace ResultsFormat
 
       // Print to one decimal place if the average is not an exact
       // integer. Otherwise we print normally.
-      ((unsigned(average_its*10))%10)?
-        (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
-        << average_its << "(" << nnewtonstep << ")" << "\n":
-        (*results_stream_pt) << "\t"<< average_its << "(" << nnewtonstep << ")" << "\n";
-      (*results_stream_pt) << std::setprecision(std::cout.precision());
+//      ((unsigned(average_its*10))%10)?
+//        (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
+//        << average_its << "(" << nnewtonstep << ")" << "\n":
+//        (*results_stream_pt) << "\t"<< average_its << "(" << nnewtonstep << ")" << "\n";
+
+      std::streamsize tmp_precision = results_stream_pt->precision();
+
+        (*results_stream_pt) << "\t" << std::setprecision(1)
+        << average_its << "(" << nnewtonstep << ")" << "\n";
+
+
+      (*results_stream_pt) << std::setprecision(tmp_precision);
   }
+
+  inline void format_rayavavgits(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+    // Loop through all the time steps
+    const unsigned ntimestep = iters_times_pt->size();
+
+    unsigned total_nnewton_step = 0;
+
+    unsigned total_its = 0;
+    unsigned n_total_its = 0;
+
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+
+      // Loop through the Newton Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+      total_nnewton_step += nnewtonstep;
+
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_its += (*iters_times_pt)[intimestep][innewtonstep][0];
+        n_total_its++;
+      }
+    }
+
+    double average_its = ((double)total_its)
+      / ((double)n_total_its);
+
+    double average_n_newton_step = ((double)total_nnewton_step)
+      / ((double)ntimestep);
+    
+    (*results_stream_pt) << "RAYAVGAVGITS:\t";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+//    ((unsigned(average_its*10))%10)?
+//      (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
+//      << average_its << "(" << n_total_its << ")" << "\n":
+ //     (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
+      std::streamsize tmp_precision = results_stream_pt->precision();
+
+    (*results_stream_pt) << "\t" << std::setprecision(1)
+      << average_its << "(" << average_n_newton_step << ")"
+                     << "(" << ntimestep << ")\n";
+
+    // reset the precision
+    (*results_stream_pt) << std::setprecision(tmp_precision);
+  }
+
 
   inline void format_rayavgits(
       const Vector<Vector<Vector<double> > >* iters_times_pt,
@@ -5009,13 +5067,12 @@ namespace ResultsFormat
     (*results_stream_pt) << "RAYAVGITS:\t";
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-    ((unsigned(average_its*10))%10)?
-      (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
-      << average_its << "(" << n_total_its << ")" << "\n":
-      (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
+      std::streamsize tmp_precision = results_stream_pt->precision();
+      (*results_stream_pt) << "\t" << std::setprecision(1)
+      << average_its << "(" << n_total_its << ")" << "\n";
 
     // reset the precision
-    (*results_stream_pt) << std::setprecision(std::cout.precision());
+    (*results_stream_pt) << std::setprecision(tmp_precision);
   }
 
   inline void format_prectime(

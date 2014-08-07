@@ -617,6 +617,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 //    } // end loop over boundaries!
 //  }
   
+//pause("Age!"); 
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
@@ -683,6 +684,74 @@ CubeProblem<ELEMENT>::CubeProblem()
       }
     }
   }
+
+
+  {
+    // Now do the sides
+    unsigned ibound=Top_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->pin(0);
+              nod_pt->unpin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+
+  {
+    // Now do the sides
+    unsigned ibound=Bottom_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->unpin(0);
+              nod_pt->pin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+  {
+    // Now do the sides
+    unsigned ibound=Front_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->unpin(0);
+              nod_pt->unpin(1);
+              nod_pt->pin(2);
+    }
+  }
+  {
+    // Now do the sides
+    unsigned ibound=Back_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->unpin(0);
+              nod_pt->unpin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+  {
+    // Now do the sides
+    unsigned ibound=Inflow_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->pin(0);
+              nod_pt->pin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+
 
   // Complete the build of all elements so they are fully functional
 
@@ -765,9 +834,6 @@ double CubeProblem<ELEMENT>::global_temporal_error_norm()
  // Divide by the number of nodes
  global_error /= double(n_node*3);
 
- std::cout << "global_error: " << global_error << std::endl; 
- 
-
  // Return square root...
  return sqrt(global_error);
 
@@ -793,17 +859,15 @@ void CubeProblem <ELEMENT>::unsteady_run()
   }
 
 
-
-
   // Initialise all history values for an impulsive start
   assign_initial_values_impulsive(dt);
-  cout << "IC = impulsive start" << std::endl;
+  oomph_info << "IC = impulsive start" << std::endl;
 
   //Now do many timesteps
   if(!doing_adaptive_time_stepping)
   {
     const unsigned ntsteps = (NSPP::Time_end - NSPP::Time_start) / dt;
-    std::cout << "NTIMESTEP IS: " << ntsteps << std::endl;
+    oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl;
   }
 
   unsigned current_time_step = 0;
@@ -817,14 +881,13 @@ void CubeProblem <ELEMENT>::unsteady_run()
   const double time_tol = 1e-4;
   while(time_pt()->time() < NSPP::Time_end)
   {
-    std::cout << "TIMESTEP: " << current_time_step << std::endl;
+    oomph_info << "TIMESTEP: " << current_time_step << std::endl;
 
     if(doing_adaptive_time_stepping)
     {
-      std::cout << "DELTA_T: " << dt << std::endl; 
+      oomph_info << "DELTA_T: " << dt << std::endl; 
       // Calculate the next time step.
       dt = adaptive_unsteady_newton_solve(dt, time_tol);
-      std::cout << "dt after solve: " << dt << std::endl; 
       
     }
     else
@@ -1298,6 +1361,7 @@ int main(int argc, char **argv)
     }
     
     ResultsFormat::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
     
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
