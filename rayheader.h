@@ -5030,7 +5030,7 @@ namespace ResultsFormat
  //     (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
       std::streamsize tmp_precision = results_stream_pt->precision();
 
-    (*results_stream_pt) << "\t" std::fixed << std::setprecision(1)
+    (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
       << average_its << "(" << average_n_newton_step << ")"
                      << "(" << ntimestep << ")\n";
 
