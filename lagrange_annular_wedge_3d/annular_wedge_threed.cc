@@ -693,7 +693,7 @@ CubeProblem<ELEMENT>::CubeProblem()
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->pin(0);
+              nod_pt->unpin(0);
               nod_pt->unpin(1);
               nod_pt->pin(2);
     }
@@ -708,7 +708,7 @@ CubeProblem<ELEMENT>::CubeProblem()
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
               nod_pt->unpin(0);
-              nod_pt->pin(1);
+              nod_pt->unpin(1);
               nod_pt->pin(2);
     }
   }
