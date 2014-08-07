@@ -4981,7 +4981,7 @@ namespace ResultsFormat
 
       std::streamsize tmp_precision = results_stream_pt->precision();
 
-        (*results_stream_pt) << "\t" << std::setprecision(1)
+        (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
         << average_its << "(" << nnewtonstep << ")" << "\n";
 
 
@@ -5030,7 +5030,7 @@ namespace ResultsFormat
  //     (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
       std::streamsize tmp_precision = results_stream_pt->precision();
 
-    (*results_stream_pt) << "\t" << std::setprecision(1)
+    (*results_stream_pt) << "\t" std::fixed << std::setprecision(1)
       << average_its << "(" << average_n_newton_step << ")"
                      << "(" << ntimestep << ")\n";
 
@@ -5068,7 +5068,7 @@ namespace ResultsFormat
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
       std::streamsize tmp_precision = results_stream_pt->precision();
-      (*results_stream_pt) << "\t" << std::setprecision(1)
+      (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
       << average_its << "(" << n_total_its << ")" << "\n";
 
     // reset the precision
