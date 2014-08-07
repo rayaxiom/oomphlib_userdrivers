@@ -120,14 +120,15 @@ void rotate_backward(const double& x, const double& y, const double z,
 void convert_to_melon(const double&x, const double& y, const double& z,
     Vector<double>& x_new)
 {
-  double r = 1.0 + 2.0*x;
-  double phi = 90*y * (MathematicalConstants::Pi / 180.0);
+  const double r = 1.0 + 2.0*x;
+  const double phi = 90*y * (MathematicalConstants::Pi / 180.0);
+  const double new_z = 2.0*z;
 
   x_new.resize(3,0);
 
   x_new[0] = r * cos(phi);
   x_new[1] = r * sin(phi);
-  x_new[2] = z;
+  x_new[2] = new_z;
 }
 
 
