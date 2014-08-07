@@ -170,6 +170,8 @@ public:
 
  void unsteady_run();
 
+ /// Global error norm for adaptive time-stepping
+ double global_temporal_error_norm();
 
  void create_parall_outflow_lagrange_elements(const unsigned &b,
                                               Vector<double> &tangent_direction,
@@ -213,7 +215,7 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
   // Add a new time stepper if not doing steady state.
   if(!NSPP::Steady_state)
   {
-    add_time_stepper_pt(new BDF<2>);
+    add_time_stepper_pt(new BDF<2>(true));
   }
 
 
@@ -407,6 +409,46 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 
 } // end constructor
 
+
+
+template<class ELEMENT>
+double UnstructuredFluidProblem<ELEMENT>::global_temporal_error_norm()
+{
+ double global_error = 0.0;
+   
+ //Find out how many nodes there are in the problem
+ unsigned n_node = Bulk_mesh_pt->nnode();
+
+ //Loop over the nodes and calculate the estimated error in the values
+ for(unsigned i=0;i<n_node;i++)
+  {
+   // Get error in solution: Difference between predicted and actual
+   // value for nodal value 0
+   double error0 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),0);
+
+   double error1 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),1);
+
+   double error2 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),2);
+
+
+
+   //Add the square of the individual error to the global error
+   global_error += error0*error0 + error1*error1 + error2*error2;
+  }
+    
+ // Divide by the number of nodes
+ global_error /= double(n_node*3);
+
+ // Return square root...
+ return sqrt(global_error);
+
+} // end of global_temporal_error_norm
+
+
+
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
 //=======================================================================
@@ -472,7 +514,8 @@ void UnstructuredFluidProblem <ELEMENT>::unsteady_run()
 {
 
   //Set value of dt
-  const double dt = NSPP::Delta_t;
+  //double dt = NSPP::Delta_t;
+  double dt = 1e-2;
 
 
   // Initialise all history values for an impulsive start
@@ -492,13 +535,16 @@ void UnstructuredFluidProblem <ELEMENT>::unsteady_run()
 
   // increment counter
 
+  double time_tol = 1e-4;
   //Loop over the timesteps
-  for(unsigned t=1;t<=ntsteps;t++)
+//  for(unsigned t=1;t<=ntsteps;t++)
+  unsigned t = 0;
+  while(time_pt()->time() < NSPP::Time_end)
   {
     oomph_info << "TIMESTEP: " << t << std::endl;
 
     //Take one fixed timestep
-    unsteady_newton_solve(dt);
+    dt = adaptive_unsteady_newton_solve(dt, time_tol);
 
     //Output the time
     oomph_info << "Time is now " << time_pt()->time() << std::endl;
@@ -508,6 +554,7 @@ void UnstructuredFluidProblem <ELEMENT>::unsteady_run()
       // Doc solution
           doc_solution(t); 
     }
+    t++;
   }
 } // end of unsteady run
 
