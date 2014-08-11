@@ -289,8 +289,6 @@ public:
 
  void actions_before_implicit_timestep()
   {
-    oomph_info << "RAYFROM actions_before_implicit_timestep" << std::endl; 
-    
     Doc_linear_solver_info_pt->clear_current_time_step();
 
    {
@@ -394,7 +392,6 @@ public:
  /// Doc_linear_solver_info_pt.
  void actions_before_newton_solve()
  {
-   oomph_info << "RAYFROM actions_before_newton_solve" << std::endl; 
  } // end_of_actions_before_newton_solve
 
 
@@ -402,8 +399,6 @@ public:
  // results.
  void actions_after_newton_step()
  {
-   oomph_info << "RAYFROM actions_after_newton_step" << std::endl; 
-   
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
    {
      NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
