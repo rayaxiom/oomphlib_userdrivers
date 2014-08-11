@@ -4944,6 +4944,193 @@ namespace GenericProblemSetup
     // Wipe the mesh
     surface_mesh_pt->flush_element_and_node_storage();
  }
+
+ inline double global_temporal_error_norm(Problem* problem_pt,
+                                          const unsigned& dim,
+                                          Mesh* const & bulk_mesh_pt)
+ {
+#ifdef OOMPH_HAS_MPI
+   double global_error = 0.0;
+
+   // Find out how many nodes there are in the problem.
+   unsigned n_node = bulk_mesh_pt->nnode();
+
+   // Loop over the nodes and calculate the estimate error in the values
+   // for non-haloes
+   int count = 0;
+   for (unsigned nod_i = 0; nod_i < n_node; nod_i++) 
+   {
+     Node* nod_pt = bulk_mesh_pt->node_pt(nod_i);
+     if(!(nod_pt->is_halo()))
+     {
+       // Get the error in solution: Difference between the predicted and
+       // actual value for nodal values 0, ... dim-1
+       double node_error = 0.0;
+       for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
+       {
+         double error = nod_pt->time_stepper_pt()->
+                        temporal_error_in_value(nod_pt,nodal_i);
+         node_error += error*error;
+         count++;
+       } // for loop over the nodal values 0,..,dim-1
+       global_error += node_error;
+     } // if the node is not halo
+   } // for loop over nodes
+
+   // Accumulate
+   int n_node_local = count;
+   int n_node_total = 0;
+
+   MPI_Allreduce(&n_node_local,&n_node_total,1,MPI_INT,MPI_SUM,
+                 problem_pt->communicator_pt()->mpi_comm());
+
+   double global_error_total = 0.0;
+   MPI_Allreduce(&global_error,&global_error_total,1,MPI_DOUBLE,MPI_SUM,
+                 problem_pt->communicator_pt()->mpi_comm());
+
+   // Divide by the number of nodes
+   global_error_total /= double(n_node_total);
+
+   // Return square root...
+   // RAYRAY remove this output?
+   oomph_info << "Total error " << n_node_total << " " 
+              <<  sqrt(global_error_total) << std::endl;
+   return sqrt(global_error_total);
+#else
+   double global_error = 0.0;
+
+   // Find out how many nodes there are in the problem
+   unsigned n_node = bulk_mesh_pt->nnode();
+
+   // Loop over the nodes and calculate the errors in the values.
+   for (unsigned node_i = 0; node_i < n_node; node_i++) 
+   {
+     Node* nod_pt = bulk_mesh_pt->node_pt(node_i);
+
+     // Get the error in the solution: Difference between predicted and 
+     // actual value for nodal values 0,..,dim-1
+     double nodal_error = 0.0;
+     for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
+     {
+       double error = nod_pt->time_stepper_pt()->
+         temporal_error_in_value(nod_pt,nodal_i);
+
+       // Add the squared value to the nodal error.
+       nodal_error += error*error;
+     }
+
+     // add the nodal error to the global error.
+     global_error += nodal_error;
+   }
+
+   global_error /= double(n_node*3);
+
+   // Return square root
+   return sqrt(global_error);
+#endif
+ } // EoF global_temporal_error_norm
+
+
+
+
+ inline void doc_solution(Mesh* bulk_mesh_pt,
+                          const int& nt = -1)
+ {
+  namespace NSPP = NavierStokesProblemParameters;
+
+  std::ofstream some_file;
+  std::stringstream filename;
+  if(nt < 0)
+  {
+    filename << NSPP::Soln_dir_str<<"/"<< NSPP::Label_str <<".dat";
+  }
+  else
+  {
+    filename << NSPP::Soln_dir_str<<"/"<< NSPP::Label_str <<"t"<<nt<<".dat";
+  }
+
+  // Number of plot points
+  const unsigned npts=5;
+
+  // Output solution
+  some_file.open(filename.str().c_str());
+  bulk_mesh_pt->output(some_file,npts);
+  some_file.close();
+ }
+
+
+ inline void unsteady_run(Problem* problem_pt, 
+                          Mesh* mesh_pt)
+ {
+   namespace NSPP = NavierStokesProblemParameters;
+
+   double dt = 0.0;
+   bool doing_adaptive_time_stepping = false;
+
+   if(NSPP::Delta_t < 0.0)
+   {
+     dt = 1e-2;
+     doing_adaptive_time_stepping = true;
+   }
+   else
+   {
+     dt = NSPP::Delta_t;
+   }
+
+   // Initialise all history values for an impulsive start
+   problem_pt->assign_initial_values_impulsive(dt);
+   oomph_info << "IC = Impulsive start" << std::endl;
+
+   // Now do many time steps
+   if (!doing_adaptive_time_stepping) 
+   {
+     const unsigned nsteps = unsigned(std::ceil((NSPP::Time_end 
+                                                 - NSPP::Time_start) / dt));
+
+     oomph_info << "Taking constant time steps of: " << dt << std::endl;
+     oomph_info << "NTIMESTEP is: " << nsteps << std::endl;
+   }
+
+   unsigned current_time_step = 0;
+
+   if(NSPP::Doc_soln)
+   {
+     doc_solution(mesh_pt,current_time_step);
+   }
+
+   const double time_tol = 1e-4;
+
+   while(problem_pt->time_pt()->time() < NSPP::Time_end)
+   {
+     oomph_info << "TIMESTEP: " << current_time_step << std::endl;
+
+     if (doing_adaptive_time_stepping) 
+     {
+       oomph_info << "DELTA_T: " << dt << std::endl;
+
+       // Calculate the next time step.
+       dt = problem_pt->adaptive_unsteady_newton_solve(dt,time_tol);
+     }
+     else
+     {
+       // Take one fixed time step
+       problem_pt->unsteady_newton_solve(dt);
+     }
+
+     oomph_info << "Time is now: " 
+                << problem_pt->time_pt()->time() << std::endl;
+
+     if(NSPP::Doc_soln)
+     {
+       doc_solution(mesh_pt,current_time_step);
+     }
+     current_time_step++;
+   }
+ } // EoF unsteady_run
+
+ 
+
+
 } // namespace GenericProblemSetup
 
 

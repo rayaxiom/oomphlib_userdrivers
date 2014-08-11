@@ -27,7 +27,7 @@ ITSTIMEDIR="--itstimedir $TIME_DIR" # TO CHECK
 SOLVER_TYPE="--solver_type 2" # TO CHECK
 DT="--dt -1.0"
 TIME_START="--time_start 0.0"
-TIME_END="--time_end 1.0"
+TIME_END="--time_end 5.0"
 NSPP="$DIST_PROB $PROB_ID $DOC_SOLN $VISC $REY $MAX_ITER $ITSTIMEDIR $SOLVER_TYPE $DT $TIME_START $TIME_END"
 
 ###########################################
@@ -56,7 +56,7 @@ LPH="$PRINT_HYPRE $W_SOLVER $NS_SOLVER $P_SOLVER $F_SOLVER"
 ##########################################
 
 ANG="--ang 0"
-NOEL="--noel 8"
+NOEL="--noel 5"
 CL="$ANG $NOEL"
 
 
@@ -70,8 +70,11 @@ PROGRAM="annular_wedge_threed"
 #make $PROGRAM && \
 #mpirun -np 1 ./$PROGRAM $PARAM #&& \
 
+#make $PROGRAM && rm -rf ./$SOLN_DIR/*.dat && rm -rf ./$TIME_DIR/* && \
+#mpirun -np 1 ./$PROGRAM $PARAM > $OUTFILE 2>&1 #&& \
+
 make $PROGRAM && rm -rf ./$SOLN_DIR/*.dat && rm -rf ./$TIME_DIR/* && \
-mpirun -np 1 ./$PROGRAM $PARAM > $OUTFILE 2>&1 #&& \
+mpirun -np 1 ./$PROGRAM $PARAM #&& \
 
 #diff RESLT/soln8.dat RESLT_A30_R200_N4/soln8.dat
 

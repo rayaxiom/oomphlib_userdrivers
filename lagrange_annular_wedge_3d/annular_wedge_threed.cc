@@ -67,7 +67,7 @@ namespace CL = CubeLagrange;
 // R = Rz*Ry*Rx
 //
 // Rx = x_new
-void rotate_forward(const double& x, const double& y, const double z,
+void rotate_forward(const double& x, const double& y, const double& z,
     const double& phix, const double& phiy, const double& phiz,
     Vector<double>& x_new)
 {
@@ -99,7 +99,7 @@ void rotate_forward(const double& x, const double& y, const double z,
 // R = Rx*Ry*Rz (note the ordering)
 //
 // Rx = x_new
-void rotate_backward(const double& x, const double& y, const double z,
+void rotate_backward(const double& x, const double& y, const double& z,
     const double& phix, const double& phiy, const double& phiz,
     Vector<double>& x_new)
 {
@@ -363,9 +363,9 @@ public:
     for (unsigned inod=0;inod<num_nod;inod++)
      {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-//      const double x=nod_pt->x(0);
-//      const double y=nod_pt->x(1);
-//      const double z=nod_pt->x(2);
+      const double x=nod_pt->x(0);
+      const double y=nod_pt->x(1);
+      const double z=nod_pt->x(2);
 
       const double time=time_pt()->time();
 
@@ -373,6 +373,13 @@ public:
 //      double ux = 0.0;
 
       std::pair<double,double>u_xy_pair = RAYRAY::get_radial_v(nod_pt,time);
+
+//      if(nod_pt->is_on_boundary(5))
+//      {
+//        std::cout << x << ", " << y  << ", "<< z << std::endl; 
+//        std::cout << "ux = " << u_xy_pair.first 
+//                  << ", uy = " << u_xy_pair.second << std::endl;
+//      }
       // RAY DO THIS
 //      CL::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
 
@@ -383,8 +390,55 @@ public:
       nod_pt->set_value(0,u_xy_pair.first);
       nod_pt->set_value(1,u_xy_pair.second);
       nod_pt->set_value(2,0.0);
+
+
+      if(nod_pt->is_on_boundary(5))
+      {
+        std::cout << x << ", " << y  << "\t\t\t" 
+                  << "ux = " << nod_pt->value(0) 
+                  << ", uy = " << nod_pt->value(1)
+                  << ", uz = " << nod_pt->value(2) << std::endl;
+      }
+
+
      }
    }
+
+//   {
+//    // Inflow in upper half of inflow boundary
+//    const unsigned ibound=Top_boundary; 
+//    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//    for (unsigned inod=0;inod<num_nod;inod++)
+//     {
+//      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//
+//      const double time=time_pt()->time();
+//
+//      std::pair<double,double>u_xy_pair = RAYRAY::get_radial_v(nod_pt,time);
+//
+//      nod_pt->set_value(0,0.0);
+//      nod_pt->set_value(1,u_xy_pair.second);
+//      nod_pt->set_value(2,0.0);
+//     }
+//   }
+//   {
+//    // Inflow in upper half of inflow boundary
+//    const unsigned ibound=Bottom_boundary; 
+//    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//    for (unsigned inod=0;inod<num_nod;inod++)
+//     {
+//      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//
+//      const double time=time_pt()->time();
+//
+//      std::pair<double,double>u_xy_pair = RAYRAY::get_radial_v(nod_pt,time);
+//
+//      nod_pt->set_value(0,u_xy_pair.first);
+//      nod_pt->set_value(1,0.0);
+//      nod_pt->set_value(2,0.0);
+//     }
+//   }
+
   } // end of actions_before_implicit_timestep
 
 
@@ -473,10 +527,10 @@ public:
    }
  }
  /// Run an unsteady simulation
- void unsteady_run(); 
+// void unsteady_run(); 
  
  /// Doc the solution
- void doc_solution(const unsigned& nt);
+// void doc_solution(const unsigned& nt);
 
  /// Create traction elements on outflow boundary
 // template<class ELEMENT>
@@ -647,18 +701,18 @@ CubeProblem<ELEMENT>::CubeProblem()
   // free by default -- just pin the ones that have Dirichlet conditions
   // here. 
   unsigned num_bound = Bulk_mesh_pt->nboundary();
-  for(unsigned ibound=0;ibound<num_bound;ibound++)
-  {
-    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-    {
-      // Loop over values (u, v and w velocities)
-      for (unsigned i=0;i<3;i++)
-      {
-        Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
-      }
-    }
-  } // end loop over boundaries!
+//  for(unsigned ibound=0;ibound<num_bound;ibound++)
+//  {
+//    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//    for (unsigned inod=0;inod<num_nod;inod++)
+//    {
+//      // Loop over values (u, v and w velocities)
+//      for (unsigned i=0;i<3;i++)
+//      {
+//        Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
+//      }
+//    }
+//  } // end loop over boundaries!
 
 
   {
@@ -682,34 +736,6 @@ CubeProblem<ELEMENT>::CubeProblem()
               nod_pt->unpin(2);
         }
       }
-    }
-  }
-
-
-  {
-    // Now do the sides
-    unsigned ibound=Top_boundary;
-    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-    {
-      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->unpin(0);
-              nod_pt->unpin(1);
-              nod_pt->pin(2);
-    }
-  }
-
-
-  {
-    // Now do the sides
-    unsigned ibound=Bottom_boundary;
-    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
-    {
-      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->unpin(0);
-              nod_pt->unpin(1);
-              nod_pt->pin(2);
     }
   }
 
@@ -737,6 +763,36 @@ CubeProblem<ELEMENT>::CubeProblem()
               nod_pt->pin(2);
     }
   }
+  {
+    // Now do the sides
+    unsigned ibound=Top_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->pin(0);
+              nod_pt->unpin(1);
+              //nod_pt->pin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+
+  {
+    // Now do the sides
+    unsigned ibound=Bottom_boundary;
+    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+    for (unsigned inod=0;inod<num_nod;inod++)
+    {
+      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+              nod_pt->unpin(0);
+             // nod_pt->pin(0);
+              nod_pt->pin(1);
+              nod_pt->pin(2);
+    }
+  }
+
+
 
   {
     // Now do the sides
@@ -750,7 +806,6 @@ CubeProblem<ELEMENT>::CubeProblem()
               nod_pt->pin(2);
     }
   }
-
 
 
   // Complete the build of all elements so they are fully functional
@@ -806,107 +861,111 @@ CubeProblem<ELEMENT>::CubeProblem()
 template<class ELEMENT>
 double CubeProblem<ELEMENT>::global_temporal_error_norm()
 {
- double global_error = 0.0;
-   
- //Find out how many nodes there are in the problem
- unsigned n_node = Bulk_mesh_pt->nnode();
 
- //Loop over the nodes and calculate the estimated error in the values
- for(unsigned i=0;i<n_node;i++)
-  {
-   // Get error in solution: Difference between predicted and actual
-   // value for nodal value 0
-   double error0 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),0);
+  return GenericProblemSetup::global_temporal_error_norm(this,
+      3,Bulk_mesh_pt);
 
-   double error1 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),1);
-
-   double error2 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),2);
-
-
-
-   //Add the square of the individual error to the global error
-   global_error += error0*error0 + error1*error1 + error2*error2;
-  }
-    
- // Divide by the number of nodes
- global_error /= double(n_node*3);
-
- // Return square root...
- return sqrt(global_error);
+//  double global_error = 0.0;
+//   
+// //Find out how many nodes there are in the problem
+// unsigned n_node = Bulk_mesh_pt->nnode();
+//
+// //Loop over the nodes and calculate the estimated error in the values
+// for(unsigned i=0;i<n_node;i++)
+//  {
+//   // Get error in solution: Difference between predicted and actual
+//   // value for nodal value 0
+//   double error0 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),0);
+//
+//   double error1 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),1);
+//
+//   double error2 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
+//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),2);
+//
+//
+//
+//   //Add the square of the individual error to the global error
+//   global_error += error0*error0 + error1*error1 + error2*error2;
+//  }
+//    
+// // Divide by the number of nodes
+// global_error /= double(n_node*3);
+//
+// // Return square root...
+// return sqrt(global_error);
 
 } // end of global_temporal_error_norm
 
 
-  template<class ELEMENT>
-void CubeProblem <ELEMENT>::unsteady_run()
-{
-
-  //Set value of dt
-  double dt = 0.0;
-  bool doing_adaptive_time_stepping = false;
-  
-  if(NSPP::Delta_t < 0.0)
-  {
-    dt = 1e-2;
-    doing_adaptive_time_stepping = true;
-  }
-  else
-  {
-    dt = NSPP::Delta_t;
-  }
-
-
-  // Initialise all history values for an impulsive start
-  assign_initial_values_impulsive(dt);
-  oomph_info << "IC = impulsive start" << std::endl;
-
-  //Now do many timesteps
-  if(!doing_adaptive_time_stepping)
-  {
-    const unsigned ntsteps = (NSPP::Time_end - NSPP::Time_start) / dt;
-    oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl;
-  }
-
-  unsigned current_time_step = 0;
-
-  // Doc initial condition
-  if(NSPP::Doc_soln)
-  {
-    doc_solution(current_time_step);
-  }
-
-  const double time_tol = 1e-4;
-  while(time_pt()->time() < NSPP::Time_end)
-  {
-    oomph_info << "TIMESTEP: " << current_time_step << std::endl;
-
-    if(doing_adaptive_time_stepping)
-    {
-      oomph_info << "DELTA_T: " << dt << std::endl; 
-      // Calculate the next time step.
-      dt = adaptive_unsteady_newton_solve(dt, time_tol);
-      
-    }
-    else
-    {
-      //Take one fixed timestep
-      unsteady_newton_solve(dt);
-    }
-
-    //Output the time
-    oomph_info << "Time is now " << time_pt()->time() << std::endl;
-
-    if(NSPP::Doc_soln)
-    {
-      // Doc solution
-      doc_solution(current_time_step);
-    }
-    current_time_step++;
-  }
-} // end of unsteady run
+//  template<class ELEMENT>
+//void CubeProblem <ELEMENT>::unsteady_run()
+//{
+//
+//  //Set value of dt
+//  double dt = 0.0;
+//  bool doing_adaptive_time_stepping = false;
+//  
+//  if(NSPP::Delta_t < 0.0)
+//  {
+//    dt = 1e-2;
+//    doing_adaptive_time_stepping = true;
+//  }
+//  else
+//  {
+//    dt = NSPP::Delta_t;
+//  }
+//
+//
+//  // Initialise all history values for an impulsive start
+//  assign_initial_values_impulsive(dt);
+//  oomph_info << "IC = impulsive start" << std::endl;
+//
+//  //Now do many timesteps
+//  if(!doing_adaptive_time_stepping)
+//  {
+//    const unsigned ntsteps = (NSPP::Time_end - NSPP::Time_start) / dt;
+//    oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl;
+//  }
+//
+//  unsigned current_time_step = 0;
+//
+//  // Doc initial condition
+//  if(NSPP::Doc_soln)
+//  {
+//    doc_solution(current_time_step);
+//  }
+//
+//  const double time_tol = 1e-4;
+//  while(time_pt()->time() < NSPP::Time_end)
+//  {
+//    oomph_info << "TIMESTEP: " << current_time_step << std::endl;
+//
+//    if(doing_adaptive_time_stepping)
+//    {
+//      oomph_info << "DELTA_T: " << dt << std::endl; 
+//      // Calculate the next time step.
+//      dt = adaptive_unsteady_newton_solve(dt, time_tol);
+//      
+//    }
+//    else
+//    {
+//      //Take one fixed timestep
+//      unsteady_newton_solve(dt);
+//    }
+//
+//    //Output the time
+//    oomph_info << "Time is now " << time_pt()->time() << std::endl;
+//
+//    if(NSPP::Doc_soln)
+//    {
+//      // Doc solution
+//      doc_solution(current_time_step);
+//    }
+//    current_time_step++;
+//  }
+//} // end of unsteady run
 
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
@@ -1162,43 +1221,43 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 //} // end of create_traction_elements
 
 
-//==start_of_doc_solution=================================================
-/// Doc the solution
-//========================================================================
-template<class ELEMENT>
-void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
-{ 
-
-  std::ofstream some_file;
-  std::stringstream filename;
-  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
-
-  // Number of plot points
-  unsigned npts=5;
-
-  // Output solution
-  some_file.open(filename.str().c_str());
-  Bulk_mesh_pt->output(some_file,npts);
-  some_file.close();
-
-
-
-
-// ofstream some_file;
-// char filename[100];
+////==start_of_doc_solution=================================================
+///// Doc the solution
+////========================================================================
+//template<class ELEMENT>
+//void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
+//{ 
 //
-// // Number of plot points
-// unsigned npts;
-// npts=5; 
+//  std::ofstream some_file;
+//  std::stringstream filename;
+//  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
 //
-// // Output solution 
-// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
-//         doc_info.number());
-// some_file.open(filename);
-// Bulk_mesh_pt->output(some_file,npts);
-// some_file.close();
-
-} // end_of_doc_solution
+//  // Number of plot points
+//  unsigned npts=5;
+//
+//  // Output solution
+//  some_file.open(filename.str().c_str());
+//  Bulk_mesh_pt->output(some_file,npts);
+//  some_file.close();
+//
+//
+//
+//
+//// ofstream some_file;
+//// char filename[100];
+////
+//// // Number of plot points
+//// unsigned npts;
+//// npts=5; 
+////
+//// // Output solution 
+//// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
+////         doc_info.number());
+//// some_file.open(filename);
+//// Bulk_mesh_pt->output(some_file,npts);
+//// some_file.close();
+//
+//} // end_of_doc_solution
 
 
 std::string create_label()
@@ -1303,9 +1362,11 @@ int main(int argc, char **argv)
     << NSPP::Label_str
     << " on " << ctime(&rawtime) << std::endl;
 
-  problem.doc_solution(0);
+  GenericProblemSetup::doc_solution(problem.bulk_mesh_pt(),0);
+//  problem.doc_solution(0);
 
-  problem.unsteady_run();
+  GenericProblemSetup::unsteady_run(&problem,problem.bulk_mesh_pt());
+//  problem.unsteady_run();
   }
 
   //////////////////////////////////////////////////////////////////////////
