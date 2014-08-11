@@ -289,6 +289,8 @@ public:
 
  void actions_before_implicit_timestep()
   {
+    oomph_info << "RAYFROM actions_before_implicit_timestep" << std::endl; 
+    
     Doc_linear_solver_info_pt->clear_current_time_step();
 
    {
@@ -392,11 +394,7 @@ public:
  /// Doc_linear_solver_info_pt.
  void actions_before_newton_solve()
  {
-   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-   {
-    // Initialise counters for each newton solve.
-    Doc_linear_solver_info_pt->setup_new_time_step();
-   }
+   oomph_info << "RAYFROM actions_before_newton_solve" << std::endl; 
  } // end_of_actions_before_newton_solve
 
 
@@ -404,6 +402,8 @@ public:
  // results.
  void actions_after_newton_step()
  {
+   oomph_info << "RAYFROM actions_after_newton_step" << std::endl; 
+   
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
    {
      NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
@@ -419,7 +419,7 @@ public:
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
 
-private:
+//private:
 
  /// Solver
  IterativeLinearSolver* Solver_pt;
@@ -900,7 +900,9 @@ int main(int argc, char **argv)
 
   GenericProblemSetup::doc_solution(problem.bulk_mesh_pt(),0);
 
-  GenericProblemSetup::unsteady_run(&problem,problem.bulk_mesh_pt());
+  GenericProblemSetup::unsteady_run(&problem,
+                                    &doc_linear_solver_info,
+                                    problem.bulk_mesh_pt());
   }
 
   //////////////////////////////////////////////////////////////////////////

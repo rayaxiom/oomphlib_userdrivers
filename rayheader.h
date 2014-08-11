@@ -5074,7 +5074,8 @@ namespace GenericProblemSetup
  }
 
 
- inline void unsteady_run(Problem* problem_pt, 
+ inline void unsteady_run(Problem* problem_pt,
+                          DocLinearSolverInfo* doc_linear_solver_info_pt,
                           Mesh* mesh_pt)
  {
    namespace NSPP = NavierStokesProblemParameters;
@@ -5118,6 +5119,13 @@ namespace GenericProblemSetup
    while(problem_pt->time_pt()->time() < NSPP::Time_end)
    {
      oomph_info << "TIMESTEP: " << current_time_step << std::endl;
+
+     // Setup storage for a new time step
+     if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+     {
+      // Initialise counters for each newton solve.
+      doc_linear_solver_info_pt->setup_new_time_step();
+     }
 
      if (doing_adaptive_time_stepping) 
      {
