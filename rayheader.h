@@ -2447,20 +2447,57 @@ namespace CubeLagrange
 } // Namespace CubeLagrange
 
 
+
+// Namespace for AnnularWedge in 3D!
+//        y
+//        |
+//        |
+//        |
+//        |____________ x
+//        /
+//       /
+//      /
+//     /
+//    z
+//        --------------
+//       /|            /      Left = 4 (Inflow)
+//      / |           / |     Right = 2 (Outflow)
+//     /  |          /  |     Front = 5
+//    /   |         /   |     Back = 0
+//    --------------    |     Bottom = 1
+//    |   |--------|----|     Top = 3
+//    |   /        |   /
+//    |  /         |  /
+//    | /          | /
+//    |/           |/
+//    --------------
+// 
+//  
+//  We morph the unit cube into a wedge!
+//
+//  We bend around the Z axis, so that the:
+//  
+//  Top boundary is parallel to the YZ plane (YZ_boundary)
+//  Bottom boundary is parallel to the XZ plane (XZ_boundary)
+//
+//  Left (Inflow) is the smaller curve (Small_curve_boundary)
+//  Right (Outflow) is the bigger curve (Big_curve_boundary)
+//
+//  Front and Back are parallel to the XY plane.
+//  Z_max_boundary and Z_min_boundary respectively.
 namespace AnnularWedge3DLagrange
 {
-  const static unsigned Left_boundary = 4;
-  const static unsigned Right_boundary = 2;
-  const static unsigned Front_boundary = 5;
-  const static unsigned Back_boundary = 0;
-  const static unsigned Bottom_boundary = 1;
-  const static unsigned Top_boundary = 3; 
-
+  const static unsigned Small_curve_boundary = 4;
+  const static unsigned Big_curve_boundary = 2;
+  const static unsigned Z_max_boundary = 5;
+  const static unsigned Z_min_boundary = 0;
+  const static unsigned XZ_boundary = 1;
+  const static unsigned YZ_boundary = 3; 
 
   // Static problem identifiers
-  const static int PID_CU_TMP = 10;
+  const static int PID_AW3D_TMP = 10;
 
-  const static int PID_CU_PO_FULL = 20;
+  const static int PID_AW3D_PO = 20;
 
   std::map<int,std::string> valid_prob_id_map;
   
@@ -2590,8 +2627,8 @@ namespace AnnularWedge3DLagrange
   inline void generic_setup()
   {
     // Insert the prob id and string pairs.
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_TMP,"CuTmp"));
-    valid_prob_id_map.insert(std::pair<int,std::string>(PID_CU_PO_FULL,"CuPoF"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_AW3D_TMP,"Aw3dTmp"));
+    valid_prob_id_map.insert(std::pair<int,std::string>(PID_AW3D_PO,"Aw3dPo"));
 
     set_prob_str();
     set_noel_str();
@@ -2614,29 +2651,7 @@ namespace AnnularWedge3DLagrange
     std::string label = prob_str() + noel_str();
     return label; 
   } // inlined function create_label
-
-
- void get_prescribed_inflow(const double& t,
-                            const double& y,
-                            const double& z,
-                            double& ux)
- {
-
-   const double scaling =  -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
-   // For the velocity profile in the x direction.
-   // 1) First form the parabolic profile
-   ux = 0.0;
-   if((y > 0.5)&&(z > 0.5))
-   {
-     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
-     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
-   }
- } 
-
-} // Namespace CubeLagrange
-
-
-
+} // Namespace AnnularWedge3DLagrange
 
 
 namespace BifurcationLagrange
@@ -5189,7 +5204,6 @@ namespace ResultsFormat
 
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-
       // Loop through the Newton Steps
       unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
       total_nnewton_step += nnewtonstep;
@@ -5286,6 +5300,52 @@ namespace ResultsFormat
       (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
 
+
+
+  inline void format_avavgprectime(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+
+    // Loop through all the time steps
+    const unsigned ntimestep = iters_times_pt->size();
+
+    unsigned total_nnewton_step = 0;
+
+    double total_time = 0.0;
+    unsigned n_total_time = 0;
+
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      // Loop through the Newton Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+      total_nnewton_step += nnewtonstep;
+
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_time += (*iters_times_pt)[intimestep][innewtonstep][1];
+        n_total_time++;
+      }
+    }
+
+    (*results_stream_pt) << "RAYAVGAVGPRECSETUP:\t";
+
+    double average_time = ((double)total_time)
+      / ((double)n_total_time);
+
+    double average_n_newton_step = ((double)total_nnewton_step)
+      / ((double)ntimestep);
+
+
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"
+      << average_time 
+      << "(" <<  average_n_newton_step << ")" 
+      << "(" << ntimestep << ")" << "\n";
+  }
+
   inline void format_avgprectime(
       const Vector<Vector<Vector<double> > >* iters_times_pt,
       std::ostringstream* results_stream_pt)
@@ -5342,6 +5402,51 @@ namespace ResultsFormat
       // integer. Otherwise we print normally.
       (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
+
+
+
+  inline void format_avavgsolvertime(
+      const Vector<Vector<Vector<double> > >* iters_times_pt,
+      std::ostringstream* results_stream_pt)
+  {
+    const unsigned ntimestep = iters_times_pt->size();
+
+    unsigned total_nnewton_step = 0;
+
+    double total_time = 0.0;
+    unsigned n_total_time = 0;
+
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    { 
+      // Loop through the Newtom Steps
+      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+
+      total_nnewton_step += nnewtonstep;
+
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_time += (*iters_times_pt)[intimestep][innewtonstep][2];
+        n_total_time++;
+      }
+    }
+    (*results_stream_pt) << "RAYAVGAVGLINSOLVER:\t";
+
+
+    double average_time = ((double)total_time)
+            / ((double)n_total_time);
+    double average_n_newton_step = ((double)total_nnewton_step)
+      / ((double)ntimestep);
+
+
+      // Print to one decimal place if the average is not an exact
+      // integer. Otherwise we print normally.
+      (*results_stream_pt) << "\t"
+        << average_time 
+        << "(" << average_n_newton_step << ")"
+        << "(" << ntimestep << ")" << "\n";
+  }
+
 
   inline void format_avgsolvertime(
       const Vector<Vector<Vector<double> > >* iters_times_pt,

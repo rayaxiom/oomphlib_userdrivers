@@ -49,79 +49,14 @@ using namespace oomph;
 // Alias the namespace for convenience.
 namespace NSPP = NavierStokesProblemParameters;
 namespace LPH = LagrangianPreconditionerHelpers;
-namespace CL = CubeLagrange;
-
-
-// Rx = [1 0   0
-//       0 cx -sx
-//       0 sx  cx];
-//
-// Ry = [cy 0 sy
-//       0  1 0
-//      -sy 0 cy];
-//
-// Rz = [cz -sz 0
-//       sz  cz  0
-//       0   0  1];
-//
-// R = Rz*Ry*Rx
-//
-// Rx = x_new
-void rotate_forward(const double& x, const double& y, const double& z,
-    const double& phix, const double& phiy, const double& phiz,
-    Vector<double>& x_new)
-{
-  x_new.resize(3,0);
-  x_new[0] = (cos(phiy)*cos(phiz))*x 
-    + (cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))*y 
-    + (sin(phix)*sin(phiz) + cos(phix)*cos(phiz)*sin(phiy))*z;
-
-  x_new[1] = (cos(phiy)*sin(phiz))*x 
-    + (cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz))*y 
-    + (cos(phix)*sin(phiy)*sin(phiz) - cos(phiz)*sin(phix))*z;
-
-  x_new[2] = (-sin(phiy))*x 
-    + (cos(phiy)*sin(phix))*y
-    + ( cos(phix)*cos(phiy))*z;
-}
-// Rx = [1 0   0
-//       0 cx -sx
-//       0 sx  cx];
-//
-// Ry = [cy 0 sy
-//       0  1 0
-//      -sy 0 cy];
-//
-// Rz = [cz -sz 0
-//       sz  cz  0
-//       0   0  1];
-//
-// R = Rx*Ry*Rz (note the ordering)
-//
-// Rx = x_new
-void rotate_backward(const double& x, const double& y, const double& z,
-    const double& phix, const double& phiy, const double& phiz,
-    Vector<double>& x_new)
-{
-  x_new.resize(3,0);
-
-  x_new[0] = (cos(phiy)*cos(phiz))*x 
-    -(cos(phiy)*sin(phiz))*y 
-    + (sin(phiy))*z;
-  x_new[1] = (cos(phix)*sin(phiz) + cos(phiz)*sin(phix)*sin(phiy))*x 
-    + (cos(phix)*cos(phiz) - sin(phix)*sin(phiy)*sin(phiz))*y 
-    -(cos(phiy)*sin(phix))*z;
-  x_new[2] = (sin(phix)*sin(phiz) - cos(phix)*cos(phiz)*sin(phiy))*x 
-    + (cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))*y 
-    + (cos(phix)*cos(phiy))*z;
-}
+namespace AW3DL = AnnularWedge3DLagrange;
 
 
 void convert_to_melon(const double&x, const double& y, const double& z,
     Vector<double>& x_new)
 {
   const double r = 1.0 + 2.0*x;
-  const double phi = 90*y * (MathematicalConstants::Pi / 180.0);
+  const double phi = 90.0*y * (MathematicalConstants::Pi / 180.0);
   const double new_z = 2.0*z;
 
   x_new.resize(3,0);
@@ -130,8 +65,6 @@ void convert_to_melon(const double&x, const double& y, const double& z,
   x_new[1] = r * sin(phi);
   x_new[2] = new_z;
 }
-
-
 
 namespace oomph
 {
@@ -142,12 +75,12 @@ namespace oomph
 /// the same mesh rotated with an angle phi
 //========================================================================
  template<class ELEMENT>
- class SlopingCubicMesh : public SimpleCubicMesh<ELEMENT>
+ class AnnularWedgeCubicMesh : public SimpleCubicMesh<ELEMENT>
  {
  public:
 
   /// Constructor.
-  SlopingCubicMesh(const unsigned& nx, const unsigned& ny, const unsigned& nz,
+  AnnularWedgeCubicMesh(const unsigned& nx, const unsigned& ny, const unsigned& nz,
                    const double& lx,  const double& ly, const double& lz,
                    TimeStepper* time_stepper_pt=&Mesh::Default_TimeStepper) :
    SimpleCubicMesh<ELEMENT>(nx,ny,nz,lx,ly,lz,time_stepper_pt)
@@ -363,50 +296,22 @@ public:
     for (unsigned inod=0;inod<num_nod;inod++)
      {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-      const double x=nod_pt->x(0);
-      const double y=nod_pt->x(1);
-      const double z=nod_pt->x(2);
 
       const double time=time_pt()->time();
 
-      // Rotate x y and z back
-//      double ux = 0.0;
 
       std::pair<double,double>u_xy_pair = RAYRAY::get_radial_v(nod_pt,time);
-
-//      if(nod_pt->is_on_boundary(5))
-//      {
-//        std::cout << x << ", " << y  << ", "<< z << std::endl; 
-//        std::cout << "ux = " << u_xy_pair.first 
-//                  << ", uy = " << u_xy_pair.second << std::endl;
-//      }
-      // RAY DO THIS
-//      CL::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
-
-      // Now rotate the velocity profile
-//      Vector<double>u_new;
-//      rotate_forward(ux,0,0,CL::Angx,CL::Angy,CL::Angz,u_new);
 
       nod_pt->set_value(0,u_xy_pair.first);
       nod_pt->set_value(1,u_xy_pair.second);
       nod_pt->set_value(2,0.0);
-
-
-      if(nod_pt->is_on_boundary(5))
-      {
-        std::cout << x << ", " << y  << "\t\t\t" 
-                  << "ux = " << nod_pt->value(0) 
-                  << ", uy = " << nod_pt->value(1)
-                  << ", uz = " << nod_pt->value(2) << std::endl;
-      }
-
 
      }
    }
 
 //   {
 //    // Inflow in upper half of inflow boundary
-//    const unsigned ibound=Top_boundary; 
+//    const unsigned ibound=YZ_boundary; 
 //    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
 //    for (unsigned inod=0;inod<num_nod;inod++)
 //     {
@@ -423,7 +328,7 @@ public:
 //   }
 //   {
 //    // Inflow in upper half of inflow boundary
-//    const unsigned ibound=Bottom_boundary; 
+//    const unsigned ibound=XZ_boundary; 
 //    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
 //    for (unsigned inod=0;inod<num_nod;inod++)
 //     {
@@ -480,11 +385,10 @@ public:
  /// Update the after solve (empty)
  void actions_after_newton_solve()
  {
-
-
  }
 
- /// Update the problem specs before solve. 
+ /// Before a newton solve, we set up a new "time step" in the
+ /// Doc_linear_solver_info_pt.
  void actions_before_newton_solve()
  {
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
@@ -492,33 +396,11 @@ public:
     // Initialise counters for each newton solve.
     Doc_linear_solver_info_pt->setup_new_time_step();
    }
-//   {
-//    // Inflow in upper half of inflow boundary
-//    const unsigned ibound=Inflow_boundary; 
-//    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//    for (unsigned inod=0;inod<num_nod;inod++)
-//     {
-//      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-//      const double y=nod_pt->x(1);
-//      const double z=nod_pt->x(2);
-//      const double time=1.0;
-//
-//      double ux = 0.0;
-//
-//      Global_Variables::get_prescribed_inflow_full(time,y,z,ux);
-//
-//      nod_pt->set_value(0,ux);
-//      nod_pt->set_value(1,0.0);
-//      nod_pt->set_value(2,0.0);
-//     }
-//   }
-
-
-  // Initialise counter for iterations
-//  Global_Variables::Iterations.clear();
-//  Global_Variables::Linear_solver_time.clear();
-  
  } // end_of_actions_before_newton_solve
+
+
+ // After a Newton step, we push in the iteration counts and timing
+ // results.
  void actions_after_newton_step()
  {
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
@@ -526,23 +408,9 @@ public:
      NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
  }
- /// Run an unsteady simulation
-// void unsteady_run(); 
- 
- /// Doc the solution
-// void doc_solution(const unsigned& nt);
-
- /// Create traction elements on outflow boundary
-// template<class ELEMENT>
-// void create_traction_elements();
-
 
  /// Global error norm for adaptive time-stepping
  double global_temporal_error_norm();
-
-// void create_inflow_traction_elements(const unsigned &b,
-//                                      Mesh* const &bulk_mesh_pt,
-//                                      Mesh* const &surface_mesh_pt);
 
  void create_parall_outflow_lagrange_elements(const unsigned &b,
                                               Mesh* const &bulk_mesh_pt,
@@ -568,12 +436,12 @@ private:
 
 
 
- unsigned Left_boundary;
- unsigned Right_boundary;
- unsigned Front_boundary;
- unsigned Back_boundary;
- unsigned Bottom_boundary;
- unsigned Top_boundary;
+ unsigned Small_curve_boundary;
+ unsigned Big_curve_boundary;
+ unsigned Z_max_boundary;
+ unsigned Z_min_boundary;
+ unsigned XZ_boundary;
+ unsigned YZ_boundary;
 
  /// ID of inflow boundary
  unsigned Inflow_boundary;
@@ -620,74 +488,42 @@ private:
 CubeProblem<ELEMENT>::CubeProblem()
 { 
   // Assign boundary IDs defined in rayheader.h
-  Left_boundary = CL::Left_boundary;
-  Right_boundary = CL::Right_boundary;
-  Front_boundary = CL::Front_boundary;
-  Back_boundary = CL::Back_boundary;
-  Bottom_boundary = CL::Bottom_boundary;
-  Top_boundary = CL::Top_boundary; 
+  Small_curve_boundary = AW3DL::Small_curve_boundary;
+  Big_curve_boundary = AW3DL::Big_curve_boundary;
+  Z_max_boundary = AW3DL::Z_max_boundary;
+  Z_min_boundary = AW3DL::Z_min_boundary;
+  XZ_boundary = AW3DL::XZ_boundary;
+  YZ_boundary = AW3DL::YZ_boundary; 
 
-  Inflow_boundary=Left_boundary;
-  Outflow_boundary=Right_boundary;
+  // Identify the inflow and outflow boundaries.
+  Inflow_boundary=Small_curve_boundary;
+  Outflow_boundary=Big_curve_boundary;
+
   Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
-  add_time_stepper_pt(new BDF<2>(true));
+  if(NSPP::Delta_t < 0.0)
+  {
+    add_time_stepper_pt(new BDF<2>(true));
+  }
+  else
+  {
+    add_time_stepper_pt(new BDF<2>);
+  }
   // Setup mesh
 
 
-//  Bulk_mesh_pt = 
-//    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
-
-  
-  {
   Bulk_mesh_pt = 
-    new SlopingCubicMesh<ELEMENT>(CL::Noel,CL::Noel,CL::Noel,
-                                  CL::Lx, CL::Ly, CL::Lz,
-                                  time_stepper_pt());
-  }
-
-
-
-//  {
-//    const unsigned n_bound = Bulk_mesh_pt->nboundary();
-//    oomph_info << "n_bound = " << n_bound << std::endl;
-//
-//    for(unsigned ibound=0;ibound<n_bound;ibound++)
-//    {
-//      oomph_info << "Boundary no: " << ibound << std::endl; 
-//
-//      unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//      for (unsigned inod=0;inod<num_nod;inod++)
-//      {
-//        // Loop over values (u, v and w velocities)
-//        Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-//
-//        const double x = nod_pt->x(0);
-//        const double y = nod_pt->x(1);
-//        const double z = nod_pt->x(2);
-//
-//        oomph_info << x << " " << y << " " << z << std::endl;
-//
-//      }
-//    } // end loop over boundaries!
-//  }
-  
-//pause("Age!"); 
-
-//  Bulk_mesh_pt = 
-//    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
+    new AnnularWedgeCubicMesh<ELEMENT>(AW3DL::Noel,AW3DL::Noel,AW3DL::Noel,
+        AW3DL::Lx, AW3DL::Ly, AW3DL::Lz,
+        time_stepper_pt());
 
 
   // Create "surface mesh" that will contain only the prescribed-traction 
   // elements.
   Surface_mesh_pt = new Mesh;
 
-
-//   create_inflow_traction_elements(Inflow_boundary,
-//                                   Bulk_mesh_pt,Surface_mesh_pt);
-
   create_parall_outflow_lagrange_elements(Outflow_boundary,
-                                          Bulk_mesh_pt,
-                                          Surface_mesh_pt);
+      Bulk_mesh_pt,
+      Surface_mesh_pt);
 
   // Add the two sub meshes to the problem
   add_sub_mesh(Bulk_mesh_pt);
@@ -696,25 +532,24 @@ CubeProblem<ELEMENT>::CubeProblem()
   // Combine all submeshes into a single Mesh
   build_global_mesh();
 
+  // Set up the boundary conditions. The order in which we set up the
+  // boundaries is important. Since we do not want to unpin nodes which
+  // previous boundary conditions has pinned. Pinned nodes always wins
+  // over unpinned nodes.
+  //
+  // So we do the unpinned nodes first. Then work our way to the pinned nodes.
 
-  // Set the boundary conditions for this problem: All nodes are
-  // free by default -- just pin the ones that have Dirichlet conditions
-  // here. 
-  unsigned num_bound = Bulk_mesh_pt->nboundary();
-//  for(unsigned ibound=0;ibound<num_bound;ibound++)
-//  {
-//    unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//    for (unsigned inod=0;inod<num_nod;inod++)
-//    {
-//      // Loop over values (u, v and w velocities)
-//      for (unsigned i=0;i<3;i++)
-//      {
-//        Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
-//      }
-//    }
-//  } // end loop over boundaries!
-
-
+  // Outflow boundary. We unpin all the velocity components which is not
+  // on another boundary. I.e., in 2D as want to just pin the "inner" nodes:
+  //
+  // -----------pinned!
+  // |         |unpinned
+  // |         |unpinned
+  // |         |unpinned 
+  // |         |unpinned
+  // -----------pinned!
+  //
+  // Extend the above to 3D surface!
   {
     unsigned ibound=Outflow_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
@@ -728,72 +563,87 @@ CubeProblem<ELEMENT>::CubeProblem()
       {
         if (bnd_pt->size()<2)
         {
-//          if (!(nod_pt->is_on_boundary(0)) ||
-//              !(nod_pt->is_on_boundary(1)) )
-            // We need to rotate the coordinates back
-              nod_pt->unpin(0);
-              nod_pt->unpin(1);
-              nod_pt->unpin(2);
+          nod_pt->unpin(0);
+          nod_pt->unpin(1);
+          nod_pt->unpin(2);
         }
       }
     }
   }
 
+
+  // Now we do the top and bottom boundaries of the SLICE.
+  // This corresponds to the front and back of the unit cube.
+  // With these boundaries, only the uz velocity component is pinned to 0.
+  // we let the x and y free to do what they do.
   {
-    // Now do the sides
-    unsigned ibound=Front_boundary;
+    unsigned ibound=Z_max_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->unpin(0);
-              nod_pt->unpin(1);
-              nod_pt->pin(2);
+      nod_pt->unpin(0);
+      nod_pt->unpin(1);
+      nod_pt->pin(2);
+
+      // Set the values for safe measure.
+      nod_pt->set_value(2,0.0);
     }
   }
   {
-    // Now do the sides
-    unsigned ibound=Back_boundary;
+    unsigned ibound=Z_min_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->unpin(0);
-              nod_pt->unpin(1);
-              nod_pt->pin(2);
+      nod_pt->unpin(0);
+      nod_pt->unpin(1);
+      nod_pt->pin(2);
+
+      // Set the values for safe measure.
+      nod_pt->set_value(2,0.0);
     }
   }
+
+
+  // We now do the two sides where the knife cuts.
   {
-    // Now do the sides
-    unsigned ibound=Top_boundary;
+    // The top boundary is parallel to the Y axis. As such, only uy is free.
+    // The other velocity components should be 0.
+    unsigned ibound=YZ_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->pin(0);
-              nod_pt->unpin(1);
-              //nod_pt->pin(1);
-              nod_pt->pin(2);
+      nod_pt->pin(0);
+      nod_pt->unpin(1);
+      nod_pt->pin(2);
+
+      // Set the values for safe measure.
+      nod_pt->set_value(0,0.0);
+      nod_pt->set_value(2,0.0);
     }
   }
-
-
   {
-    // Now do the sides
-    unsigned ibound=Bottom_boundary;
+    // The bottom boundary of the unit cube. This is parallel to the x axis
+    // in the annular wedge. As such, only ux is free, the other components
+    // are pinned to zero.
+    unsigned ibound=XZ_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->unpin(0);
-             // nod_pt->pin(0);
-              nod_pt->pin(1);
-              nod_pt->pin(2);
+      nod_pt->unpin(0);
+      nod_pt->pin(1);
+      nod_pt->pin(2);
+
+      // Set the values for safe measure.
+      nod_pt->set_value(1,0.0);
+      nod_pt->set_value(2,0.0);
     }
   }
 
-
-
+  // Now do the inflow velocity. All of this is pinned.
   {
     // Now do the sides
     unsigned ibound=Inflow_boundary;
@@ -801,9 +651,14 @@ CubeProblem<ELEMENT>::CubeProblem()
     for (unsigned inod=0;inod<num_nod;inod++)
     {
       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-              nod_pt->pin(0);
-              nod_pt->pin(1);
-              nod_pt->pin(2);
+      nod_pt->pin(0);
+      nod_pt->pin(1);
+      nod_pt->pin(2);
+
+      // Set the values for safe measure.
+      nod_pt->set_value(0,0.0);
+      nod_pt->set_value(1,0.0);
+      nod_pt->set_value(2,0.0);
     }
   }
 
@@ -827,16 +682,13 @@ CubeProblem<ELEMENT>::CubeProblem()
   } // end loop over elements
 
 
-  // Now set the first pressure value in element 0 to 0.0
-  // if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
-
   // Setup equation numbering scheme
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
   {
     Vector<Mesh*> mesh_pt;
-    if(NSPP::Prob_id == CL::PID_CU_PO_QUARTER)
+    if(NSPP::Prob_id == AW3DL::PID_AW3D_PO)
     {
       mesh_pt.resize(2,0);
       mesh_pt[0] = Bulk_mesh_pt;
@@ -848,124 +700,21 @@ CubeProblem<ELEMENT>::CubeProblem()
     Prec_pt = LPH::get_preconditioner();
   }
 
- const double solver_tol = 1.0e-6;
- const double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
-                                   solver_tol,newton_tol,
-                                   NSPP::Solver_type,this,Prec_pt);
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+  GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
+      solver_tol,newton_tol,
+      NSPP::Solver_type,this,Prec_pt);
 } // end_of_constructor
 
 
-
-
-template<class ELEMENT>
+  template<class ELEMENT>
 double CubeProblem<ELEMENT>::global_temporal_error_norm()
 {
-
   return GenericProblemSetup::global_temporal_error_norm(this,
       3,Bulk_mesh_pt);
-
-//  double global_error = 0.0;
-//   
-// //Find out how many nodes there are in the problem
-// unsigned n_node = Bulk_mesh_pt->nnode();
-//
-// //Loop over the nodes and calculate the estimated error in the values
-// for(unsigned i=0;i<n_node;i++)
-//  {
-//   // Get error in solution: Difference between predicted and actual
-//   // value for nodal value 0
-//   double error0 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),0);
-//
-//   double error1 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),1);
-//
-//   double error2 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-//    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),2);
-//
-//
-//
-//   //Add the square of the individual error to the global error
-//   global_error += error0*error0 + error1*error1 + error2*error2;
-//  }
-//    
-// // Divide by the number of nodes
-// global_error /= double(n_node*3);
-//
-// // Return square root...
-// return sqrt(global_error);
-
 } // end of global_temporal_error_norm
 
-
-//  template<class ELEMENT>
-//void CubeProblem <ELEMENT>::unsteady_run()
-//{
-//
-//  //Set value of dt
-//  double dt = 0.0;
-//  bool doing_adaptive_time_stepping = false;
-//  
-//  if(NSPP::Delta_t < 0.0)
-//  {
-//    dt = 1e-2;
-//    doing_adaptive_time_stepping = true;
-//  }
-//  else
-//  {
-//    dt = NSPP::Delta_t;
-//  }
-//
-//
-//  // Initialise all history values for an impulsive start
-//  assign_initial_values_impulsive(dt);
-//  oomph_info << "IC = impulsive start" << std::endl;
-//
-//  //Now do many timesteps
-//  if(!doing_adaptive_time_stepping)
-//  {
-//    const unsigned ntsteps = (NSPP::Time_end - NSPP::Time_start) / dt;
-//    oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl;
-//  }
-//
-//  unsigned current_time_step = 0;
-//
-//  // Doc initial condition
-//  if(NSPP::Doc_soln)
-//  {
-//    doc_solution(current_time_step);
-//  }
-//
-//  const double time_tol = 1e-4;
-//  while(time_pt()->time() < NSPP::Time_end)
-//  {
-//    oomph_info << "TIMESTEP: " << current_time_step << std::endl;
-//
-//    if(doing_adaptive_time_stepping)
-//    {
-//      oomph_info << "DELTA_T: " << dt << std::endl; 
-//      // Calculate the next time step.
-//      dt = adaptive_unsteady_newton_solve(dt, time_tol);
-//      
-//    }
-//    else
-//    {
-//      //Take one fixed timestep
-//      unsteady_newton_solve(dt);
-//    }
-//
-//    //Output the time
-//    oomph_info << "Time is now " << time_pt()->time() << std::endl;
-//
-//    if(NSPP::Doc_soln)
-//    {
-//      // Doc solution
-//      doc_solution(current_time_step);
-//    }
-//    current_time_step++;
-//  }
-//} // end of unsteady run
 
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
@@ -1052,213 +801,6 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 } // end of create_parall_outflow_lagrange_elements
 
 
-//============start_of_create_traction_elements==========================
-/// Create Navier-Stokes traction elements on outflow boundary
-//=======================================================================
-//template<class ELEMENT>
-//void CubeProblem::create_traction_elements()
-//{
-//
-// unsigned b=Outflow_boundary;
-//
-// // How many bulk elements are adjacent to boundary b?
-// unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
-//
-// // Loop over the bulk elements adjacent to boundary b?
-// for(unsigned e=0;e<n_element;e++)
-//  {
-//   // Get pointer to the bulk element that is adjacent to boundary b
-//   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
-//    Bulk_mesh_pt->boundary_element_pt(b,e));
-//   
-//   //What is the index of the face of element e along boundary b
-//   int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
-//   
-//   // Build the corresponding prescribed-flux element
-//   NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
-//      NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
-//
-//   //Add the prescribed-flux element to the surface mesh
-//   Surface_mesh_pt->add_element_pt(flux_element_pt);
-//   
-//   // Set the pointer to the prescribed traction function
-//   flux_element_pt->traction_fct_pt() = &Global_Variables::prescribed_traction;
-//   
-//  } //end of loop over bulk elements adjacent to boundary b
-//
-// // Now rebuild the global mesh
-// rebuild_global_mesh();
-//
-// // Reassign equation numbers
-// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-//
-//} // end of create_traction_elements
-
-
-//Template<class ELEMENT>
-//Void CubeProblem<ELEMENT>::create_inflow_traction_elements(
-//    const unsigned &b, 
-//    Mesh* const &bulk_mesh_pt, 
-//    Mesh* const &surface_mesh_pt)
-//{
-// // How many bulk elements are adjacent to boundary b?
-// unsigned n_element = Bulk_mesh_pt->nboundary_element(b);
-//
-// // Loop over the bulk elements adjacent to boundary b?   // Set the boundary conditions for this problem: All nodes are
-//   // free by default -- just pin the ones that have Dirichlet conditions
-//   // here. 
-//   unsigned num_bound = Bulk_mesh_pt->nboundary();
-//   for(unsigned ibound=0;ibound<num_bound;ibound++)
-//    {
-//     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//     for (unsigned inod=0;inod<num_nod;inod++)
-//      {
-//       // Loop over values (u, v and w velocities)
-//       for (unsigned i=0;i<3;i++)
-//        {
-//         Bulk_mesh_pt->boundary_node_pt(ibound,inod)->pin(i); 
-//        }
-//      }
-//    } // end loop over boundaries
-//
-// 
-//
-//   // OUTFLOW ONLY, for inflow, check out the before solve
-//// if (Problem_id==Global_Variables::Through_flow)
-//  {
-//   unsigned ibound=Outflow_boundary;
-//   unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//   for (unsigned inod=0;inod<num_nod;inod++)
-//    {
-//     Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-//     // Only free if node is ONLY on a single boundary
-//     std::set<unsigned>* bnd_pt=0;
-//     nod_pt->get_boundaries_pt(bnd_pt);
-//     if (bnd_pt!=0)
-//      {
-//       if (bnd_pt->size()<2)
-//        {
-//         if (!(nod_pt->is_on_boundary(0)))
-//          {
-//           if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0);
-//          }
-//        }
-//      }
-//    }
-//  }
-//
-// // Complete the build of all elements so they are fully functional
-//
-// //Find number of elements in mesh
-// unsigned n_element = Bulk_mesh_pt->nelement();
-//
-// // Loop over the elements to set up element-specific 
-// // things that cannot be handled by constructor
-// for(unsigned e=0;e<n_element;e++)
-//  {
-//   // Upcast from GeneralisedElement to the present element
-//   NavierStokesEquations<3>* el_pt = 
-//    dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
-//   
-//   //Set the Reynolds number
-//   el_pt->re_pt() = &Global_Variables::Re;
-//  } // end loop over elements
-// 
-// 
-//
-// // Now set the first pressure value in element 0 to 0.0
-//// if (Problem_id==Global_Variables::Driven_cavity) fix_pressure(0,0,0.0);
-//
-// // Setup equation numbering scheme
-// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-// for(unsigned e=0;e<n_element;e++)
-//  {
-//   // Get pointer to the bulk element that is adjacent to boundary b
-//   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
-//    Bulk_mesh_pt->boundary_element_pt(b,e));
-//
-//   // Loop through all of the nodes on this element and find and out if
-//   // all the y and z coordinates with within [0.5]^2
-//   const unsigned nbulk_nod = bulk_elem_pt->nnode();
-//   bool within_inflow = true;
-//
-//   for(unsigned nod_i = 0; (nod_i < nbulk_nod) && within_inflow; nod_i++)
-//   {
-//     Node* bulk_nod_pt = bulk_elem_pt->node_pt(nod_i);
-//     const double y = bulk_nod_pt->x(1);
-//     const double z = bulk_nod_pt->x(2);
-//     if((y <= 0.5) || (z <= 0.5))
-//     {
-//       within_inflow = false;
-//     }
-//   }
-//   
-//   if(within_inflow)
-//   {
-//     //What is the index of the face of element e along boundary b
-//     int face_index = Bulk_mesh_pt->face_index_at_boundary(b,e);
-//
-//     // Build the corresponding prescribed-flux element
-//     NavierStokesTractionElement<ELEMENT>* flux_element_pt = new 
-//       NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,face_index);
-//
-//     //Add the prescribed-flux element to the surface mesh
-//     Surface_mesh_pt->add_element_pt(flux_element_pt);
-//
-//     // Set the pointer to the prescribed traction function
-//     flux_element_pt->traction_fct_pt() 
-//       = &Global_Variables::inflow_prescribed_traction;
-//   }
-//   
-//  } //end of loop over bulk elements adjacent to boundary b
-//
-// // Now rebuild the global mesh
-// rebuild_global_mesh();
-//
-// // Reassign equation numbers
-// oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-//
-//} // end of create_traction_elements
-
-
-////==start_of_doc_solution=================================================
-///// Doc the solution
-////========================================================================
-//template<class ELEMENT>
-//void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
-//{ 
-//
-//  std::ofstream some_file;
-//  std::stringstream filename;
-//  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
-//
-//  // Number of plot points
-//  unsigned npts=5;
-//
-//  // Output solution
-//  some_file.open(filename.str().c_str());
-//  Bulk_mesh_pt->output(some_file,npts);
-//  some_file.close();
-//
-//
-//
-//
-//// ofstream some_file;
-//// char filename[100];
-////
-//// // Number of plot points
-//// unsigned npts;
-//// npts=5; 
-////
-//// // Output solution 
-//// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
-////         doc_info.number());
-//// some_file.open(filename);
-//// Bulk_mesh_pt->output(some_file,npts);
-//// some_file.close();
-//
-//} // end_of_doc_solution
-
 
 std::string create_label()
 {
@@ -1272,11 +814,11 @@ std::string create_label()
   //
   // i.e.
   // SqPo + NSPP::label + LPH::label Ang Noel.
-  
-  std::string label = CL::prob_str()
-                      + NSPP::create_label() 
-                      + LPH::create_label() 
-                      + CL::ang_deg_str() + CL::noel_str();
+
+  std::string label = AW3DL::prob_str()
+    + NSPP::create_label() 
+    + LPH::create_label() 
+    + AW3DL::noel_str();
   return label;
 }
 
@@ -1308,18 +850,14 @@ int main(int argc, char **argv)
   // Set the Label_pt
   LPH::Label_str_pt = &NSPP::Label_str;
   LPH::Vis_pt = &NSPP::Vis;
-  CL::Prob_id_pt = &NSPP::Prob_id;
-
-  NSPP::Time_start = 0.0;
-  NSPP::Time_end = 1.0; 
-
+  AW3DL::Prob_id_pt = &NSPP::Prob_id;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
   NSPP::setup_commandline_flags();
   LPH::setup_commandline_flags();
-  CL::setup_commandline_flags(); 
+  AW3DL::setup_commandline_flags(); 
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
@@ -1332,10 +870,7 @@ int main(int argc, char **argv)
   // dim = 3
   NSPP::generic_problem_setup(dim);
   LPH::generic_setup();
-  CL::generic_setup(); 
-
-
-
+  AW3DL::generic_setup(); 
 
   //////////////////////////////////////  
 
@@ -1363,10 +898,8 @@ int main(int argc, char **argv)
     << " on " << ctime(&rawtime) << std::endl;
 
   GenericProblemSetup::doc_solution(problem.bulk_mesh_pt(),0);
-//  problem.doc_solution(0);
 
   GenericProblemSetup::unsteady_run(&problem,problem.bulk_mesh_pt());
-//  problem.unsteady_run();
   }
 
   //////////////////////////////////////////////////////////////////////////
@@ -1431,6 +964,7 @@ int main(int argc, char **argv)
     }
 
     ResultsFormat::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
 
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
@@ -1439,6 +973,7 @@ int main(int argc, char **argv)
     }
     
     ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream);
     
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
@@ -1463,15 +998,9 @@ int main(int argc, char **argv)
     }
   }
 
-
-
-
-
-
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
 #endif
-
 
 } // end_of_main
 

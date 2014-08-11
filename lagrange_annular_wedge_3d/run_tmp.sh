@@ -16,7 +16,7 @@ mkdir $TIME_DIR
 
 
 DIST_PROB="--dist_prob"
-PROB_ID="--prob_id 21"
+PROB_ID="--prob_id 20"
 DOC_SOLN="--doc_soln $SOLN_DIR"
 #DOC_SOLN=""
 VISC="--visc 1"
@@ -27,7 +27,7 @@ ITSTIMEDIR="--itstimedir $TIME_DIR" # TO CHECK
 SOLVER_TYPE="--solver_type 2" # TO CHECK
 DT="--dt -1.0"
 TIME_START="--time_start 0.0"
-TIME_END="--time_end 5.0"
+TIME_END="--time_end 0.5"
 NSPP="$DIST_PROB $PROB_ID $DOC_SOLN $VISC $REY $MAX_ITER $ITSTIMEDIR $SOLVER_TYPE $DT $TIME_START $TIME_END"
 
 ###########################################
@@ -55,9 +55,8 @@ LPH="$PRINT_HYPRE $W_SOLVER $NS_SOLVER $P_SOLVER $F_SOLVER"
 #LPH="--w_solver 0 --ns_solver 0"
 ##########################################
 
-ANG="--ang 0"
-NOEL="--noel 5"
-CL="$ANG $NOEL"
+NOEL="--noel 3"
+CL="$NOEL"
 
 
 
