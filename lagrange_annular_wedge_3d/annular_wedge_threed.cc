@@ -289,6 +289,8 @@ public:
 
  void actions_before_implicit_timestep()
   {
+    Doc_linear_solver_info_pt->clear_current_time_step();
+
    {
     // Inflow in upper half of inflow boundary
     const unsigned ibound=Inflow_boundary; 
@@ -353,7 +355,6 @@ public:
 
  void actions_before_distribute()
  {
-
    if(NSPP::Distribute_problem)
    {
      GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
