@@ -257,8 +257,8 @@ done
 gen_exact_tests
 gen_small_amg_tests
 
-echo "#!/bin/bash" >> $TLIST_FILE_SCRIPT
-cat $TLIST_FILE_LIST >> $TLIST_FILE_SCRIPT
+#echo "#!/bin/bash" >> $TLIST_FILE_SCRIPT
+#cat $TLIST_FILE_LIST >> $TLIST_FILE_SCRIPT
 
 #. $PROGRAM_DIR/../generate_qsub_script.sh
 ## Do this bit in a sub shell
