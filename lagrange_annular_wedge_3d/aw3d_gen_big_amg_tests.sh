@@ -6,8 +6,7 @@ THISFILE=${THISFILE:2} # Gets rid of "./"
 THISFILEBASE=${THISFILE%%.*} # Get rid of the extension (in this case, ".sh")
 
 TLIST_FILE_LIST="${THISFILEBASE}.list"
-TLIST_FILE_SCRIPT="${THISFILEBASE}.sh"
-rm -rf $TLIST_FILE_LIST $TLIST_FILE_SCRIPT
+rm -rf $TLIST_FILE_LIST
 
 
 PROGRAM="annular_wedge_threed"
@@ -138,12 +137,5 @@ done
 } # gen_tests function
 
 gen_big_amg_tests
-
-#echo "#!/bin/bash" >> $TLIST_FILE_SCRIPT
-#cat $TLIST_FILE_LIST >> $TLIST_FILE_SCRIPT
-
-#. $PROGRAM_DIR/../generate_qsub_script.sh
-## Do this bit in a sub shell
-#(generate_qsub_script $TEST_LIST)
 
 
