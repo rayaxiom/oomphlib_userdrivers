@@ -385,7 +385,7 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
 
 
-  CubeProblem<QPoissonElement<2,3> > problem;
+  CubeProblem<QPoissonElement<3,3> > problem;
 
   problem.distribute();
   problem.newton_solve();
