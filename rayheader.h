@@ -2137,7 +2137,6 @@ namespace CubeLagrange
   
   // Prob id, set by main method
   const int* Prob_id_pt = 0;
-  const double* Dt_pt = 0;
 
   std::string Prob_str = "";
   std::string Ang_deg_str = "";
@@ -2439,7 +2438,7 @@ namespace CubeLagrange
    ux = 0.0;
    if((y > 0.5)&&(z > 0.5))
    {
-     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
+     const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
      ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
    }
  } 
@@ -2667,7 +2666,6 @@ namespace BifurcationLagrange
   const int* Prob_id_pt = 0;
 
   // We need the start and end time to set the inflow.
-  const double* Dt_pt = 0;
 
   std::string Prob_str = "";
   std::string Mesh_folder_str = "";
