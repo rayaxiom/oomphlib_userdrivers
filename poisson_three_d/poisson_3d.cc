@@ -325,13 +325,13 @@ CubeProblem<ELEMENT>::CubeProblem()
   trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
   Solver_pt = trilinos_solver_pt;
 
-  Solver_pt->tolerance() = 1e-6;
+  Solver_pt->tolerance() = 1e-8;
   Solver_pt->max_iter() = 100;
   Solver_pt->preconditioner_pt() = Prec_pt;
 
   this->linear_solver_pt() = Solver_pt;
 
-  this->newton_solver_tolerance() = 1e-6;
+  this->newton_solver_tolerance() = 1e-8;
 
 } // end_of_constructor
 
