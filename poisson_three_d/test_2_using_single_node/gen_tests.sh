@@ -107,22 +107,25 @@ done
 ###############################################################################
 TESTLIST1="testlist_np1.list"
 TESTLIST="$TESTLIST1"
+rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np 1 taskset -c 0"
 gen_tests
 
 TESTLIST2="testlist_np2.list"
 TESTLIST="$TESTLIST2"
-TESTLIST=
+rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np 2 taskset -c 0,8"
 gen_tests
 
 TESTLIST3="testlist_np4.list"
 TESTLIST="$TESTLIST3"
+rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np 4 taskset -c 0,4,8,12"
 gen_tests
 
 TESTLIST4="testlist_np8.list"
 TESTLIST="$TESTLIST4"
+rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np 8 taskset -c 0,2,4,6,8,10,12,14"
 gen_tests
 
