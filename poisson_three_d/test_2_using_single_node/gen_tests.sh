@@ -97,12 +97,12 @@ done
 
 }
 
-###############################################################################
-# First compile the program and move it into this folder.
-#cd ..
-#make $PROGRAM
-#cd $CURRENT_DIR
-#cp ./../$PROGRAM .
+##############################################################################
+ First compile the program and move it into this folder.
+cd ..
+make $PROGRAM
+cd $CURRENT_DIR
+cp ./../$PROGRAM .
 
 ###############################################################################
 TESTLIST1="testlist_np1.list"
@@ -133,19 +133,19 @@ gen_tests
 ###############################################################################
 
 ### Copy to scratch
-#SCRATCH_PATH="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_2_using_single_node"
-#
-#rsync -av $PROGRAM $SCRATCH_PATH
-#
-#rsync -av $TESTLIST1 $SCRATCH_PATH
-#rsync -av $TESTLIST2 $SCRATCH_PATH
-#rsync -av $TESTLIST3 $SCRATCH_PATH
-#rsync -av $TESTLIST4 $SCRATCH_PATH
-#
-#rsync -av testlist_np1.qsub $SCRATCH_PATH
-#rsync -av testlist_np2.qsub $SCRATCH_PATH
-#rsync -av testlist_np3.qsub $SCRATCH_PATH
-#rsync -av testlist_np4.qsub $SCRATCH_PATH
+SCRATCH_PATH="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_2_using_single_node"
+
+rsync -av $PROGRAM $SCRATCH_PATH
+
+rsync -av $TESTLIST1 $SCRATCH_PATH
+rsync -av $TESTLIST2 $SCRATCH_PATH
+rsync -av $TESTLIST3 $SCRATCH_PATH
+rsync -av $TESTLIST4 $SCRATCH_PATH
+
+rsync -av testlist_np1.qsub $SCRATCH_PATH
+rsync -av testlist_np2.qsub $SCRATCH_PATH
+rsync -av testlist_np3.qsub $SCRATCH_PATH
+rsync -av testlist_np4.qsub $SCRATCH_PATH
 
 
 
