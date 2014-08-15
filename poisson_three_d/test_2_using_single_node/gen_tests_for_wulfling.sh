@@ -51,8 +51,11 @@ TESTLIST=""
 
 NPROC=""
 
-gen_tests()
+gen_tests3()
 {
+
+TESTNUMBERLIST="1 2 3"
+
 NPROC_STR="NP${NPROC}"
 
 AMG_STRN_LIST="0.5 0.7"
@@ -87,7 +90,10 @@ else
   AMG_COARSE_STR="HMIS"
 fi
 
-OUTFILE="three_d_poisson_${AMG_STRN_STR}_${AMG_COARSE_STR}_${NPROC_STR}"
+for TESTNUM in $TESTNUMBERLIST
+do
+
+OUTFILE="three_d_poisson_${AMG_STRN_STR}_${AMG_COARSE_STR}_${NPROC_STR}_T${TESTNUM}"
 
 PARAM="--amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn ${AMG_STRN} --amg_coarse ${AMG_COARSE} --noel 101"
 
@@ -96,6 +102,7 @@ RUN_COMMAND="mpirun -np $NPROC"
 echo "$RUN_COMMAND ./$PROGRAM $PARAM > $OUTFILE 2>&1" >> $TESTLIST
 
  done
+done
 done
 
 }
@@ -112,25 +119,25 @@ TESTLIST1="testlist_np1.sh"
 TESTLIST="$TESTLIST1"
 rm -rf $TESTLIST
 NPROC="1"
-gen_tests
+gen_tests3
 
 TESTLIST2="testlist_np2.sh"
 TESTLIST="$TESTLIST2"
 rm -rf $TESTLIST
 NPROC="2"
-gen_tests
+gen_tests3
 
 TESTLIST3="testlist_np4.sh"
 TESTLIST="$TESTLIST3"
 rm -rf $TESTLIST
 NPROC="4"
-gen_tests
+gen_tests3
 
 TESTLIST4="testlist_np8.sh"
 TESTLIST="$TESTLIST4"
 rm -rf $TESTLIST
 NPROC="8"
-gen_tests
+gen_tests3
 
 
 

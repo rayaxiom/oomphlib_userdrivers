@@ -262,7 +262,7 @@ CubeProblem<ELEMENT>::CubeProblem()
   }
 
  // Setup the equation numbering scheme
- cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+ std::cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
  // Set the linear solver and preconditioner.
