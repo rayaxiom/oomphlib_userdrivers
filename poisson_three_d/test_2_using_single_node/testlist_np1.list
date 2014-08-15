@@ -1,0 +1,10 @@
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.5 --amg_coarse 0 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.5 --amg_coarse 3 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.5 --amg_coarse 6 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.5 --amg_coarse 8 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.5 --amg_coarse 10 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.7 --amg_coarse 0 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.7 --amg_coarse 3 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.7 --amg_coarse 6 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.7 --amg_coarse 8 --noel 101
+mpirun -np 1 ./poisson_3d --amg_iter 1 --amg_smiter 2 --amg_sim_smoo 0 --amg_damp 0.8 --amg_strn 0.7 --amg_coarse 10 --noel 101
