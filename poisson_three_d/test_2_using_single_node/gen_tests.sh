@@ -146,7 +146,7 @@ rsync -av testlist_np1.qsub $SCRATCH_PATH
 rsync -av testlist_np2.qsub $SCRATCH_PATH
 rsync -av testlist_np3.qsub $SCRATCH_PATH
 rsync -av testlist_np4.qsub $SCRATCH_PATH
-
+rsync -av testlist_np8.qsub $SCRATCH_PATH
 
 
 
