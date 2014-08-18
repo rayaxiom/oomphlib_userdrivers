@@ -118,24 +118,28 @@ cp ./../$PROGRAM .
 TESTLIST1="testlist_np1.sh"
 TESTLIST="$TESTLIST1"
 rm -rf $TESTLIST
+echo "#!/bin/bash" >> $TESTLIST
 NPROC="1"
 gen_tests3
 
 TESTLIST2="testlist_np2.sh"
 TESTLIST="$TESTLIST2"
 rm -rf $TESTLIST
+echo "#!/bin/bash" >> $TESTLIST
 NPROC="2"
 gen_tests3
 
 TESTLIST3="testlist_np4.sh"
 TESTLIST="$TESTLIST3"
 rm -rf $TESTLIST
+echo "#!/bin/bash" >> $TESTLIST
 NPROC="4"
 gen_tests3
 
 TESTLIST4="testlist_np8.sh"
 TESTLIST="$TESTLIST4"
 rm -rf $TESTLIST
+echo "#!/bin/bash" >> $TESTLIST
 NPROC="8"
 gen_tests3
 
