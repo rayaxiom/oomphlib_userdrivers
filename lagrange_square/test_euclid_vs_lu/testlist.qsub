@@ -1,0 +1,24 @@
+#!/bin/bash
+#$ -S /bin/bash
+#$ -cwd
+#$ -V
+
+# Do we need high mem?
+# For 4GB — 8GB per core, use highmem
+# For 8GB — 16GB per core, use vhighmem
+#$ -l highmem
+#$ -t 1-2 
+
+# Task id 1 will read line 1 from tests_AwPo_initial.list
+# Task id 2 will read line 2 from tests_AwPo_initial.list
+# and so on...                               
+# Each line contains the run command with a different set of parameters
+
+
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist.list`
+$FULL_RUNCOMMAND                             
+
+
+mv --force testlist.qsub.*.$SGE_TASK_ID ./testlist/
+
+

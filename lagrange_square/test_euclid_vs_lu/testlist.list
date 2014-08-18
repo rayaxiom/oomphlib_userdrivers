@@ -1,0 +1,2 @@
+mpirun -np 1 ./sq_lgr --dist_prob --prob_id 11  --visc 1 --rey 200 --max_solver_iter 100 --itstimedir res_temp --solver_type 2 --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0 --noel 256 --ang 30.0
+mpirun -np 1 ./sq_lgr --dist_prob --prob_id 11  --visc 1 --rey 200 --max_solver_iter 100 --itstimedir res_temp --solver_type 2    --w_solver 0  --ns_solver 1 --p_solver 1 --f_solver 96 --f_amg_str 0.668  --f_amg_coarse 1  --f_amg_com_smoo 9 --f_amg_iter 1 --f_amg_smiter 2 --noel 256 --ang 30.0
