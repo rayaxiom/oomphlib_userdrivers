@@ -98,7 +98,7 @@ done
 }
 
 ##############################################################################
- First compile the program and move it into this folder.
+# First compile the program and move it into this folder.
 cd ..
 make $PROGRAM
 cd $CURRENT_DIR
