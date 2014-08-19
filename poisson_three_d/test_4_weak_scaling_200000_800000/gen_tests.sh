@@ -186,7 +186,7 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
 generate_tests
 
-### Now do the same but for NDOF=500000
+### Now do the same but for NDOF=400000
 
 NDOF="400000"
 NPROC="1"
@@ -248,9 +248,9 @@ NPROC="16"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
-### Now do the same but for NDOF=500000
+### Now do the same but for NDOF=400000
 
-NDOF="500000"
+NDOF="400000"
 NPROC="1"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
@@ -274,7 +274,7 @@ Files_to_copy+=($TESTLIST)
 #############################################################################
 
 #### Copy to scratch
-SCRATCH_PATH="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_3_weak_scaling_single_node"
+SCRATCH_PATH="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_4_weak_scaling_200000_800000/"
 
 ## now loop through the above array
 for i in "${Files_to_copy[@]}"
