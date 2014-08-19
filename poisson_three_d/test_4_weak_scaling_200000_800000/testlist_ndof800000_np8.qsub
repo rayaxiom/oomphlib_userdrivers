@@ -7,7 +7,7 @@
 #$ -t 1-10
 export OMP_NUM_THREADS=8
 
-FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof400000_np8.list`
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof800000_np8.list`
 $FULL_RUNCOMMAND
 
 

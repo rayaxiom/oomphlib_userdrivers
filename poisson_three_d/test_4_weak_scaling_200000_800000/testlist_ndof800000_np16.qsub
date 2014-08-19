@@ -5,9 +5,9 @@
 #$ -pe smp.pe 16               # Reserve whole node.
 #$ -l ivybridge
 #$ -t 1-10
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=16
 
-FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof400000_np4.list`
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof800000_np16.list`
 $FULL_RUNCOMMAND
 
 

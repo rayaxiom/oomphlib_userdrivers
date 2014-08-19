@@ -93,12 +93,12 @@ do
 # NPROC=8, NOEL=120
 # NPROC=16, NOEL=151
 # 
-# For NDOF= 400,000 base, we want:
-# NPROC=1, NOEL=75
-# NPROC=2, NOEL=94
-# NPROC=4, NOEL=119
-# NPROC=8, NOEL=150
-# NPROC=16, NOEL=189
+# For NDOF= 800,000 base, we want:
+# NPROC=1, NOEL=94
+# NPROC=2, NOEL=118
+# NPROC=4, NOEL=149
+# NPROC=8, NOEL=188
+# NPROC=16, NOEL=237
 NOEL=""
 if [ "$NDOF" = "200000" ]; then
   if [ "$NPROC" = "1" ]; then
@@ -114,15 +114,15 @@ if [ "$NDOF" = "200000" ]; then
   fi
 else
   if [ "$NPROC" = "1" ]; then
-    NOEL="75"
-  elif [ "$NPROC" = "2" ]; then
     NOEL="94"
+  elif [ "$NPROC" = "2" ]; then
+    NOEL="118"
   elif [ "$NPROC" = "4" ]; then
-    NOEL="119"
+    NOEL="149"
   elif [ "$NPROC" = "8" ]; then
-    NOEL="150"
+    NOEL="188"
   else
-    NOEL="189"
+    NOEL="237"
   fi
 fi
 
@@ -186,9 +186,9 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
 generate_tests
 
-### Now do the same but for NDOF=400000
+### Now do the same but for NDOF=800000
 
-NDOF="400000"
+NDOF="800000"
 NPROC="1"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
@@ -248,9 +248,9 @@ NPROC="16"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
-### Now do the same but for NDOF=400000
+### Now do the same but for NDOF=800000
 
-NDOF="400000"
+NDOF="800000"
 NPROC="1"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)

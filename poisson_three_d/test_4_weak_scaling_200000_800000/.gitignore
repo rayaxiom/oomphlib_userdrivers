@@ -8,9 +8,9 @@ testlist_ndof200000_np16.list
 testlist_ndof200000_np2.list
 testlist_ndof200000_np4.list
 testlist_ndof200000_np8.list
-testlist_ndof400000_np1.list
-testlist_ndof400000_np16.list
-testlist_ndof400000_np2.list
-testlist_ndof400000_np4.list
-testlist_ndof400000_np8.list
+testlist_ndof800000_np1.list
+testlist_ndof800000_np16.list
+testlist_ndof800000_np2.list
+testlist_ndof800000_np4.list
+testlist_ndof800000_np8.list
 
