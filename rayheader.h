@@ -365,32 +365,32 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
       = checked_dynamic_cast<HyprePreconditioner*>(preconditioner_pt);
 
     // Print AMG iterations:
-    std::cout << "HyprePreconditioner settings are: " << std::endl;
-    std::cout << "Max_iter: " << h_prec_pt->amg_iterations() << std::endl;
-    std::cout << "smoother iter: " << h_prec_pt->amg_smoother_iterations() 
+    oomph_info << "HyprePreconditioner settings are: " << std::endl;
+    oomph_info << "Max_iter: " << h_prec_pt->amg_iterations() << std::endl;
+    oomph_info << "smoother iter: " << h_prec_pt->amg_smoother_iterations() 
       << std::endl;
-    std::cout << "Hypre_method: " << h_prec_pt->hypre_method() << std::endl;
-    std::cout << "internal_preconditioner: " 
+    oomph_info << "Hypre_method: " << h_prec_pt->hypre_method() << std::endl;
+    oomph_info << "internal_preconditioner: " 
       << h_prec_pt->internal_preconditioner() << std::endl;
-    std::cout << "AMG_using_simple_smoothing: " 
+    oomph_info << "AMG_using_simple_smoothing: " 
       << h_prec_pt->amg_using_simple_smoothing_flag() << std::endl; 
-    std::cout << "AMG_simple_smoother: " 
+    oomph_info << "AMG_simple_smoother: " 
       << h_prec_pt->amg_simple_smoother() << std::endl; 
-    std::cout << "AMG_complex_smoother: " 
+    oomph_info << "AMG_complex_smoother: " 
       << h_prec_pt->amg_complex_smoother() << std::endl; 
-    std::cout << "AMG_coarsening: " 
+    oomph_info << "AMG_coarsening: " 
       << h_prec_pt->amg_coarsening() << std::endl;
-    std::cout << "AMG_max_levels: " 
+    oomph_info << "AMG_max_levels: " 
       << h_prec_pt->amg_max_levels() << std::endl;
-    std::cout << "AMG_damping: " 
+    oomph_info << "AMG_damping: " 
       << h_prec_pt->amg_damping() << std::endl;
-    std::cout << "AMG_strength: " 
+    oomph_info << "AMG_strength: " 
       << h_prec_pt->amg_strength() << std::endl;;
-    std::cout << "AMG_max_row_sum: " 
+    oomph_info << "AMG_max_row_sum: " 
       << h_prec_pt->amg_max_row_sum() << std::endl;
-    std::cout << "AMG_truncation: " 
+    oomph_info << "AMG_truncation: " 
       << h_prec_pt->amg_truncation() << std::endl;
-    std::cout << "\n" << std::endl;
+    oomph_info << "\n" << std::endl;
   }
 
   // This function assumes that the global amg parameters are set
@@ -815,7 +815,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
     std::string amg_label_str = get_amg_label(hypre_preconditioner_pt);
 
-    std::cout << "RAYHYPRE: " << amg_label_str << std::endl;
+    oomph_info << "RAYHYPRE: " << amg_label_str << std::endl;
 
     return another_preconditioner_pt;
   } // get_custom_hypre_preconditioner
@@ -4605,10 +4605,10 @@ namespace NavierStokesProblemParameters
         &&CommandLineArgs::command_line_flag_has_been_set("--rey_incre")
         &&CommandLineArgs::command_line_flag_has_been_set("--rey_end"))
     {
-      std::cout << "Looping Reynolds: \n"
+      oomph_info << "Looping Reynolds: \n"
         << "Rey_start = " << Rey_start << std::endl; 
-      std::cout << "Rey_incre = " << Rey_incre << std::endl; 
-      std::cout << "Rey_end = " << Rey_end << std::endl; 
+      oomph_info << "Rey_incre = " << Rey_incre << std::endl; 
+      oomph_info << "Rey_end = " << Rey_end << std::endl; 
     }
     else if(!CommandLineArgs::command_line_flag_has_been_set("--rey"))
     {

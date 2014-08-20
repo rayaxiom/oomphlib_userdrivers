@@ -345,7 +345,7 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
   } // for(unsigned e=0;e<n_el;e++)
 
  //Assign equation numbers
- std::cout << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
+ oomph_info << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
  
 
  // Only do this bit if we do NOT have a direct solver.
@@ -1314,7 +1314,7 @@ int main(int argc, char* argv[])
       time_t rawtime;
       time(&rawtime);
 
-      std::cout << "RAYDOING: "
+      oomph_info << "RAYDOING: "
         << NSPP::Label_str
         << " on " << ctime(&rawtime) << std::endl;
 
@@ -1406,7 +1406,7 @@ int main(int argc, char* argv[])
     time_t rawtime;
     time(&rawtime);
 
-    std::cout << "RAYDOING: "
+    oomph_info << "RAYDOING: "
       << NSPP::Label_str
       << " on " << ctime(&rawtime) << std::endl;
 
