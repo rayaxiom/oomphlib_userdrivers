@@ -1,0 +1,39 @@
+#!/bin/bash                                                                                                                                       
+#$ -S /bin/bash
+#$ -cwd
+#$ -V
+ 
+ 
+#$ -t 1-320
+ 
+ 
+# This should be ran in the scratch file system.
+# Thus results directory 'res_iterations' may not exist.
+# We create it if it does not exist.
+ 
+if [ ! -d "res_iterations" ]; then
+  mkdir res_its_time
+fi
+ 
+ 
+if [ ! -d "qsub_output" ]; then
+  mkdir qsub_output
+fi
+ 
+ 
+# Task id 1 will read line 1 from tests_euclid_amg_only.list
+# Task id 2 will read line 2 from tests_euclid_amg_only.list
+# and so on...
+# Each line contains the run command with a different set of parameters
+ 
+ 
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist.list`
+$FULL_RUNCOMMAND
+ 
+ 
+mv testlist.qsub.*.$SGE_TASK_ID ./qsub_output/
+
+
+
+
+
