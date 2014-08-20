@@ -1,10 +1,10 @@
 noinst_PROGRAMS= \
-periodic_load
+periodic_load_3d
 
 #------------------------------------------------------------------------
-periodic_load_SOURCES = periodic_load.cc
+periodic_load_3d_SOURCES = periodic_load_3d.cc
 
-periodic_load_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -llinear_elasticity -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+periodic_load_3d_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -llinear_elasticity -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
 # Include path for library headers: All library headers live in 
