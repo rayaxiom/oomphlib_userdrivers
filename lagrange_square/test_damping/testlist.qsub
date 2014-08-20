@@ -11,7 +11,7 @@
 # Thus results directory 'res_iterations' may not exist.
 # We create it if it does not exist.
  
-if [ ! -d "res_iterations" ]; then
+if [ ! -d "res_its_time" ]; then
   mkdir res_its_time
 fi
  

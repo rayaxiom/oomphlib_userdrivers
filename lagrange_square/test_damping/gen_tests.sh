@@ -17,15 +17,16 @@
 ## These are handled by the NavierStokesProblemParameters namespace
 
 RES_DIR="res_its_time"
+QSUB_DIR="qsub_output"
 
 DIST_PROB="--dist_prob"
 PROB_ID="--prob_id 11" # RAYRAY SET
 DOC_SOLN="" # RAYRAY SET
 VISC="" # RAYRAY SET
 REY="" # RAYRAY SET
-MAX_SOLVER_ITER="--max_solver_iter 100"
+MAX_SOLVER_ITER="--max_solver_iter 1000"
 ITSTIMEDIR="--itstimedir $RES_DIR"
-SOLVER_TYPE="--solver_type 2"
+SOLVER_TYPE="--solver_type 1"
 DT=""
 TIME_START=""
 TIME_END=""
@@ -200,11 +201,17 @@ done
 
 }
 
+# Create the results directory, emptying everything inside (if applicable)
 mkdir -p $RES_DIR
 rm -rf ./$RES_DIR/*
+
+# Remove the test list file, so we do not add new tests with old tests
 rm -rf $TESTLIST_FILE
+
+# Generate the tests 
 generate_tests
 
+# Make the program and copy it into here.
 CURRENT_DIR=`pwd`
 cd ..
 make $PROGRAM
@@ -212,7 +219,14 @@ cd $CURRENT_DIR
 cp ./../$PROGRAM .
 
 
+################################################################
 SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/lagrange_square/test_damping/"
+
+mkdir -p $SCRATCH_DIR
+rm -rf $SCRATCH_DIR/*
+
+mkdir -p $SCRATCH_DIR/$RES_DIR
+mkdir -p $SCRATCH_DIR/$QSUB_DIR
 
 rsync -av $PROGRAM $SCRATCH_DIR
 rsync -av $TESTLIST_FILE $SCRATCH_DIR
