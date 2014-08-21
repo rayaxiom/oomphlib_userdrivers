@@ -47,12 +47,9 @@ using namespace std;
 
 using namespace oomph;
 
-
-
 // Namespace extension
 namespace oomph
 {
-
 
  namespace RayPreconditionerCreationFunctions
  {
@@ -135,7 +132,7 @@ class MyPoissonElement : public virtual QPoissonElement<DIM,NNODE_1D>
 public: 
 
  /// \short The number of "DOF types" that degrees of freedom in this element
- /// are sub-divided into: The displacement components
+ /// are sub-divided into: heat, one dimension only.
  unsigned ndof_types() const
   {
    return 1;
@@ -149,9 +146,7 @@ public:
 /// scheme has been set up.)
 /// 
 /// The dof type enumeration (in 3D) is as follows:
-/// S_x = 0
-/// S_y = 1
-/// S_z = 2
+/// u = 0
 /// 
  void get_dof_numbers_for_unknowns(
   std::list<std::pair<unsigned long,unsigned> >& dof_lookup_list) const
@@ -228,7 +223,7 @@ namespace ConstSourceForPoisson
 } // end of namespace
 
 
-namespace GlobalParam
+namespace Global_Parameters
 {
   unsigned Noel = 0;
 
@@ -295,13 +290,13 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
-   GlobalParam::Doc_linear_solver_info_pt->setup_new_time_step();
+   Global_Parameters::Doc_linear_solver_info_pt->setup_new_time_step();
 
  } // end_of_actions_before_newton_solve
 
  void actions_after_newton_step()
  {
-   NSPP::doc_iter_times(this,GlobalParam::Doc_linear_solver_info_pt);
+   NSPP::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
  }
 
  
@@ -371,8 +366,8 @@ CubeProblem<ELEMENT>::CubeProblem()
   Top_boundary = 3;
 
 
-  const unsigned length = GlobalParam::Length;
-  const unsigned noel = GlobalParam::Noel;
+  const unsigned length = Global_Parameters::Length;
+  const unsigned noel = Global_Parameters::Noel;
 
   Bulk_mesh_pt = 
       new SimpleCubicMesh<ELEMENT>(noel,noel,noel,length,length,length);
@@ -420,56 +415,6 @@ CubeProblem<ELEMENT>::CubeProblem()
 
  // Set the linear solver and preconditioner.
  
-  
-//  // Create a new hypre preconditioner
-//  Prec_pt = new HyprePreconditioner;
-//
-//  // Pointless cast because I want to.
-//  HyprePreconditioner* hypre_preconditioner_pt = 
-//      checked_static_cast<HyprePreconditioner*>(Prec_pt);
-//
-//  // Set up the hypre preconditioner.
-//
-//    // Set the hypre_method to BoomerAMG. This is hard coded.
-//    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-//
-//    hypre_preconditioner_pt->set_amg_iterations(GlobalParam::AMG_iterations);
-//
-//    hypre_preconditioner_pt->amg_smoother_iterations() 
-//      = GlobalParam::AMG_smoother_iterations;
-//
-//    if(GlobalParam::AMG_simple_smoother >= 0)
-//    {
-//      hypre_preconditioner_pt->amg_using_simple_smoothing();
-//      hypre_preconditioner_pt->amg_simple_smoother()
-//        = GlobalParam::AMG_simple_smoother;
-//    }
-//    else if(GlobalParam::AMG_complex_smoother >=0)
-//    {
-//      hypre_preconditioner_pt->amg_using_complex_smoothing();
-//      hypre_preconditioner_pt->amg_complex_smoother()
-//        = GlobalParam::AMG_complex_smoother;
-//    }
-//    else
-//    {
-//      std::ostringstream err_msg;
-//      err_msg << "You have not supplied a valid smoother.\n";
-//      throw OomphLibError(err_msg.str(),
-//          OOMPH_CURRENT_FUNCTION,
-//          OOMPH_EXCEPTION_LOCATION);
-//    }
-// 
-//     // Set the damping parameter.
-//    hypre_preconditioner_pt->amg_damping() = GlobalParam::AMG_damping;
-//
-//    // Now set the AMG strength parameter.
-//    hypre_preconditioner_pt->amg_strength() = GlobalParam::AMG_strength;
-//
-//    // AMG coarsening strategy.
-//    hypre_preconditioner_pt->amg_coarsening() = GlobalParam::AMG_coarsening;
-//
-//    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-//            hypre_preconditioner_pt);
 
  Prec_pt = new ExactBlockPreconditioner<CRDoubleMatrix>;
  ExactBlockPreconditioner<CRDoubleMatrix>* exact_block_prec_pt = 
@@ -515,13 +460,13 @@ int main(int argc, char **argv)
   // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
 
-  GlobalParam::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  Global_Parameters::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
   CommandLineArgs::specify_command_line_flag("--noel", 
-    &GlobalParam::Noel);
+    &Global_Parameters::Noel);
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
     &RayPreconditionerCreationFunctions::AMG_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_smiter", 
@@ -588,7 +533,7 @@ int main(int argc, char **argv)
 
     // Get the 3D vector which holds the iteration counts and timing results.
     Vector<Vector<Vector<double> > > iters_times
-      = GlobalParam::Doc_linear_solver_info_pt->iterations_and_times();
+      = Global_Parameters::Doc_linear_solver_info_pt->iterations_and_times();
 
     // Since this is a steady state problem, there is only
     // one "time step", thus it is essentially a 2D vector 
