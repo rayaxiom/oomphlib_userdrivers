@@ -50,12 +50,84 @@ using namespace oomph;
 // Namespace extension
 namespace oomph
 {
+
+
+ namespace RayPreconditionerCreationFunctions
+ {
+
+
+  // AMG parameters:
+  int AMG_iterations = -1;
+  int AMG_smoother_iterations = -1;
+  int AMG_simple_smoother = -1;
+  int AMG_complex_smoother = -1;
+  double AMG_damping = -1.0;
+  double AMG_strength = -1.0;
+  int AMG_coarsening = -1.0;
+
+  /// \short Helper function to create a SuperLu preconditioner (for use as
+  /// the default subsididary preconditioner creator in
+  /// GeneralPurposeBlockPreconditioners).
+  inline Preconditioner* create_hypre_preconditioner()
+  {
+   Preconditioner* prec_pt = new HyprePreconditioner;
+
+  // Pointless cast because I want to.
+  HyprePreconditioner* hypre_preconditioner_pt = 
+      checked_static_cast<HyprePreconditioner*>(prec_pt);
+
+     // Set the hypre_method to BoomerAMG. This is hard coded.
+    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+
+    hypre_preconditioner_pt->set_amg_iterations(AMG_iterations);
+    
+    hypre_preconditioner_pt->amg_smoother_iterations() 
+      = AMG_smoother_iterations;
+
+        if(AMG_simple_smoother >= 0)
+    {
+      hypre_preconditioner_pt->amg_using_simple_smoothing();
+      hypre_preconditioner_pt->amg_simple_smoother()
+        = AMG_simple_smoother;
+    }
+    else if(AMG_complex_smoother >=0)
+    {
+      hypre_preconditioner_pt->amg_using_complex_smoothing();
+      hypre_preconditioner_pt->amg_complex_smoother()
+        = AMG_complex_smoother;
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "You have not supplied a valid smoother.\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+     // Set the damping parameter.
+    hypre_preconditioner_pt->amg_damping() = AMG_damping;
+
+    // Now set the AMG strength parameter.
+    hypre_preconditioner_pt->amg_strength() = AMG_strength;
+
+    // AMG coarsening strategy.
+    hypre_preconditioner_pt->amg_coarsening() =AMG_coarsening;
+
+    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            hypre_preconditioner_pt);
+    return prec_pt;
+  }
+
+ }
+
+
   //==start_of_mylinearelasticityelement===============================
 /// Wrapper to make quadratic linear elasticity element block
 /// preconditionable 
 //===================================================================
-template<unsigned DIM>
-class MyLinearElasticityElement : public virtual QLinearElasticityElement<DIM,3>
+template<unsigned DIM, unsigned NNODE_1D>
+class MyLinearElasticityElement : public virtual QLinearElasticityElement<DIM,NNODE_1D>
 {
  
 public: 
@@ -123,12 +195,12 @@ public:
 /// Face geometry for element is the same as that for the underlying
 /// wrapped element
 //=======================================================================
-template<unsigned DIM>
-class FaceGeometry<MyLinearElasticityElement<DIM> >
- : public virtual QElement<DIM-1,3> 
+template<unsigned DIM,unsigned NNODE_1D>
+class FaceGeometry<MyLinearElasticityElement<DIM,NNODE_1D> >
+ : public virtual QElement<DIM-1,NNODE_1D> 
  {
  public:
-  FaceGeometry() : QElement<DIM-1,3>() {}
+  FaceGeometry() : QElement<DIM-1,NNODE_1D>() {}
  };
 
 
@@ -165,14 +237,7 @@ namespace Global_Parameters
 
   unsigned Noel = 0;
 
-  // AMG parameters:
-  int AMG_iterations = -1;
-  int AMG_smoother_iterations = -1;
-  int AMG_simple_smoother = -1;
-  int AMG_complex_smoother = -1;
-  double AMG_damping = -1.0;
-  double AMG_strength = -1.0;
-  int AMG_coarsening = -1.0;
+
 
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
 
@@ -431,77 +496,87 @@ PeriodicLoadProblem<ELEMENT>::PeriodicLoadProblem()
    el_pt->elasticity_tensor_pt() = &Global_Parameters::E;
   }// end loop over elements
 
- // Loop over the traction elements
- unsigned n_traction =  Surface_mesh_pt->nelement();
- for(unsigned e=0;e<n_traction;e++)
-  {
-   // Cast to a surface element
-   LinearElasticityTractionElement<ELEMENT> *el_pt = 
-    dynamic_cast<LinearElasticityTractionElement<ELEMENT>* >
-    (Surface_mesh_pt->element_pt(e));
-   
-   // Set the applied traction
-   el_pt->traction_fct_pt() = &Global_Parameters::periodic_traction;
-  }// end loop over traction elements
+// // Loop over the traction elements
+// unsigned n_traction =  Surface_mesh_pt->nelement();
+// for(unsigned e=0;e<n_traction;e++)
+//  {
+//   // Cast to a surface element
+//   LinearElasticityTractionElement<ELEMENT> *el_pt = 
+//    dynamic_cast<LinearElasticityTractionElement<ELEMENT>* >
+//    (Surface_mesh_pt->element_pt(e));
+//   
+//   // Set the applied traction
+//   el_pt->traction_fct_pt() = &Global_Parameters::periodic_traction;
+//  }// end loop over traction elements
 
 
  // Assign equation numbers
  oomph_info << assign_eqn_numbers() << " equations assigned" << std::endl; 
 
+//
+// // Set the linear solver and preconditioner. ////////////////////////
+//
+//  // Create a new hypre preconditioner
+//  Prec_pt = new HyprePreconditioner;
+//
+//  // Pointless cast because I want to.
+//  HyprePreconditioner* hypre_preconditioner_pt = 
+//      checked_static_cast<HyprePreconditioner*>(Prec_pt);
+//
+//  // Set up the hypre preconditioner.
+//
+//    // Set the hypre_method to BoomerAMG. This is hard coded.
+//    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+//
+//    hypre_preconditioner_pt->set_amg_iterations(Global_Parameters::AMG_iterations);
+//
+//    hypre_preconditioner_pt->amg_smoother_iterations() 
+//      = Global_Parameters::AMG_smoother_iterations;
+//
+//    if(Global_Parameters::AMG_simple_smoother >= 0)
+//    {
+//      hypre_preconditioner_pt->amg_using_simple_smoothing();
+//      hypre_preconditioner_pt->amg_simple_smoother()
+//        = Global_Parameters::AMG_simple_smoother;
+//    }
+//    else if(Global_Parameters::AMG_complex_smoother >=0)
+//    {
+//      hypre_preconditioner_pt->amg_using_complex_smoothing();
+//      hypre_preconditioner_pt->amg_complex_smoother()
+//        = Global_Parameters::AMG_complex_smoother;
+//    }
+//    else
+//    {
+//      std::ostringstream err_msg;
+//      err_msg << "You have not supplied a valid smoother.\n";
+//      throw OomphLibError(err_msg.str(),
+//          OOMPH_CURRENT_FUNCTION,
+//          OOMPH_EXCEPTION_LOCATION);
+//    }
+// 
+//     // Set the damping parameter.
+//    hypre_preconditioner_pt->amg_damping() = Global_Parameters::AMG_damping;
+//
+//    // Now set the AMG strength parameter.
+//    hypre_preconditioner_pt->amg_strength() = Global_Parameters::AMG_strength;
+//
+//    // AMG coarsening strategy.
+//    hypre_preconditioner_pt->amg_coarsening() = Global_Parameters::AMG_coarsening;
+//
+//    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+//            hypre_preconditioner_pt);
 
- // Set the linear solver and preconditioner. ////////////////////////
 
-  // Create a new hypre preconditioner
-  Prec_pt = new HyprePreconditioner;
+ Prec_pt = new BlockDiagonalPreconditioner<CRDoubleMatrix>;
 
-  // Pointless cast because I want to.
-  HyprePreconditioner* hypre_preconditioner_pt = 
-      checked_static_cast<HyprePreconditioner*>(Prec_pt);
+ BlockDiagonalPreconditioner<CRDoubleMatrix>* block_diag_prec_pt = 
+   checked_static_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >(Prec_pt);
 
-  // Set up the hypre preconditioner.
-
-    // Set the hypre_method to BoomerAMG. This is hard coded.
-    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-
-    hypre_preconditioner_pt->set_amg_iterations(Global_Parameters::AMG_iterations);
-
-    hypre_preconditioner_pt->amg_smoother_iterations() 
-      = Global_Parameters::AMG_smoother_iterations;
-
-    if(Global_Parameters::AMG_simple_smoother >= 0)
-    {
-      hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother()
-        = Global_Parameters::AMG_simple_smoother;
-    }
-    else if(Global_Parameters::AMG_complex_smoother >=0)
-    {
-      hypre_preconditioner_pt->amg_using_complex_smoothing();
-      hypre_preconditioner_pt->amg_complex_smoother()
-        = Global_Parameters::AMG_complex_smoother;
-    }
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "You have not supplied a valid smoother.\n";
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
- 
-     // Set the damping parameter.
-    hypre_preconditioner_pt->amg_damping() = Global_Parameters::AMG_damping;
-
-    // Now set the AMG strength parameter.
-    hypre_preconditioner_pt->amg_strength() = Global_Parameters::AMG_strength;
-
-    // AMG coarsening strategy.
-    hypre_preconditioner_pt->amg_coarsening() = Global_Parameters::AMG_coarsening;
-
-    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-            hypre_preconditioner_pt);
-
-
+ block_diag_prec_pt->set_nmesh(1);
+ block_diag_prec_pt->set_mesh(0,Bulk_mesh_pt);
+ block_diag_prec_pt
+   ->set_subsidiary_preconditioner_function(
+       &RayPreconditionerCreationFunctions::create_hypre_preconditioner);
 
     // Now set up the solver.
   TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
@@ -542,6 +617,16 @@ void PeriodicLoadProblem<ELEMENT>::assign_traction_elements()
  
    // Add to mesh
    Surface_mesh_pt->add_element_pt(traction_element_pt);
+   
+
+   // Cast to a surface element
+   LinearElasticityTractionElement<ELEMENT> *el_pt = 
+    dynamic_cast<LinearElasticityTractionElement<ELEMENT>* >
+    (traction_element_pt);
+   
+   // Set the applied traction
+   el_pt->traction_fct_pt() = &Global_Parameters::periodic_traction;
+
   }
  
 } // end of assign_traction_elements
@@ -617,21 +702,21 @@ int main(int argc, char* argv[])
   CommandLineArgs::setup(argc,argv);
 
   CommandLineArgs::specify_command_line_flag("--noel", 
-                                             &Global_Parameters::Noel);
+    &Global_Parameters::Noel);
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
-                                             &Global_Parameters::AMG_iterations);
+    &RayPreconditionerCreationFunctions::AMG_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_smiter", 
-                                             &Global_Parameters::AMG_smoother_iterations);
+    &RayPreconditionerCreationFunctions::AMG_smoother_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_sim_smoo", 
-      &Global_Parameters::AMG_simple_smoother);
+    &RayPreconditionerCreationFunctions::AMG_simple_smoother);
   CommandLineArgs::specify_command_line_flag("--amg_com_smoo", 
-      &Global_Parameters::AMG_complex_smoother);
+    &RayPreconditionerCreationFunctions::AMG_complex_smoother);
   CommandLineArgs::specify_command_line_flag("--amg_damp", 
-      &Global_Parameters::AMG_damping);
+      &RayPreconditionerCreationFunctions::AMG_damping);
   CommandLineArgs::specify_command_line_flag("--amg_strn", 
-      &Global_Parameters::AMG_strength);
+      &RayPreconditionerCreationFunctions::AMG_strength);
   CommandLineArgs::specify_command_line_flag("--amg_coarse", 
-      &Global_Parameters::AMG_coarsening);
+      &RayPreconditionerCreationFunctions::AMG_coarsening);
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
@@ -646,8 +731,7 @@ int main(int argc, char* argv[])
  doc_info.set_directory("RESLT");
  
  // Set up problem
- PeriodicLoadProblem<QLinearElasticityElement<3,3> > 
-  problem;
+ PeriodicLoadProblem<MyLinearElasticityElement<3,3> > problem;
 
  problem.distribute();
  
