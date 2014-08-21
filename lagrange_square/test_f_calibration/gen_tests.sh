@@ -286,8 +286,8 @@ mkdir -p $ABS_SCRATCH_DIR/$QSUB_DIR
 rsync -av git_rev_oomphlib $ABS_SCRATCH_DIR/$RES_DIR/
 
 rsync -av $PROGRAM $ABS_SCRATCH_DIR
-rsync -av $TESTLIST_FILE $SCRATCH_DIR
-rsync -av testlist.qsub $SCRATCH_DIR
+rsync -av $TESTLIST_FILE $ABS_SCRATCH_DIR
+rsync -av testlist.qsub $ABS_SCRATCH_DIR
 
 
 
