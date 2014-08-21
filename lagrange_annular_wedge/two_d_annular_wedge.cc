@@ -456,7 +456,10 @@ std::pair<double, double> PartialAnnulusProblem<ELEMENT>::get_radial_v(const Nod
 
   const double phi = atan2(x1,x0);
 
-  const double radial_v = (radial_dist);
+  const double radial_v = get_radial_v(radial_dist);
+
+  std::cout << "x = " << x0 << ", y = " << x1 << ", radial v: " << radial_v << std::endl; 
+  
 
   std::pair <double,double> u_pair(radial_v*cos(phi),radial_v*sin(phi));
 
@@ -731,7 +734,7 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_bottom_partial()
 
    std::pair<double,double>u_pair = get_radial_v(nod_pt);
 
-   nod_pt->set_value(1,u_pair.second);
+   nod_pt->set_value(1,0.0);
  }
 
 } // set_mesh_bc_for_AwPo
@@ -818,7 +821,7 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_left_partial()
 
    std::pair<double,double> u_pair = get_radial_v(nod_pt);
 
-   nod_pt->set_value(0,u_pair.first);
+   nod_pt->set_value(0,0.0);
 //   nod_pt->set_value(1,u);
  }
 
@@ -887,6 +890,8 @@ template<class ELEMENT>
 void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_inflow()
 {
 
+  pause("About to do inflow"); 
+  
  // Which boundary are we dealing with?
  unsigned current_bound = 1337;
  
@@ -913,9 +918,16 @@ void PartialAnnulusProblem<ELEMENT>::set_mesh_bc_for_AwPo_inflow()
 
    std::pair<double,double> u_pair = get_radial_v(nod_pt);
 
+
+
+
+
    nod_pt->set_value(0,u_pair.first);
    nod_pt->set_value(1,u_pair.second);
  }
+
+ pause("done inflow"); 
+ 
 } // set_mesh_bc_for_AwPo
 
 
@@ -1055,7 +1067,7 @@ std::string create_label()
   std::string label = AWL::prob_str()
                       + NSPP::create_label() 
                       + LPH::create_label() 
-                      + AWL::ang_deg_str() + AWL::noel_str();
+                      + AWL::noel_str();
   return label;
 }
 

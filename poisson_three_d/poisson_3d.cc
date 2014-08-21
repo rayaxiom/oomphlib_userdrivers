@@ -48,6 +48,168 @@ using namespace std;
 using namespace oomph;
 
 
+
+// Namespace extension
+namespace oomph
+{
+
+
+ namespace RayPreconditionerCreationFunctions
+ {
+
+
+  // AMG parameters:
+  int AMG_iterations = -1;
+  int AMG_smoother_iterations = -1;
+  int AMG_simple_smoother = -1;
+  int AMG_complex_smoother = -1;
+  double AMG_damping = -1.0;
+  double AMG_strength = -1.0;
+  int AMG_coarsening = -1.0;
+
+  /// \short Helper function to create a SuperLu preconditioner (for use as
+  /// the default subsididary preconditioner creator in
+  /// GeneralPurposeBlockPreconditioners).
+  inline Preconditioner* create_hypre_preconditioner()
+  {
+   Preconditioner* prec_pt = new HyprePreconditioner;
+
+  // Pointless cast because I want to.
+  HyprePreconditioner* hypre_preconditioner_pt = 
+      checked_static_cast<HyprePreconditioner*>(prec_pt);
+
+     // Set the hypre_method to BoomerAMG. This is hard coded.
+    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+
+    hypre_preconditioner_pt->set_amg_iterations(AMG_iterations);
+    
+    hypre_preconditioner_pt->amg_smoother_iterations() 
+      = AMG_smoother_iterations;
+
+        if(AMG_simple_smoother >= 0)
+    {
+      hypre_preconditioner_pt->amg_using_simple_smoothing();
+      hypre_preconditioner_pt->amg_simple_smoother()
+        = AMG_simple_smoother;
+    }
+    else if(AMG_complex_smoother >=0)
+    {
+      hypre_preconditioner_pt->amg_using_complex_smoothing();
+      hypre_preconditioner_pt->amg_complex_smoother()
+        = AMG_complex_smoother;
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "You have not supplied a valid smoother.\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+     // Set the damping parameter.
+    hypre_preconditioner_pt->amg_damping() = AMG_damping;
+
+    // Now set the AMG strength parameter.
+    hypre_preconditioner_pt->amg_strength() = AMG_strength;
+
+    // AMG coarsening strategy.
+    hypre_preconditioner_pt->amg_coarsening() =AMG_coarsening;
+
+    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+            hypre_preconditioner_pt);
+    return prec_pt;
+  }
+
+ }
+
+
+  //==start_of_mylinearelasticityelement===============================
+/// Wrapper to make quadratic linear elasticity element block
+/// preconditionable 
+//===================================================================
+template<unsigned DIM, unsigned NNODE_1D>
+class MyPoissonElement : public virtual QPoissonElement<DIM,NNODE_1D>
+{
+ 
+public: 
+
+ /// \short The number of "DOF types" that degrees of freedom in this element
+ /// are sub-divided into: The displacement components
+ unsigned ndof_types() const
+  {
+   return 1;
+  }
+ 
+/// Create a list of pairs for all unknowns in this element,
+/// so the first entry in each pair contains the global equation
+/// number of the unknown, while the second one contains the number
+/// of the "DOF type" that this unknown is associated with.
+/// (Function can obviously only be called if the equation numbering
+/// scheme has been set up.)
+/// 
+/// The dof type enumeration (in 3D) is as follows:
+/// S_x = 0
+/// S_y = 1
+/// S_z = 2
+/// 
+ void get_dof_numbers_for_unknowns(
+  std::list<std::pair<unsigned long,unsigned> >& dof_lookup_list) const
+  {
+   // number of nodes
+   unsigned n_node = this->nnode();
+   
+   // temporary pair (used to store dof lookup prior to being added to list)
+   std::pair<unsigned,unsigned> dof_lookup;
+   
+   // loop over the nodes
+   for (unsigned j=0;j<n_node;j++)
+    {
+     //loop over displacement components
+     for (unsigned i=0;i<1;i++)
+      {
+       // determine local eqn number
+       int local_eqn_number = this->nodal_local_eqn(j,i);
+       
+       // ignore pinned values - far away degrees of freedom resulting 
+       // from hanging nodes can be ignored since these are be dealt
+       // with by the element containing their master nodes
+       if (local_eqn_number >= 0)
+        {
+         // store dof lookup in temporary pair: Global equation number
+         // is the first entry in pair
+         dof_lookup.first = this->eqn_number(local_eqn_number);
+         
+         // set dof numbers: Dof number is the second entry in pair
+         dof_lookup.second = i;
+         
+         // add to list
+         dof_lookup_list.push_front(dof_lookup);
+        }
+      }
+    }
+  }
+
+};
+
+
+//=======================================================================
+/// Face geometry for element is the same as that for the underlying
+/// wrapped element
+//=======================================================================
+template<unsigned DIM,unsigned NNODE_1D>
+class FaceGeometry<MyPoissonElement<DIM,NNODE_1D> >
+ : public virtual QElement<DIM-1,NNODE_1D> 
+ {
+ public:
+  FaceGeometry() : QElement<DIM-1,NNODE_1D>() {}
+ };
+
+
+
+
+}
+
 //============ start_of_namespace=====================================
 /// Namespace for const source term in Poisson equation
 //====================================================================
@@ -71,15 +233,6 @@ namespace GlobalParam
   unsigned Noel = 0;
 
   const unsigned Length = 1;
-
-  // AMG parameters:
-  int AMG_iterations = -1;
-  int AMG_smoother_iterations = -1;
-  int AMG_simple_smoother = -1;
-  int AMG_complex_smoother = -1;
-  double AMG_damping = -1.0;
-  double AMG_strength = -1.0;
-  int AMG_coarsening = -1.0;
 
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
 }
@@ -262,63 +415,71 @@ CubeProblem<ELEMENT>::CubeProblem()
   }
 
  // Setup the equation numbering scheme
- std::cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
+ oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
  // Set the linear solver and preconditioner.
  
   
-  // Create a new hypre preconditioner
-  Prec_pt = new HyprePreconditioner;
+//  // Create a new hypre preconditioner
+//  Prec_pt = new HyprePreconditioner;
+//
+//  // Pointless cast because I want to.
+//  HyprePreconditioner* hypre_preconditioner_pt = 
+//      checked_static_cast<HyprePreconditioner*>(Prec_pt);
+//
+//  // Set up the hypre preconditioner.
+//
+//    // Set the hypre_method to BoomerAMG. This is hard coded.
+//    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
+//
+//    hypre_preconditioner_pt->set_amg_iterations(GlobalParam::AMG_iterations);
+//
+//    hypre_preconditioner_pt->amg_smoother_iterations() 
+//      = GlobalParam::AMG_smoother_iterations;
+//
+//    if(GlobalParam::AMG_simple_smoother >= 0)
+//    {
+//      hypre_preconditioner_pt->amg_using_simple_smoothing();
+//      hypre_preconditioner_pt->amg_simple_smoother()
+//        = GlobalParam::AMG_simple_smoother;
+//    }
+//    else if(GlobalParam::AMG_complex_smoother >=0)
+//    {
+//      hypre_preconditioner_pt->amg_using_complex_smoothing();
+//      hypre_preconditioner_pt->amg_complex_smoother()
+//        = GlobalParam::AMG_complex_smoother;
+//    }
+//    else
+//    {
+//      std::ostringstream err_msg;
+//      err_msg << "You have not supplied a valid smoother.\n";
+//      throw OomphLibError(err_msg.str(),
+//          OOMPH_CURRENT_FUNCTION,
+//          OOMPH_EXCEPTION_LOCATION);
+//    }
+// 
+//     // Set the damping parameter.
+//    hypre_preconditioner_pt->amg_damping() = GlobalParam::AMG_damping;
+//
+//    // Now set the AMG strength parameter.
+//    hypre_preconditioner_pt->amg_strength() = GlobalParam::AMG_strength;
+//
+//    // AMG coarsening strategy.
+//    hypre_preconditioner_pt->amg_coarsening() = GlobalParam::AMG_coarsening;
+//
+//    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+//            hypre_preconditioner_pt);
 
-  // Pointless cast because I want to.
-  HyprePreconditioner* hypre_preconditioner_pt = 
-      checked_static_cast<HyprePreconditioner*>(Prec_pt);
+ Prec_pt = new ExactBlockPreconditioner<CRDoubleMatrix>;
+ ExactBlockPreconditioner<CRDoubleMatrix>* exact_block_prec_pt = 
+   checked_static_cast<ExactBlockPreconditioner<CRDoubleMatrix>* >(Prec_pt);
 
-  // Set up the hypre preconditioner.
-
-    // Set the hypre_method to BoomerAMG. This is hard coded.
-    hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-
-    hypre_preconditioner_pt->set_amg_iterations(GlobalParam::AMG_iterations);
-
-    hypre_preconditioner_pt->amg_smoother_iterations() 
-      = GlobalParam::AMG_smoother_iterations;
-
-    if(GlobalParam::AMG_simple_smoother >= 0)
-    {
-      hypre_preconditioner_pt->amg_using_simple_smoothing();
-      hypre_preconditioner_pt->amg_simple_smoother()
-        = GlobalParam::AMG_simple_smoother;
-    }
-    else if(GlobalParam::AMG_complex_smoother >=0)
-    {
-      hypre_preconditioner_pt->amg_using_complex_smoothing();
-      hypre_preconditioner_pt->amg_complex_smoother()
-        = GlobalParam::AMG_complex_smoother;
-    }
-    else
-    {
-      std::ostringstream err_msg;
-      err_msg << "You have not supplied a valid smoother.\n";
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
- 
-     // Set the damping parameter.
-    hypre_preconditioner_pt->amg_damping() = GlobalParam::AMG_damping;
-
-    // Now set the AMG strength parameter.
-    hypre_preconditioner_pt->amg_strength() = GlobalParam::AMG_strength;
-
-    // AMG coarsening strategy.
-    hypre_preconditioner_pt->amg_coarsening() = GlobalParam::AMG_coarsening;
-
-    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
-            hypre_preconditioner_pt);
-
-
+ exact_block_prec_pt->set_nmesh(1);
+ exact_block_prec_pt->set_mesh(0,Bulk_mesh_pt);
+ exact_block_prec_pt
+   ->set_subsidiary_preconditioner_function(
+       &RayPreconditionerCreationFunctions::create_hypre_preconditioner);
 
     // Now set up the solver.
   TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
@@ -360,21 +521,24 @@ int main(int argc, char **argv)
   CommandLineArgs::setup(argc,argv);
 
   CommandLineArgs::specify_command_line_flag("--noel", 
-                                             &GlobalParam::Noel);
+    &GlobalParam::Noel);
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
-                                             &GlobalParam::AMG_iterations);
+    &RayPreconditionerCreationFunctions::AMG_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_smiter", 
-                                             &GlobalParam::AMG_smoother_iterations);
+    &RayPreconditionerCreationFunctions::AMG_smoother_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_sim_smoo", 
-      &GlobalParam::AMG_simple_smoother);
+    &RayPreconditionerCreationFunctions::AMG_simple_smoother);
   CommandLineArgs::specify_command_line_flag("--amg_com_smoo", 
-      &GlobalParam::AMG_complex_smoother);
+    &RayPreconditionerCreationFunctions::AMG_complex_smoother);
   CommandLineArgs::specify_command_line_flag("--amg_damp", 
-      &GlobalParam::AMG_damping);
+      &RayPreconditionerCreationFunctions::AMG_damping);
   CommandLineArgs::specify_command_line_flag("--amg_strn", 
-      &GlobalParam::AMG_strength);
+      &RayPreconditionerCreationFunctions::AMG_strength);
   CommandLineArgs::specify_command_line_flag("--amg_coarse", 
-      &GlobalParam::AMG_coarsening);
+      &RayPreconditionerCreationFunctions::AMG_coarsening);
+
+
+
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
@@ -385,7 +549,7 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
 
 
-  CubeProblem<QPoissonElement<3,2> > problem;
+  CubeProblem<MyPoissonElement<3,2> > problem;
 
   problem.distribute();
   problem.newton_solve();

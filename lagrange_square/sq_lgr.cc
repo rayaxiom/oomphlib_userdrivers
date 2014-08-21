@@ -1232,6 +1232,9 @@ std::string create_label()
                       + NSPP::create_label() 
                       + prec_string
                       + SL::ang_deg_str() + SL::noel_str();
+  
+  std::replace(label.begin(), label.end(),
+                '.','-');
   return label;
 }
 
