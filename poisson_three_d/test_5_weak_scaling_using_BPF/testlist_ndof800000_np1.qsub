@@ -11,6 +11,6 @@ FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof800000_np1.list`
 $FULL_RUNCOMMAND
 
 
-
+mv testlist_ndof800000_np1.qsub.*.$SGE_TASK_ID ./qsub_output/
 
 

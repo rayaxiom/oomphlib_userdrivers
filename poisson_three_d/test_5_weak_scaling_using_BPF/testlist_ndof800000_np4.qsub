@@ -12,5 +12,6 @@ $FULL_RUNCOMMAND
 
 
 
+mv testlist_ndof800000_np4.qsub.*.$SGE_TASK_ID ./qsub_output/
 
 

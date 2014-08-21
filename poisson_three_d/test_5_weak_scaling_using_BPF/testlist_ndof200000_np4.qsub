@@ -10,7 +10,7 @@ export OMP_NUM_THREADS=4
 FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof200000_np4.list`
 $FULL_RUNCOMMAND
 
-
+mv testlist_ndof200000_np4.qsub.*.$SGE_TASK_ID ./qsub_output/
 
 
 
