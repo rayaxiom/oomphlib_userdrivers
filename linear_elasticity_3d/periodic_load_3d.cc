@@ -583,13 +583,13 @@ PeriodicLoadProblem<ELEMENT>::PeriodicLoadProblem()
   trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
   Solver_pt = trilinos_solver_pt;
 
-  Solver_pt->tolerance() = 1e-8;
+  Solver_pt->tolerance() = 1e-6;
   Solver_pt->max_iter() = 100;
   Solver_pt->preconditioner_pt() = Prec_pt;
 
   this->linear_solver_pt() = Solver_pt;
 
-  this->newton_solver_tolerance() = 1e-8;
+  this->newton_solver_tolerance() = 1e-6;
 
 
 } // end of constructor
@@ -728,7 +728,7 @@ int main(int argc, char* argv[])
  DocInfo doc_info;
  
  // Set output directory
- doc_info.set_directory("RESLT");
+// doc_info.set_directory("RESLT");
  
  // Set up problem
  PeriodicLoadProblem<MyLinearElasticityElement<3,3> > problem;
@@ -739,7 +739,7 @@ int main(int argc, char* argv[])
  problem.newton_solve();
  
  // Output the solution
- problem.doc_solution(doc_info);
+// problem.doc_solution(doc_info);
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
