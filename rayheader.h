@@ -4346,15 +4346,34 @@ namespace NavierStokesProblemParameters
   // To fill
   std::map<int,std::string> valid_solver_type_map;
 
+////////////////////////////////////
+
+  // STEADY wins, even if --dt, --time_start and --time_end is set,
+  // if Time_type == 0, then the time parameters will be ignored, steady
+  // state will be attempted. This is because no timing parameters is 
+  // required for steady state, thus we can ignore them.
+  const static int Time_type_STEADY = 0;
+
+  // Adaptive time stepping takes second precedence, this is because only
+  // two of the three time variables needs to be set 
+  // (--time_start and --time_end).
+  const static int Time_type_ADAPT = 1;
+
+  // This takes last precedence. We have done it this way so you can have
+  // all three time variables set and just change the Time_type to switch 
+  // between the different time stepping states.
+  const static int Time_type_FIXED = 2;
+
+  // This is what we set:
+  int Time_type = -1;
+
 ///////////////////////////////
   const static int MeshType_TETRAHEDRAL = 0;
   const static int MeshType_HEXAHEDRAL = 1;
 
   int Mesh_type = -1;
 
-  // By default, this is true. If --dt is set, then we set this to false
-  // and do time stepping.
-  bool Steady_state = true;
+  //////////////////////////////////////////
 
   // From Commandline
   int Solver_type = -1;
@@ -4435,6 +4454,9 @@ namespace NavierStokesProblemParameters
     CommandLineArgs::specify_command_line_flag("--solver_type",
         &Solver_type);
 
+    CommandLineArgs::specify_command_line_flag("--time_type",
+        &Time_type);
+
     CommandLineArgs::specify_command_line_flag("--dt", &Delta_t);
     CommandLineArgs::specify_command_line_flag("--time_start", &Time_start);
     CommandLineArgs::specify_command_line_flag("--time_end", &Time_end);
@@ -4446,7 +4468,6 @@ namespace NavierStokesProblemParameters
   {
     if(CommandLineArgs::command_line_flag_has_been_set("--dt"))
     {
-      Steady_state = false;
       if(!CommandLineArgs::command_line_flag_has_been_set("--time_start"))
       {
       std::ostringstream err_msg;

@@ -40,15 +40,19 @@
 #include "meshes/tetgen_mesh.h"
 #include "meshes/brick_from_tet_mesh.h"
 
-// My own header
-#include "./../rayheader.h"
+//#include "./../rayheader.h"
+#include "./../ray_preconditioner_creation.h"
+#include "./../ray_navier_stokes_parameters.h"
+#include "./../ray_general_problem_parameters.h"
+
 using namespace std;
 
 using namespace oomph;
 
-// Alias the namespace for convenience.
-//namespace NSPP = NavierStokesProblemParameters;
 
+namespace PH = PreconditionerHelpers;
+namespace GPH = GeneralProblemHelpers;
+namespace NSH = NavierStokesHelpers;
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -56,13 +60,61 @@ using namespace oomph;
 
 namespace Global_Parameters
 {
-  unsigned Noel = 4;
 
-  double Length = 1.0;
 
-  double Rey = 200.0;
 
-  DocLinearSolverInfo* Doc_linear_solver_info_pt;
+
+
+  // Problem specific parameters
+
+  unsigned Noel = 0;
+  int Prob_id = -1;
+
+  const double Length = 1.0;
+
+  inline std::string prob_str()
+  {
+    std::string prob_str = "";
+    if(Prob_id == 0)
+    {
+      prob_str = "Cuq";
+    }
+    else
+    {
+      std::ostringstream error_message;
+      error_message << "No other problem ids done." << std::endl;
+
+      throw OomphLibError(error_message.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    return prob_str;
+
+  }
+
+
+
+  inline std::string noel_str()
+  {
+    std::ostringstream noel_stream;
+    if(Noel != 0)
+    {
+      noel_stream << "N" << Noel;
+    }
+    else
+    {
+      std::ostringstream error_message;
+      error_message << "Noel is zero. Have you called --noel?" << std::endl;
+
+      throw OomphLibError(error_message.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+    return noel_stream.str();
+  }
+
+
+
 
 
   inline double get_prescribed_inflow_for_quarter(const double& y, 
@@ -99,7 +151,7 @@ namespace Global_Parameters
 
 }
 
-
+namespace GP = Global_Parameters;
 
 
 //==start_of_problem_class============================================
@@ -209,29 +261,38 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
-   // Start a new "time step"
-   Doc_linear_solver_info_pt->setup_new_time_step();
-
-    // Inflow in upper half of inflow boundary
-    const unsigned ibound=Inflow_boundary; 
-    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    for (unsigned inod=0;inod<num_nod;inod++)
+   // If steady state, we set the boundary conditions
+   // before the newton solve. Otherwise we set it before
+   // implicit time step.
+   if(GPH::Time_type == GPH::Time_type_STEADY)
+   {
+     if(GPH::Solver_type != GPH::Solver_type_DIRECT_SOLVE)
      {
-      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-      const double y=nod_pt->x(1);
-      const double z=nod_pt->x(2);
-
-      if( (y > 0.5) && (z > 0.5) )
-      {
-
-      const double ux 
-        = Global_Parameters::get_prescribed_inflow_for_quarter(y,z);
-
-      nod_pt->set_value(0,ux);
-      nod_pt->set_value(1,0.0);
-      nod_pt->set_value(2,0.0);
-      }
+       // Start a new "time step"
+       Doc_linear_solver_info_pt->setup_new_time_step();
      }
+
+     // Inflow in upper half of inflow boundary
+     const unsigned ibound=Inflow_boundary; 
+     const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
+     {
+       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+       const double y=nod_pt->x(1);
+       const double z=nod_pt->x(2);
+
+       if( (y > 0.5) && (z > 0.5) )
+       {
+
+         const double ux 
+           = GP::get_prescribed_inflow_for_quarter(y,z);
+
+         nod_pt->set_value(0,ux);
+         nod_pt->set_value(1,0.0);
+         nod_pt->set_value(2,0.0);
+       }
+     }
+   }
 
 
   // Initialise counter for iterations
@@ -241,10 +302,10 @@ public:
  } // end_of_actions_before_newton_solve
  void actions_after_newton_step()
  {
-//   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-//   {
-//     NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
-//   }
+   if(GPH::Solver_type != GPH::Solver_type_DIRECT_SOLVE)
+   {
+     GPH::doc_iter_times(this,Doc_linear_solver_info_pt);
+   }
  }
  
  /// Global error norm for adaptive time-stepping
@@ -254,22 +315,6 @@ public:
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
 
-
- void doc_solution(Mesh* bulk_mesh_pt)
- {
-  std::ofstream some_file;
-  std::stringstream filename;
-
-  filename << "tmp_soln.dat";
-
-  // Number of plot points
-  const unsigned npts=5;
-
-  // Output solution
-  some_file.open(filename.str().c_str());
-  bulk_mesh_pt->output(some_file,npts);
-  some_file.close();
- }
 
 //private:
 
@@ -348,63 +393,62 @@ CubeProblem<ELEMENT>::CubeProblem()
 
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;
-  Doc_linear_solver_info_pt = Global_Parameters::Doc_linear_solver_info_pt;
+  Doc_linear_solver_info_pt = GPH::Doc_linear_solver_info_pt;
 
-//  if(NSPP::Time_type == NSPP::Time_type_STEADY)
-//  {
-//    oomph_info << "Doing steady state.\n"
-//      << "No time stepper added." << std::endl;
-//  }
-//  else if(NSPP::Time_type == NSPP::Time_type_ADAPT)
-//  {
-//    oomph_info << "Adding adaptive time stepper" << std::endl; 
-//    add_time_stepper_pt(new BDF<2>(true));
-//  }
-//  else if(NSPP::Time_type == NSPP::Time_type_FIXED)
-//  {
-//    oomph_info << "Adding non-adaptive time stepper" << std::endl; 
-//    add_time_stepper_pt(new BDF<2>);
-//  }
-//  else
-//  {
-//    std::ostringstream err_msg;
-//    err_msg << "Time stepper for Time_type: "
-//      << NSPP::Time_type << std::endl;
-//
-//    throw OomphLibError(err_msg.str(),
-//        OOMPH_CURRENT_FUNCTION,
-//        OOMPH_EXCEPTION_LOCATION);
-//  }
+  if(GPH::Time_type == GPH::Time_type_STEADY)
+  {
+    oomph_info << "Doing steady state, no time stepper added." << std::endl;
+  }
+  else if(GPH::Time_type == GPH::Time_type_ADAPT)
+  {
+    oomph_info << "Adding adaptive time stepper" << std::endl; 
+    add_time_stepper_pt(new BDF<2>(true));
+  }
+  else if(GPH::Time_type == GPH::Time_type_FIXED)
+  {
+    oomph_info << "Adding non-adaptive time stepper" << std::endl; 
+    add_time_stepper_pt(new BDF<2>);
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "Time stepper for Time_type: "
+      << GPH::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
 
 
   // Setup mesh
-  const unsigned noel = Global_Parameters::Noel;
-  const double length = Global_Parameters::Length;
+  const unsigned noel = GP::Noel;
+  const double length = GP::Length;
 
-//  if(NSPP::Time_type == NSPP::Time_type_STEADY)
+  if(GPH::Time_type == GPH::Time_type_STEADY)
   {
     Bulk_mesh_pt = 
       new SimpleCubicMesh<ELEMENT>(noel,noel,noel,
           length, length, length);
   }
-//  else if((NSPP::Time_type == NSPP::Time_type_ADAPT)
-//      ||NSPP::Time_type == NSPP::Time_type_FIXED)
-//  {
-//    Bulk_mesh_pt = 
-//      new SimpleCubicMesh<ELEMENT>(noel,noel,noel, 
-//          length, length, length,
-//          time_stepper_pt());
-//  }
-//  else
-//  {
-//    std::ostringstream err_msg;
-//    err_msg << "No mesh set up for Time_type: "
-//      << NSPP::Time_type << std::endl;
-//
-//    throw OomphLibError(err_msg.str(),
-//        OOMPH_CURRENT_FUNCTION,
-//        OOMPH_EXCEPTION_LOCATION);
-//  }
+  else if((GPH::Time_type == GPH::Time_type_ADAPT)
+      ||GPH::Time_type == GPH::Time_type_FIXED)
+  {
+    Bulk_mesh_pt = 
+      new SimpleCubicMesh<ELEMENT>(noel,noel,noel, 
+          length, length, length,
+          time_stepper_pt());
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "No mesh set up for Time_type: "
+      << GPH::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
 
 
   // Add the two sub meshes to the problem
@@ -477,8 +521,8 @@ CubeProblem<ELEMENT>::CubeProblem()
       dynamic_cast<NavierStokesEquations<3>*>(Bulk_mesh_pt->element_pt(e));
 
     //Set the Reynolds number
-    el_pt->re_pt() = &Global_Parameters::Rey;
-    el_pt->re_st_pt() = &Global_Parameters::Rey;
+    el_pt->re_pt() = &NSH::Rey;
+    el_pt->re_st_pt() = &NSH::Rey;
   } // end loop over elements
 
 
@@ -489,6 +533,21 @@ CubeProblem<ELEMENT>::CubeProblem()
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
+  // Set up preconditioner and solver.
+  F_matrix_preconditioner_pt = PH::create_f_p_amg_preconditioner(PH::F_amg_param,0);
+  P_matrix_preconditioner_pt = PH::create_f_p_amg_preconditioner(PH::P_amg_param,1);
+
+  Prec_pt = PH::create_lsc_preconditioner(this,Bulk_mesh_pt,
+                                          F_matrix_preconditioner_pt,
+                                          P_matrix_preconditioner_pt);
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+
+  GPH::setup_solver(GPH::Max_solver_iteration,solver_tol,newton_tol,
+                    this,Prec_pt);
+
+  Solver_pt = GPH::Iterative_linear_solver_pt;
+  
 
 //  
 //  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
@@ -517,8 +576,7 @@ CubeProblem<ELEMENT>::CubeProblem()
   template<class ELEMENT>
 double CubeProblem<ELEMENT>::global_temporal_error_norm()
 {
-  return GenericProblemSetup::global_temporal_error_norm(this,
-      3,Bulk_mesh_pt);
+  return NSH::global_temporal_error_norm(this,NSH::Dim,Bulk_mesh_pt);
 } // end of global_temporal_error_norm
 
 
@@ -693,10 +751,6 @@ double CubeProblem<ELEMENT>::global_temporal_error_norm()
 //} // end of create_traction_elements
 
 
-
-
-
-
 std::string create_label()
 {
   // We want the unique problem label, then the generic problem label, then
@@ -710,7 +764,13 @@ std::string create_label()
   // i.e.
   // SqPo + NSPP::label + LPH::label Ang Noel.
   
-  std::string label = "tmp_label";
+
+  std::string label = Global_Parameters::prob_str()
+                      + NSH::create_label()
+                      + PH::NS_prec_str
+                      + PH::NS_f_prec_str
+                      + PH::NS_p_prec_str
+                      + Global_Parameters::noel_str();
 //  std::string label = CL::prob_str()
 //                      + NSPP::create_label() 
 //                      + LPH::create_label() 
@@ -725,6 +785,40 @@ std::string create_label()
 
 
 
+
+inline void problem_specific_setup_commandline_flags()
+{
+    CommandLineArgs::specify_command_line_flag("--noel", 
+        &GP::Noel);
+
+        CommandLineArgs::specify_command_line_flag("--prob_id", 
+        &GP::Prob_id);
+}
+
+
+inline void problem_specific_generic_setup()
+{
+  if(!CommandLineArgs::command_line_flag_has_been_set("--noel"))
+  {
+    std::ostringstream err_msg;
+    err_msg << "Please set --noel" << std::endl;
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
+  if(!CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+  {
+    std::ostringstream err_msg;
+    err_msg << "Please set --prob_id" << std::endl;
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
+}
+
+
 //==start_of_main======================================================
 /// Driver for Fp preconditioner
 //=====================================================================
@@ -734,17 +828,31 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
-  // Problem dimension.
-  const unsigned dim = 3;
-
   // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
 
-  Global_Parameters::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-  // Again, pass this to the NSPP and LPH
+  GPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  NSH::Dim = 3;
+
+  // Store commandline arguments
+  CommandLineArgs::setup(argc,argv);
+
+  GPH::setup_commandline_flags();
+  NSH::setup_commandline_flags();
+  PH::setup_commandline_flags();
   
-//  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-//  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  problem_specific_setup_commandline_flags();
+
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags();
+
+
+  GPH::generic_setup();
+  NSH::generic_setup();
+  PH::generic_setup();
+  problem_specific_generic_setup();
+
 
   // Set the Label_pt
 //  LPH::Label_str_pt = &NSPP::Label_str;
@@ -757,16 +865,13 @@ int main(int argc, char **argv)
 
 //  RaySpace::Use_tetgen_mesh = true;
 
-  // Store commandline arguments
-//  CommandLineArgs::setup(argc,argv);
+
 
 //  NSPP::setup_commandline_flags();
 //  LPH::setup_commandline_flags();
 //  CL::setup_commandline_flags(); 
 
-  // Parse the above flags.
-//  CommandLineArgs::parse_and_assign();
-//  CommandLineArgs::doc_specified_flags();
+
 
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
@@ -817,7 +922,7 @@ int main(int argc, char **argv)
   // Solve the problem 
   //              problem.newton_solve();
 
-//  if(NSPP::Distribute_problem)
+  if(GPH::Distribute_problem)
   {
     problem.distribute();
   }
@@ -832,12 +937,20 @@ int main(int argc, char **argv)
     << label
     << " on " << ctime(&rawtime) << std::endl;
 
+  if(GPH::Time_type == GPH::Time_type_STEADY)
+  {
   problem.newton_solve();
 
 
 
-  problem.doc_solution(problem.bulk_mesh_pt());
-//  GenericProblemSetup::doc_solution(problem.bulk_mesh_pt(),0);
+  if(GPH::Doc_soln_flag)
+  {
+    std::string tmp_label = "tmp_label";
+    GPH::doc_solution(problem.bulk_mesh_pt(),
+                      GPH::Soln_dir_str,
+                      tmp_label);
+  }
+  }
 
 //  GenericProblemSetup::unsteady_run(&problem,
 //                                    &doc_linear_solver_info,
