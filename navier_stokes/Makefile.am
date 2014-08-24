@@ -1,10 +1,17 @@
 noinst_PROGRAMS= \
-cube
+cube \
+three_d_fp
 
 #------------------------------------------------------------------------
 cube_SOURCES = cube.cc
 
 cube_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+
+three_d_fp_SOURCES = three_d_fp.cc
+
+three_d_fp_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+
+
 #------------------------------------------------------------------------
 
 # Include path for library headers: All library headers live in 
