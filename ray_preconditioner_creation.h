@@ -276,7 +276,10 @@ namespace PreconditionerHelpers
     // Set the coarsening strategy
     hypre_preconditioner_pt->amg_coarsening() = amg_param.Coarsening;
 
-    print_hypre_parameters(hypre_preconditioner_pt);
+    if(amg_param.Print_parameters)
+    {
+      print_hypre_parameters(hypre_preconditioner_pt);
+    }
 
     return hypre_preconditioner_pt;
   } // create_hypre_preconditioner
@@ -564,6 +567,11 @@ namespace PreconditionerHelpers
         }
         else
         {
+          if(amg_param.Print_parameters)
+          {
+            oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
+          }
+          
           HyprePreconditioner* h_prec_pt 
             = create_hypre_preconditioner(amg_param);
           NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
@@ -579,6 +587,10 @@ namespace PreconditionerHelpers
         }
         else
         {
+          if(amg_param.Print_parameters)
+          {
+            oomph_info << "RAYINFO: P amg parameters are: " << std::endl;
+          }
           HyprePreconditioner* h_prec_pt
             = create_hypre_preconditioner(amg_param);
           NS_p_prec_str = get_hypre_preconditioner_string(h_prec_pt);

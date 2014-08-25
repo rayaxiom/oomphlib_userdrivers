@@ -470,10 +470,10 @@ namespace GeneralProblemHelpers
 
     // Initialise all history values for an impulsive start
     problem_pt->assign_initial_values_impulsive(dt);
-    oomph_info << "IC = Impulsive start" << std::endl;
+    oomph_info << "RAYINFO: IC = Impulsive start" << std::endl;
 
     // Now do many time steps
-    if (Time_type != Time_type_ADAPT) 
+    if (Time_type == Time_type_FIXED)
     {
       const unsigned nsteps = unsigned(std::ceil((Time_end 
               - Time_start) / dt));
