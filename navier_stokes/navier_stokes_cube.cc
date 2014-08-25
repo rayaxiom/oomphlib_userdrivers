@@ -772,9 +772,12 @@ int main(int argc, char **argv)
 
     if(GenProbHelpers::Distribute_problem)
     {
-      oomph_info << "RAYINFO: I am distributing the problem" << std::endl; 
+      oomph_info << "RAYINFO: I am distributing the problem" << std::endl;
       
       problem.distribute();
+
+      oomph_info << "problem.distributed() = " << problem.distributed() << std::endl; 
+      
     }
 
     label = create_label();

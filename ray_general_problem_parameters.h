@@ -461,7 +461,7 @@ namespace GeneralProblemHelpers
     double dt = 0.0;
     if(Time_type == Time_type_ADAPT)
     {
-      dt = 1e-2;
+      dt = 1e-1;
     }
     else
     {
