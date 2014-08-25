@@ -17,9 +17,9 @@ TAG="RAYITS"
 LINE=""
 
 Prob_str="SqPo"
-CYCLELIST="WeNlF_1v2 WeNlF_2v2"
+CYCLELIST="WeNlF_1v2"
 STRN="" # - depends on viscuous term
-PRECLIST="cRSJac1P_e cRSGsP_e"
+PRECLIST="cRSEuclidP_e"
 
 VISLIST="Sim Str"
 ANGLIST="A0 A30 A67"

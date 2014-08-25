@@ -87,7 +87,7 @@ namespace PreconditionerHelpers
   double G_AMG_damping = -1.0;
   double G_AMG_strength = -1.0;
   int G_AMG_coarsening = -1.0;
-  
+
   // Not set as an AMG parameter, but used for book keeping.
   bool G_AMG_print_parameters = false;
 
@@ -195,7 +195,7 @@ namespace PreconditionerHelpers
     oomph_info << "AMG_truncation: " 
       << h_prec_pt->amg_truncation() << std::endl;
     oomph_info << "\n" << std::endl;
-    
+
   }
 
 
@@ -218,7 +218,7 @@ namespace PreconditionerHelpers
 
     // Set the hypre_method to BoomerAMG. This is hard coded.
     hypre_preconditioner_pt->hypre_method() = HyprePreconditioner::BoomerAMG;
-   
+
     // Set the parameters above.
     hypre_preconditioner_pt->set_amg_iterations(amg_param.Iterations);
 
@@ -236,9 +236,9 @@ namespace PreconditionerHelpers
       // Both are >= 0, only 1 should be.
       std::ostringstream err_msg;
       err_msg << "Both simple and complex smoother is set.\n"
-              << "simple_smoother: " << simple_smoother << "\n"
-              << "complex_smoother: " << complex_smoother 
-              << "\n";
+        << "simple_smoother: " << simple_smoother << "\n"
+        << "complex_smoother: " << complex_smoother 
+        << "\n";
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
@@ -259,9 +259,9 @@ namespace PreconditionerHelpers
     {
       std::ostringstream err_msg;
       err_msg << "Both smoother parameters are less than 0.\n"
-              << "Please set at most one of them." << "\n"
-              << "simple_smoother: " << simple_smoother << "\n"
-              << "complex_smoother: " << complex_smoother <<"\n";
+        << "Please set at most one of them." << "\n"
+        << "simple_smoother: " << simple_smoother << "\n"
+        << "complex_smoother: " << complex_smoother <<"\n";
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
@@ -282,18 +282,18 @@ namespace PreconditionerHelpers
   } // create_hypre_preconditioner
 
 
-  
 
-      inline void setup_commandline_flags()
+
+  inline void setup_commandline_flags()
   {
     // Flag to output the preconditioner, used for debugging.
     // string
-//    CommandLineArgs::specify_command_line_flag(
-//        "--doc_prec",&Doc_prec_dir_str);
+    //    CommandLineArgs::specify_command_line_flag(
+    //        "--doc_prec",&Doc_prec_dir_str);
 
     // No parameter after.
-//    CommandLineArgs::specify_command_line_flag(
-//        "--lsc_only");
+    //    CommandLineArgs::specify_command_line_flag(
+    //        "--lsc_only");
 
     // double
     CommandLineArgs::specify_command_line_flag(
@@ -402,191 +402,192 @@ namespace PreconditionerHelpers
 
   inline std::string 
     get_hypre_preconditioner_string(HyprePreconditioner* h_prec_pt)
-  {
-
-    std::string hypre_string = "";
     {
 
-      // Determine the cycle
-      std::stringstream cycle_stream;
-      cycle_stream << h_prec_pt->amg_iterations() << "v" 
-        << h_prec_pt->amg_smoother_iterations();
-
-      hypre_string += cycle_stream.str();
-
-      // Determine strength of dependence
-      std::stringstream strn_stream;
-      strn_stream << "Strn" << h_prec_pt->amg_strength();
-
-      hypre_string += strn_stream.str();
-
-      // Determine the coarsening strategy
-      const int amg_coarsening = h_prec_pt->amg_coarsening();
-      std::string amg_coarsening_str = "";
-      switch (amg_coarsening)
+      std::string hypre_string = "";
       {
-        case 0:
-          amg_coarsening_str = "CLPJ";
-          break;
-        case 1:
-          amg_coarsening_str = "cRS";
-          break;
-        case 3:
-          amg_coarsening_str = "mRS";
-          break;
-        case 6:
-          amg_coarsening_str = "Falgout";
-          break;
-        case 8:
-          amg_coarsening_str = "PMIS";
-          break;
-        case 10:
-          amg_coarsening_str = "HMIS";
-          break;
-        case 11:
-          amg_coarsening_str = "oRS";
-          break;
-        default:            
+
+        // Determine the cycle
+        std::stringstream cycle_stream;
+        cycle_stream << h_prec_pt->amg_iterations() << "v" 
+          << h_prec_pt->amg_smoother_iterations();
+
+        hypre_string += cycle_stream.str();
+
+        // Determine strength of dependence
+        std::stringstream strn_stream;
+        strn_stream << "Strn" << h_prec_pt->amg_strength();
+
+        hypre_string += strn_stream.str();
+
+        // Determine the coarsening strategy
+        const int amg_coarsening = h_prec_pt->amg_coarsening();
+        std::string amg_coarsening_str = "";
+        switch (amg_coarsening)
+        {
+          case 0:
+            amg_coarsening_str = "CLPJ";
+            break;
+          case 1:
+            amg_coarsening_str = "cRS";
+            break;
+          case 3:
+            amg_coarsening_str = "mRS";
+            break;
+          case 6:
+            amg_coarsening_str = "Falgout";
+            break;
+          case 8:
+            amg_coarsening_str = "PMIS";
+            break;
+          case 10:
+            amg_coarsening_str = "HMIS";
+            break;
+          case 11:
+            amg_coarsening_str = "oRS";
+            break;
+          default:            
+            {
+              std::ostringstream err_msg;
+              err_msg << "Something wrong setting coarsening string."
+                << "amg_coarsening is " << amg_coarsening << ".\n"
+                << std::endl;
+
+              throw OomphLibError(err_msg.str(),
+                  OOMPH_CURRENT_FUNCTION,
+                  OOMPH_EXCEPTION_LOCATION);
+            }
+            break;
+        }
+
+        hypre_string += amg_coarsening_str;
+
+        // Now do the smoother string.
+        const bool amg_using_simple_smoothing_flag 
+          = h_prec_pt->amg_using_simple_smoothing_flag();
+
+        const int amg_simple_smoother = h_prec_pt->amg_simple_smoother();
+        const int amg_complex_smoother = h_prec_pt->amg_complex_smoother();
+        std::string amg_smoother_str = "";
+
+        if(amg_using_simple_smoothing_flag)
+        {
+          if(amg_simple_smoother == 0)
+          {
+            amg_smoother_str = "Jac";
+
+            // If it is Jacobi, we have the damping!
+            std::ostringstream dampstream;
+            dampstream << h_prec_pt->amg_damping();
+            amg_smoother_str += dampstream.str();
+          }
+          else if(amg_simple_smoother == 1)
+          {
+            amg_smoother_str = "Gs";
+          }
+          else if(amg_simple_smoother == 2)
+          {
+            amg_smoother_str = "Gspinter";
+          }
+          else if(amg_simple_smoother == 3)
+          {
+            amg_smoother_str = "SORfs";
+          }
+          else if(amg_simple_smoother == 4)
+          {
+            amg_smoother_str = "SORbs";
+          }
+          else if(amg_simple_smoother == 6)
+          {
+            amg_smoother_str = "SSOR";
+          }
+          else
           {
             std::ostringstream err_msg;
-            err_msg << "Something wrong setting coarsening string."
-              << "amg_coarsening is " << amg_coarsening << ".\n"
+            err_msg << "Something wrong setting smoother string."
+              << "amg_simple_smoother is " << amg_simple_smoother << ".\n"
               << std::endl;
 
             throw OomphLibError(err_msg.str(),
                 OOMPH_CURRENT_FUNCTION,
                 OOMPH_EXCEPTION_LOCATION);
           }
-          break;
-      }
-
-      hypre_string += amg_coarsening_str;
-
-      // Now do the smoother string.
-      const bool amg_using_simple_smoothing_flag 
-        = h_prec_pt->amg_using_simple_smoothing_flag();
-
-      const int amg_simple_smoother = h_prec_pt->amg_simple_smoother();
-      const int amg_complex_smoother = h_prec_pt->amg_complex_smoother();
-      std::string amg_smoother_str = "";
-
-      if(amg_using_simple_smoothing_flag)
-      {
-        if(amg_simple_smoother == 0)
-        {
-          amg_smoother_str = "Jac";
-
-          // If it is Jacobi, we have the damping!
-          std::ostringstream dampstream;
-          dampstream << h_prec_pt->amg_damping();
-          amg_smoother_str += dampstream.str();
-        }
-        else if(amg_simple_smoother == 1)
-        {
-          amg_smoother_str = "Gs";
-        }
-        else if(amg_simple_smoother == 2)
-        {
-          amg_smoother_str = "Gspinter";
-        }
-        else if(amg_simple_smoother == 3)
-        {
-          amg_smoother_str = "SORfs";
-        }
-        else if(amg_simple_smoother == 4)
-        {
-          amg_smoother_str = "SORbs";
-        }
-        else if(amg_simple_smoother == 6)
-        {
-          amg_smoother_str = "SSOR";
         }
         else
         {
-          std::ostringstream err_msg;
-          err_msg << "Something wrong setting smoother string."
-            << "amg_simple_smoother is " << amg_simple_smoother << ".\n"
-            << std::endl;
+          if(amg_complex_smoother == 6)
+          {
+            amg_smoother_str = "Schwarz";
+          }
+          else if(amg_complex_smoother == 7)
+          {
+            amg_smoother_str = "Pilut";
+          }
+          else if(amg_complex_smoother == 8)
+          {
+            amg_smoother_str = "ParaSails";
+          }
+          else if(amg_complex_smoother == 9)
+          {
+            amg_smoother_str = "Euclid";
+          }
+          else
+          {
+            std::ostringstream err_msg;
+            err_msg << "Something wrong setting COMPLEX smoother string.\n"
+              << std::endl;
 
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
+            throw OomphLibError(err_msg.str(),
+                OOMPH_CURRENT_FUNCTION,
+                OOMPH_EXCEPTION_LOCATION);
+          }
         }
+
+        hypre_string += amg_smoother_str;
       }
-      else
-      {
-        if(amg_complex_smoother == 6)
-        {
-          amg_smoother_str = "Schwarz";
-        }
-        else if(amg_complex_smoother == 7)
-        {
-          amg_smoother_str = "Pilut";
-        }
-        else if(amg_complex_smoother == 8)
-        {
-          amg_smoother_str = "ParaSails";
-        }
-        else if(amg_complex_smoother == 9)
-        {
-          amg_smoother_str = "Euclid";
-        }
-        else
-        {
-          std::ostringstream err_msg;
-          err_msg << "Something wrong setting COMPLEX smoother string.\n"
-            << std::endl;
-
-          throw OomphLibError(err_msg.str(),
-              OOMPH_CURRENT_FUNCTION,
-              OOMPH_EXCEPTION_LOCATION);
-        }
-      }
-
-      hypre_string += amg_smoother_str;
+  std::replace(hypre_string.begin(), hypre_string.end(),
+                '.','-');
+      return hypre_string;
     }
-
-    return hypre_string;
-  }
 
   inline HyprePreconditioner* 
     create_f_p_amg_preconditioner(AMGParameters& amg_param,
-                                  const int& f_or_p)
-  {
-    // f_or_p = 0 means do f, 1 means do p
-    if(f_or_p == 0)
+        const int& f_or_p)
     {
-      if(F_solver == F_solver_exact)
+      // f_or_p = 0 means do f, 1 means do p
+      if(f_or_p == 0)
       {
-        NS_f_prec_str = "";
-        return 0;
+        if(F_solver == F_solver_exact)
+        {
+          NS_f_prec_str = "";
+          return 0;
+        }
+        else
+        {
+          HyprePreconditioner* h_prec_pt 
+            = create_hypre_preconditioner(amg_param);
+          NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+          return h_prec_pt;
+        }
       }
       else
       {
-        HyprePreconditioner* h_prec_pt 
-          = create_hypre_preconditioner(amg_param);
-        NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+        if(P_solver == P_solver_exact)
+        {
+          NS_p_prec_str = "";
+          return 0;
+        }
+        else
+        {
+          HyprePreconditioner* h_prec_pt
+            = create_hypre_preconditioner(amg_param);
+          NS_p_prec_str = get_hypre_preconditioner_string(h_prec_pt);
 
-        return h_prec_pt;
+          return h_prec_pt;
+        }
       }
-    }
-    else
-    {
-      if(P_solver == P_solver_exact)
-      {
-        NS_p_prec_str = "";
-        return 0;
-      }
-      else
-      {
-        HyprePreconditioner* h_prec_pt
-          = create_hypre_preconditioner(amg_param);
-        NS_p_prec_str = get_hypre_preconditioner_string(h_prec_pt);
-        return h_prec_pt;
-      }
-    }
 
-  }
+    }
 
 
 
@@ -608,21 +609,21 @@ namespace PreconditionerHelpers
       if(f_prec_pt != 0)
       {
         ns_prec_pt->set_f_preconditioner(f_prec_pt);
-        NS_prec_str+="Fa";
+        NS_prec_str+="Fa" + NS_f_prec_str;
       }
       else
       {
-        NS_prec_str+="Fe";
+        NS_prec_str+="Fe" + NS_f_prec_str;
       }
 
       if(p_prec_pt != 0)
       {
         ns_prec_pt->set_f_preconditioner(p_prec_pt);
-        NS_prec_str+="Pa";
+        NS_prec_str+="Pa" + NS_p_prec_str;
       }
       else
       {
-        NS_prec_str+="Pe";
+        NS_prec_str+="Pe" + NS_p_prec_str;
       }
 
       return ns_prec_pt;

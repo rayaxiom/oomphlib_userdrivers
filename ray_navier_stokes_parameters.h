@@ -137,132 +137,132 @@ namespace NavierStokesHelpers
     // Reynolds number is handled flexibly.
   }
 
- inline double global_temporal_error_norm(Problem* problem_pt,
-                                          const unsigned& dim,
-                                          Mesh* const & bulk_mesh_pt)
- {
+  inline double global_temporal_error_norm(Problem* problem_pt,
+      const unsigned& dim,
+      Mesh* const & bulk_mesh_pt)
+  {
 #ifdef OOMPH_HAS_MPI
-   double global_error = 0.0;
+    double global_error = 0.0;
 
-   // Find out how many nodes there are in the problem.
-   unsigned n_node = bulk_mesh_pt->nnode();
+    // Find out how many nodes there are in the problem.
+    unsigned n_node = bulk_mesh_pt->nnode();
 
-   // Loop over the nodes and calculate the estimate error in the values
-   // for non-haloes
-   int count = 0;
-   for (unsigned nod_i = 0; nod_i < n_node; nod_i++) 
-   {
-     Node* nod_pt = bulk_mesh_pt->node_pt(nod_i);
-     if(!(nod_pt->is_halo()))
-     {
-       // Get the error in solution: Difference between the predicted and
-       // actual value for nodal values 0, ... dim-1
-       double node_error = 0.0;
-       for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
-       {
-         double error = nod_pt->time_stepper_pt()->
-                        temporal_error_in_value(nod_pt,nodal_i);
-         node_error += error*error;
-         count++;
-       } // for loop over the nodal values 0,..,dim-1
-       global_error += node_error;
-     } // if the node is not halo
-   } // for loop over nodes
+    // Loop over the nodes and calculate the estimate error in the values
+    // for non-haloes
+    int count = 0;
+    for (unsigned nod_i = 0; nod_i < n_node; nod_i++) 
+    {
+      Node* nod_pt = bulk_mesh_pt->node_pt(nod_i);
+      if(!(nod_pt->is_halo()))
+      {
+        // Get the error in solution: Difference between the predicted and
+        // actual value for nodal values 0, ... dim-1
+        double node_error = 0.0;
+        for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
+        {
+          double error = nod_pt->time_stepper_pt()->
+            temporal_error_in_value(nod_pt,nodal_i);
+          node_error += error*error;
+          count++;
+        } // for loop over the nodal values 0,..,dim-1
+        global_error += node_error;
+      } // if the node is not halo
+    } // for loop over nodes
 
-   // Accumulate
-   int n_node_local = count;
-   int n_node_total = 0;
+    // Accumulate
+    int n_node_local = count;
+    int n_node_total = 0;
 
-   MPI_Allreduce(&n_node_local,&n_node_total,1,MPI_INT,MPI_SUM,
-                 problem_pt->communicator_pt()->mpi_comm());
+    MPI_Allreduce(&n_node_local,&n_node_total,1,MPI_INT,MPI_SUM,
+        problem_pt->communicator_pt()->mpi_comm());
 
-   double global_error_total = 0.0;
-   MPI_Allreduce(&global_error,&global_error_total,1,MPI_DOUBLE,MPI_SUM,
-                 problem_pt->communicator_pt()->mpi_comm());
+    double global_error_total = 0.0;
+    MPI_Allreduce(&global_error,&global_error_total,1,MPI_DOUBLE,MPI_SUM,
+        problem_pt->communicator_pt()->mpi_comm());
 
-   // Divide by the number of nodes
-   global_error_total /= double(n_node_total);
+    // Divide by the number of nodes
+    global_error_total /= double(n_node_total);
 
-   // Return square root...
-   // RAYRAY remove this output?
-   oomph_info << "Total error " << n_node_total << " " 
-              <<  sqrt(global_error_total) << std::endl;
-   return sqrt(global_error_total);
+    // Return square root...
+    // RAYRAY remove this output?
+    oomph_info << "Total error " << n_node_total << " " 
+      <<  sqrt(global_error_total) << std::endl;
+    return sqrt(global_error_total);
 #else
-   double global_error = 0.0;
+    double global_error = 0.0;
 
-   // Find out how many nodes there are in the problem
-   unsigned n_node = bulk_mesh_pt->nnode();
+    // Find out how many nodes there are in the problem
+    unsigned n_node = bulk_mesh_pt->nnode();
 
-   // Loop over the nodes and calculate the errors in the values.
-   for (unsigned node_i = 0; node_i < n_node; node_i++) 
-   {
-     Node* nod_pt = bulk_mesh_pt->node_pt(node_i);
+    // Loop over the nodes and calculate the errors in the values.
+    for (unsigned node_i = 0; node_i < n_node; node_i++) 
+    {
+      Node* nod_pt = bulk_mesh_pt->node_pt(node_i);
 
-     // Get the error in the solution: Difference between predicted and 
-     // actual value for nodal values 0,..,dim-1
-     double nodal_error = 0.0;
-     for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
-     {
-       double error = nod_pt->time_stepper_pt()->
-         temporal_error_in_value(nod_pt,nodal_i);
+      // Get the error in the solution: Difference between predicted and 
+      // actual value for nodal values 0,..,dim-1
+      double nodal_error = 0.0;
+      for (unsigned nodal_i = 0; nodal_i < dim; nodal_i++) 
+      {
+        double error = nod_pt->time_stepper_pt()->
+          temporal_error_in_value(nod_pt,nodal_i);
 
-       // Add the squared value to the nodal error.
-       nodal_error += error*error;
-     }
+        // Add the squared value to the nodal error.
+        nodal_error += error*error;
+      }
 
-     // add the nodal error to the global error.
-     global_error += nodal_error;
-   }
+      // add the nodal error to the global error.
+      global_error += nodal_error;
+    }
 
-   global_error /= double(n_node*3);
+    global_error /= double(n_node*3);
 
-   // Return square root
-   return sqrt(global_error);
+    // Return square root
+    return sqrt(global_error);
 #endif
- } // EoF global_temporal_error_norm
+  } // EoF global_temporal_error_norm
 
 
-inline std::string create_label()
-{
-  std::string label = "";
+  inline std::string create_label()
+  {
+    std::string label = "";
 
-  std::ostringstream nsp_stream;
-  if(Vis == 0)
-  {
-    nsp_stream << "Sim";
-  }
-  else if (Vis == 1)
-  {
-    nsp_stream << "Str";
-  }
-  else
-  {
+    std::ostringstream nsp_stream;
+    if(Vis == 0)
+    {
+      nsp_stream << "Sim";
+    }
+    else if (Vis == 1)
+    {
+      nsp_stream << "Str";
+    }
+    else
+    {
       std::ostringstream err_msg;
       err_msg << "No such Vis string"   << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
-  }
+    }
 
-  if(Rey < 0)
-  {
+    if(Rey < 0)
+    {
       std::ostringstream err_msg;
       err_msg << "Rey is negative."   << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
+    }
+    else
+    {
+
+      nsp_stream << "R" << Rey;
+    }
+
+    return nsp_stream.str();
+
+
   }
-  else
-  {
-
-    nsp_stream << "R" << Rey;
-  }
-
-  return nsp_stream.str();
-
-
-}
 
 
 }

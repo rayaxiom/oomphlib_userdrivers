@@ -69,22 +69,23 @@ namespace GeneralProblemHelpers
   bool Doc_time_flag = false;
   std::string Itstime_dir_str = "";
 
-  IterativeLinearSolver* Iterative_linear_solver_pt = 0;
-
   inline void setup_commandline_flags()
   {
+    // This is used within the driver code and within here.
+    // In the driver code, we may want to set different boundary conditions
+    // or set the boundary conditions in different places 
+    // (i.e. actions_before_newton_solver for steady state, and 
+    //       actions_before_implicit_time_step for time stepping)
     CommandLineArgs::specify_command_line_flag("--time_type",
         &Time_type);
 
+    // Used to set the solver in setup_solver() below, and to detect if we
+    // need to doc the times and iteration counts or not.
     CommandLineArgs::specify_command_line_flag("--solver_type",
         &Solver_type);
 
-    // A problem ID, there are eight different types of problems.
-    // Check the header file.
+
     CommandLineArgs::specify_command_line_flag("--dist_prob");
-
-
-
 
 
     CommandLineArgs::specify_command_line_flag("--max_solver_iter", 
@@ -279,6 +280,8 @@ namespace GeneralProblemHelpers
   }
 
 
+  // Pushes the iteration count and timing results in to the 
+  // DocLinearSolverInfo object.
   inline void doc_iter_times(Problem* problem_pt,
       DocLinearSolverInfo* doc_linear_solver_info_pt)
   {
@@ -330,6 +333,8 @@ namespace GeneralProblemHelpers
       (iters,preconditioner_setup_time,solver_time);
   }
 
+  // A more generalised doc_solution function. Note: This is not 
+  // parallelised yet... (maybe?)
   inline void doc_solution(Mesh* bulk_mesh_pt,
       const std::string& soln_dir,
       const std::string& label,
@@ -356,32 +361,25 @@ namespace GeneralProblemHelpers
   }
 
 
-  inline void setup_solver(const int& max_solver_iter,
-                           const double& solver_tol, const double& newton_tol,
-                           Problem* problem_pt, Preconditioner* prec_pt)
+  // setup the linear solver. NOTE: The solver is created by this function.
+  inline IterativeLinearSolver* setup_solver(const int& max_solver_iter,
+      const double& solver_tol, const double& newton_tol,
+      Problem* problem_pt, Preconditioner* prec_pt)
   { 
-    if(Iterative_linear_solver_pt != 0)
-    {
-      std::ostringstream err_msg;
-      err_msg << "GPH::Iterative_linear_solver_pt is not null" << std::endl;
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION);
-    }
-
+    IterativeLinearSolver* iterative_linear_solver_pt = 0;
 #ifdef OOMPH_HAS_TRILINOS
     if(Solver_type == Solver_type_TRILINOS_GMRES)
     {
       TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
       trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
-      Iterative_linear_solver_pt = trilinos_solver_pt;
+      iterative_linear_solver_pt = trilinos_solver_pt;
     }
     else if(Solver_type == Solver_type_OOMPHLIB_GMRES)
     {
-      Iterative_linear_solver_pt = new GMRES<CRDoubleMatrix>;
+      iterative_linear_solver_pt = new GMRES<CRDoubleMatrix>;
       // We use RHS preconditioning. Note that by default,
       // left hand preconditioning is used.
-      static_cast<GMRES<CRDoubleMatrix>*>(Iterative_linear_solver_pt)
+      static_cast<GMRES<CRDoubleMatrix>*>(iterative_linear_solver_pt)
         ->set_preconditioner_RHS();
     }
 #else
@@ -396,10 +394,10 @@ namespace GeneralProblemHelpers
     }
     else if(Solver_type == Solver_type_OOMPHLIB_GMRES)
     {
-      Iterative_linear_solver_pt = new GMRES<CRDoubleMatrix>;
+      iterative_linear_solver_pt = new GMRES<CRDoubleMatrix>;
       // We use RHS preconditioning. Note that by default,
       // left hand preconditioning is used.
-      static_cast<GMRES<CRDoubleMatrix>*>(Iterative_linear_solver_pt)
+      static_cast<GMRES<CRDoubleMatrix>*>(iterative_linear_solver_pt)
         ->set_preconditioner_RHS();
     }
 #endif
@@ -408,27 +406,34 @@ namespace GeneralProblemHelpers
     {
       std::ostringstream err_msg;
       err_msg << "Max solver iteration is " << max_solver_iter << ".\n"
-              << "Something has gone wrong. Have you set the flag\n"
-              << "--max_solver_iter ?" << std::endl;
+        << "Something has gone wrong. Have you set the flag\n"
+        << "--max_solver_iter ?" << std::endl;
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
     }
 
     // Now set everything!
-    if(Iterative_linear_solver_pt != 0)
+    if(iterative_linear_solver_pt != 0)
     {
-      Iterative_linear_solver_pt->tolerance() = solver_tol;
-      Iterative_linear_solver_pt->max_iter() = max_solver_iter;
-      Iterative_linear_solver_pt->preconditioner_pt() = prec_pt;
-      problem_pt->linear_solver_pt() = Iterative_linear_solver_pt;
+      iterative_linear_solver_pt->tolerance() = solver_tol;
+      iterative_linear_solver_pt->max_iter() = max_solver_iter;
+      iterative_linear_solver_pt->preconditioner_pt() = prec_pt;
+      problem_pt->linear_solver_pt() = iterative_linear_solver_pt;
     }
 
     problem_pt->newton_solver_tolerance() = newton_tol;
+
+    return iterative_linear_solver_pt;
   }
 
- inline void delete_flux_elements(Mesh* const &surface_mesh_pt)
- {
+
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  //Delete flux element function
+  inline void delete_flux_elements(Mesh* const &surface_mesh_pt)
+  {
     // How many surface elements are there in the mesh?
     const unsigned n_element = surface_mesh_pt->nelement();
 
@@ -441,82 +446,85 @@ namespace GeneralProblemHelpers
 
     // Wipe the mesh
     surface_mesh_pt->flush_element_and_node_storage();
- }
+  }
 
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////
+  // Used for time stepping.
+  inline void unsteady_run(Problem* problem_pt,
+      Mesh* mesh_pt,
+      DocLinearSolverInfo* doc_linear_solver_info_pt,
+      const std::string& label_str,
+      const std::string& soln_dir_str = std::string())
+  {
+    double dt = 0.0;
+    if(Time_type == Time_type_ADAPT)
+    {
+      dt = 1e-2;
+    }
+    else
+    {
+      dt = Delta_t;
+    }
 
- inline void unsteady_run(Problem* problem_pt,
-                          Mesh* mesh_pt,
-                          DocLinearSolverInfo* doc_linear_solver_info_pt,
-                          const std::string& label_str,
-                          const std::string& soln_dir_str = std::string())
- {
-   double dt = 0.0;
-   if(Time_type == Time_type_ADAPT)
-   {
-     dt = 1e-2;
-   }
-   else
-   {
-     dt = Delta_t;
-   }
+    // Initialise all history values for an impulsive start
+    problem_pt->assign_initial_values_impulsive(dt);
+    oomph_info << "IC = Impulsive start" << std::endl;
 
-   // Initialise all history values for an impulsive start
-   problem_pt->assign_initial_values_impulsive(dt);
-   oomph_info << "IC = Impulsive start" << std::endl;
+    // Now do many time steps
+    if (Time_type != Time_type_ADAPT) 
+    {
+      const unsigned nsteps = unsigned(std::ceil((Time_end 
+              - Time_start) / dt));
 
-   // Now do many time steps
-   if (Time_type != Time_type_ADAPT) 
-   {
-     const unsigned nsteps = unsigned(std::ceil((Time_end 
-                                                 - Time_start) / dt));
+      oomph_info << "Taking constant time steps of: " << dt << std::endl;
+      oomph_info << "NTIMESTEP is: " << nsteps << std::endl;
+    }
 
-     oomph_info << "Taking constant time steps of: " << dt << std::endl;
-     oomph_info << "NTIMESTEP is: " << nsteps << std::endl;
-   }
+    unsigned current_time_step = 0;
 
-   unsigned current_time_step = 0;
+    if(Doc_soln_flag)
+    {
+      doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
+    }
 
-   if(Doc_soln_flag)
-   {
-     doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
-   }
+    const double time_tol = 1e-4;
 
-   const double time_tol = 1e-4;
+    while(problem_pt->time_pt()->time() < Time_end)
+    {
+      oomph_info << "TIMESTEP: " << current_time_step << std::endl;
 
-   while(problem_pt->time_pt()->time() < Time_end)
-   {
-     oomph_info << "TIMESTEP: " << current_time_step << std::endl;
+      // Setup storage for a new time step
+      if(Solver_type != Solver_type_DIRECT_SOLVE)
+      {
+        // Initialise counters for each newton solve.
+        doc_linear_solver_info_pt->setup_new_time_step();
+      }
 
-     // Setup storage for a new time step
-     if(Solver_type != Solver_type_DIRECT_SOLVE)
-     {
-      // Initialise counters for each newton solve.
-      doc_linear_solver_info_pt->setup_new_time_step();
-     }
+      if (Time_type == Time_type_ADAPT) 
+      {
+        oomph_info << "DELTA_T: " << dt << std::endl;
 
-     if (Time_type == Time_type_ADAPT) 
-     {
-       oomph_info << "DELTA_T: " << dt << std::endl;
+        // Calculate the next time step.
+        dt = problem_pt->adaptive_unsteady_newton_solve(dt,time_tol);
+      }
+      else
+      {
+        // Take one fixed time step
+        problem_pt->unsteady_newton_solve(dt);
+      }
 
-       // Calculate the next time step.
-       dt = problem_pt->adaptive_unsteady_newton_solve(dt,time_tol);
-     }
-     else
-     {
-       // Take one fixed time step
-       problem_pt->unsteady_newton_solve(dt);
-     }
+      oomph_info << "Time is now: " 
+        << problem_pt->time_pt()->time() << std::endl;
 
-     oomph_info << "Time is now: " 
-                << problem_pt->time_pt()->time() << std::endl;
-
-     if(Doc_soln_flag)
-     {
-       doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
-     }
-     current_time_step++;
-   }
- } // EoF unsteady_run
+      if(Doc_soln_flag)
+      {
+        doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
+      }
+      current_time_step++;
+    }
+  } // EoF unsteady_run
 
 
 
@@ -533,35 +541,35 @@ namespace ResultsFormat
       const Vector<Vector<Vector<double> > >* iters_times_pt,
       std::ostringstream* results_stream_pt)
   {
-      // New timestep:
-      (*results_stream_pt) << "RAYITS:\t" << intimestep << "\t";
-      
-      // Loop through the Newton Steps
-      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
-      unsigned sum_of_newtonstep_iters = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_iters += (*iters_times_pt)[intimestep][innewtonstep][0];
-        (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][0] << " ";
-      }
-      double average_its = ((double)sum_of_newtonstep_iters)
-        / ((double)nnewtonstep);
+    // New timestep:
+    (*results_stream_pt) << "RAYITS:\t" << intimestep << "\t";
 
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-//      ((unsigned(average_its*10))%10)?
-//        (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
-//        << average_its << "(" << nnewtonstep << ")" << "\n":
-//        (*results_stream_pt) << "\t"<< average_its << "(" << nnewtonstep << ")" << "\n";
+    // Loop through the Newton Steps
+    unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+    unsigned sum_of_newtonstep_iters = 0;
+    for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+        innewtonstep++)
+    {
+      sum_of_newtonstep_iters += (*iters_times_pt)[intimestep][innewtonstep][0];
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][0] << " ";
+    }
+    double average_its = ((double)sum_of_newtonstep_iters)
+      / ((double)nnewtonstep);
 
-      std::streamsize tmp_precision = results_stream_pt->precision();
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    //      ((unsigned(average_its*10))%10)?
+    //        (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
+    //        << average_its << "(" << nnewtonstep << ")" << "\n":
+    //        (*results_stream_pt) << "\t"<< average_its << "(" << nnewtonstep << ")" << "\n";
 
-        (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
-        << average_its << "(" << nnewtonstep << ")" << "\n";
+    std::streamsize tmp_precision = results_stream_pt->precision();
+
+    (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
+      << average_its << "(" << nnewtonstep << ")" << "\n";
 
 
-      (*results_stream_pt) << std::setprecision(tmp_precision);
+    (*results_stream_pt) << std::setprecision(tmp_precision);
   }
 
   inline void format_rayavavgits(
@@ -595,19 +603,19 @@ namespace ResultsFormat
 
     double average_n_newton_step = ((double)total_nnewton_step)
       / ((double)ntimestep);
-    
+
     (*results_stream_pt) << "RAYAVGAVGITS:\t";
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-//    ((unsigned(average_its*10))%10)?
-//      (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
-//      << average_its << "(" << n_total_its << ")" << "\n":
- //     (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
-      std::streamsize tmp_precision = results_stream_pt->precision();
+    //    ((unsigned(average_its*10))%10)?
+    //      (*results_stream_pt) << "\t"<< std::fixed << std::setprecision(1)
+    //      << average_its << "(" << n_total_its << ")" << "\n":
+    //     (*results_stream_pt) << "\t"<< average_its << "(" << n_total_its << ")" << "\n";
+    std::streamsize tmp_precision = results_stream_pt->precision();
 
     (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
       << average_its << "(" << average_n_newton_step << ")"
-                     << "(" << ntimestep << ")\n";
+      << "(" << ntimestep << ")\n";
 
     // reset the precision
     (*results_stream_pt) << std::setprecision(tmp_precision);
@@ -638,12 +646,12 @@ namespace ResultsFormat
 
     double average_its = ((double)total_its)
       / ((double)n_total_its);
-    
+
     (*results_stream_pt) << "RAYAVGITS:\t";
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-      std::streamsize tmp_precision = results_stream_pt->precision();
-      (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
+    std::streamsize tmp_precision = results_stream_pt->precision();
+    (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
       << average_its << "(" << n_total_its << ")" << "\n";
 
     // reset the precision
@@ -655,23 +663,23 @@ namespace ResultsFormat
       const Vector<Vector<Vector<double> > >* iters_times_pt,
       std::ostringstream* results_stream_pt)
   {
-      // New timestep:
-      (*results_stream_pt) << "RAYPRECSETUP:\t" << intimestep << "\t";
-      // Loop through the Newtom Steps
-      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
-      double sum_of_newtonstep_times = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][1];
-        (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][1] << " ";
-      }
-      double average_time = ((double)sum_of_newtonstep_times)
-        / ((double)nnewtonstep);
+    // New timestep:
+    (*results_stream_pt) << "RAYPRECSETUP:\t" << intimestep << "\t";
+    // Loop through the Newtom Steps
+    unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+    double sum_of_newtonstep_times = 0;
+    for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+        innewtonstep++)
+    {
+      sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][1];
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][1] << " ";
+    }
+    double average_time = ((double)sum_of_newtonstep_times)
+      / ((double)nnewtonstep);
 
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
 
 
@@ -758,23 +766,23 @@ namespace ResultsFormat
       const Vector<Vector<Vector<double> > >* iters_times_pt,
       std::ostringstream* results_stream_pt)
   {
-      // New timestep:
-      (*results_stream_pt) << "RAYLINSOLVER:\t" << intimestep << "\t";
-      // Loop through the Newtom Steps
-      unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
-      double sum_of_newtonstep_times = 0;
-      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
-          innewtonstep++)
-      {
-        sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][2];
-        (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][2] << " ";
-      }
-      double average_time = ((double)sum_of_newtonstep_times)
-        / ((double)nnewtonstep);
+    // New timestep:
+    (*results_stream_pt) << "RAYLINSOLVER:\t" << intimestep << "\t";
+    // Loop through the Newtom Steps
+    unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
+    double sum_of_newtonstep_times = 0;
+    for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+        innewtonstep++)
+    {
+      sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][2];
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][2] << " ";
+    }
+    double average_time = ((double)sum_of_newtonstep_times)
+      / ((double)nnewtonstep);
 
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
   }
 
 
@@ -808,17 +816,17 @@ namespace ResultsFormat
 
 
     double average_time = ((double)total_time)
-            / ((double)n_total_time);
+      / ((double)n_total_time);
     double average_n_newton_step = ((double)total_nnewton_step)
       / ((double)ntimestep);
 
 
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      (*results_stream_pt) << "\t"
-        << average_time 
-        << "(" << average_n_newton_step << ")"
-        << "(" << ntimestep << ")" << "\n";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"
+      << average_time 
+      << "(" << average_n_newton_step << ")"
+      << "(" << ntimestep << ")" << "\n";
   }
 
 
@@ -826,16 +834,16 @@ namespace ResultsFormat
       const Vector<Vector<Vector<double> > >* iters_times_pt,
       std::ostringstream* results_stream_pt)
   {
-      // New timestep:
-//      (*results_stream_pt) << "RAYLINSOLVER:\t" << intimestep << "\t";
-         // Loop through all the time steps
+    // New timestep:
+    //      (*results_stream_pt) << "RAYLINSOLVER:\t" << intimestep << "\t";
+    // Loop through all the time steps
     const unsigned ntimestep = iters_times_pt->size();
     double total_time = 0.0;
     unsigned n_total_time = 0;
 
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     { 
-    
+
       // Loop through the Newtom Steps
       unsigned nnewtonstep = (*iters_times_pt)[intimestep].size();
       for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
@@ -845,13 +853,13 @@ namespace ResultsFormat
         n_total_time++;
       }
     }
-(*results_stream_pt) << "RAYAVGLINSOLVER:\t";
-      double average_time = ((double)total_time)
-        / ((double)n_total_time);
+    (*results_stream_pt) << "RAYAVGLINSOLVER:\t";
+    double average_time = ((double)total_time)
+      / ((double)n_total_time);
 
-      // Print to one decimal place if the average is not an exact
-      // integer. Otherwise we print normally.
-      (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
+    // Print to one decimal place if the average is not an exact
+    // integer. Otherwise we print normally.
+    (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
   }
 } // namespace ResultsFormat
 
