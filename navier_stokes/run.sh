@@ -11,7 +11,7 @@ MAX_SOLVER_ITER="--max_solver_iter 100"
 
 DT=""
 TIME_START="--time_start 0"
-TIME_END="--time_end 4"
+TIME_END="--time_end 1"
 
 SOLN_DIR="tmp_soln"
 RES_DIR="tmp_itstime"
@@ -81,7 +81,7 @@ F_AMG_SMITER="--f_amg_smiter 2"
 F_AMG_SIM_SMOO="--f_amg_sim_smoo 1"
 F_AMG_COM_SMOO=""
 F_AMG_DAMP=""
-F_AMG_STR="--f_amg_str 0.668"
+F_AMG_STR="--f_amg_str 0.75"
 F_AMG_COARSE="--f_amg_coarse 1"
 F_AMG_PRINT="--print_f_hypre"
 

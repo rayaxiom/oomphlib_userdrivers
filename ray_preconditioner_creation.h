@@ -630,7 +630,7 @@ namespace PreconditionerHelpers
 
       if(p_prec_pt != 0)
       {
-        ns_prec_pt->set_f_preconditioner(p_prec_pt);
+        ns_prec_pt->set_p_preconditioner(p_prec_pt);
         NS_prec_str+="Pa" + NS_p_prec_str;
       }
       else
