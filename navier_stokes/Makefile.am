@@ -1,11 +1,11 @@
 noinst_PROGRAMS= \
-cube \
+navier_stokes_cube \
 three_d_fp
 
 #------------------------------------------------------------------------
-cube_SOURCES = cube.cc
+navier_stokes_cube_SOURCES = navier_stokes_cube.cc
 
-cube_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+navier_stokes_cube_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 
 three_d_fp_SOURCES = three_d_fp.cc
 
