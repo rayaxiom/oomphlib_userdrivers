@@ -100,11 +100,14 @@ namespace NavierStokesHelpers
         // Dim is guaranteed to be either 2 or 3
         if(Dim == 2)
         {
+          oomph_info << "RAYINFO: setting SIMPLE form for 2D" << std::endl; 
+          
           NavierStokesEquations<2>::Gamma[0] = 0.0;
           NavierStokesEquations<2>::Gamma[1] = 0.0;
         }
         else
         {
+          oomph_info << "RAYINFO: setting SIMPLE form for 3D" << std::endl; 
           NavierStokesEquations<3>::Gamma[0] = 0.0;
           NavierStokesEquations<3>::Gamma[1] = 0.0;
           NavierStokesEquations<3>::Gamma[2] = 0.0;
@@ -114,11 +117,13 @@ namespace NavierStokesHelpers
       {
         if(Dim == 2)
         {
+          oomph_info << "RAYINFO: setting STRESS DIVERGENCE form for 2D" << std::endl; 
           NavierStokesEquations<2>::Gamma[0] = 1.0;
           NavierStokesEquations<2>::Gamma[1] = 1.0;
         }
         else
         {
+          oomph_info << "RAYINFO: setting STRESS DIVERGENCE form for 3D" << std::endl; 
           NavierStokesEquations<3>::Gamma[0] = 1.0;
           NavierStokesEquations<3>::Gamma[1] = 1.0;
           NavierStokesEquations<3>::Gamma[2] = 1.0;

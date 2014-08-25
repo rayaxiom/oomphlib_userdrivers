@@ -41,7 +41,7 @@ NavierStokesHelper="$VISC $REY $REY_START $REY_INCRE $REY_END"
 ###############################
 
 PROB_ID="--prob_id 0"
-NOEL="--noel 6"
+NOEL="--noel 4"
 
 ##
 ProbSpecificParam="$NOEL $PROB_ID"
@@ -142,6 +142,6 @@ PrecHelper="$LGR_PREC $F_AMG_PREC $P_AMG_PREC"
 PARAM="$GenProbHelper $NavierStokesHelper $ProbSpecificParam $PrecHelper"
 
 echo $PARAM
-make $PROGRAM && mpirun -np 2 ./$PROGRAM $PARAM
+make $PROGRAM && mpirun -np 1 ./$PROGRAM $PARAM
 
 
