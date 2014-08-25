@@ -175,8 +175,28 @@ public:
 //   delete F_matrix_preconditioner_pt;
   }
 
+ void actions_before_distribute()
+ {
 
- 
+
+
+
+      rebuild_global_mesh();
+
+ }
+
+
+
+ void actions_after_distribute()
+ {
+
+
+
+     rebuild_global_mesh();
+ }
+
+
+
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
  void actions_after_adapt()
   {
@@ -505,6 +525,8 @@ int main(int argc, char **argv)
 
   // Build the problem 
   FpTestProblem problem;
+
+  problem.distribute();
 
   // Solve the problem 
   problem.newton_solve();
