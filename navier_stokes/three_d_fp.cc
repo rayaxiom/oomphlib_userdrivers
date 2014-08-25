@@ -243,14 +243,22 @@ private:
  /// Inexact solver for F block
  Preconditioner* F_matrix_preconditioner_pt;
 
- /// ID of driven boundary
- unsigned Driven_boundary;
+ DocLinearSolverInfo* Doc_linear_solver_info_pt;
+
+
+ unsigned Left_boundary;
+ unsigned Right_boundary;
+ unsigned Front_boundary;
+ unsigned Back_boundary;
+ unsigned Bottom_boundary;
+ unsigned Top_boundary;
 
  /// ID of inflow boundary
  unsigned Inflow_boundary;
 
  /// ID of outflow boundary
  unsigned Outflow_boundary;
+
 
 
  /// Pointer to the "bulk" mesh
@@ -264,21 +272,70 @@ private:
 //========================================================================
 FpTestProblem::FpTestProblem()
 { 
- 
- 
+  Left_boundary = 4;
+  Right_boundary = 2;
+  Front_boundary = 5;
+  Back_boundary = 0;
+  Bottom_boundary = 1;
+  Top_boundary = 3; 
+  Inflow_boundary=Left_boundary;
+  Outflow_boundary=Right_boundary;
+  Doc_linear_solver_info_pt = GPH::Doc_linear_solver_info_pt; 
  const unsigned noel = GP::Noel;
  const double length = GP::Length;
 
- Bulk_mesh_pt = 
-   new SimpleCubicMesh<QTaylorHoodElement<3> >(noel,noel,noel,
-                                               length,length,length);
 
- Driven_boundary=0;
- Inflow_boundary=4;
- Outflow_boundary=2;
+  if(GPH::Time_type == GPH::Time_type_STEADY)
+  {
+    oomph_info << "Doing steady state, no time stepper added." << std::endl;
+  }
+  else if(GPH::Time_type == GPH::Time_type_ADAPT)
+  {
+    oomph_info << "Adding adaptive time stepper" << std::endl; 
+    add_time_stepper_pt(new BDF<2>(true));
+  }
+  else if(GPH::Time_type == GPH::Time_type_FIXED)
+  {
+    oomph_info << "Adding non-adaptive time stepper" << std::endl; 
+    add_time_stepper_pt(new BDF<2>);
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "Time stepper for Time_type: "
+      << GPH::Time_type << std::endl;
 
- // Create "surface mesh" that will contain only the prescribed-traction 
- // elements.
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
+
+  if(GPH::Time_type == GPH::Time_type_STEADY)
+  {
+    Bulk_mesh_pt = 
+      new SimpleCubicMesh<QTaylorHoodElement<3> >(noel,noel,noel,
+          length, length, length);
+  }
+  else if((GPH::Time_type == GPH::Time_type_ADAPT)
+      ||GPH::Time_type == GPH::Time_type_FIXED)
+  {
+    Bulk_mesh_pt = 
+      new SimpleCubicMesh<QTaylorHoodElement<3> >(noel,noel,noel, 
+          length, length, length,
+          time_stepper_pt());
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "No mesh set up for Time_type: "
+      << GPH::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
 
  // Add the two sub meshes to the problem
  add_sub_mesh(Bulk_mesh_pt);
@@ -286,9 +343,13 @@ FpTestProblem::FpTestProblem()
  // Combine all submeshes into a single Mesh
  build_global_mesh();
  
-
+  // Set up preconditioner and solver.
+  F_matrix_preconditioner_pt = PH::create_f_p_amg_preconditioner(PH::F_amg_param,0);
+  P_matrix_preconditioner_pt = PH::create_f_p_amg_preconditioner(PH::P_amg_param,1);
    
- Prec_pt = PH::create_lsc_preconditioner(this,Bulk_mesh_pt,0,0);
+ Prec_pt = PH::create_lsc_preconditioner(this,Bulk_mesh_pt,
+                                         F_matrix_preconditioner_pt,
+                                         P_matrix_preconditioner_pt);
  
    
    // Set the boundary conditions for this problem: All nodes are
