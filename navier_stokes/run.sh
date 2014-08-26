@@ -30,7 +30,7 @@ GenProbHelper+="$DOC_SOLN $ITSTIMEDIR"
 
 #################################
 
-VISC="--visc 1"
+VISC="--visc 0"
 REY="--rey 100"
 REY_START=""
 REY_INCRE=""
