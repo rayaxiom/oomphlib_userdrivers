@@ -560,7 +560,7 @@ namespace PreconditionerHelpers
       // f_or_p = 0 means do f, 1 means do p
       if(f_or_p == 0)
       {
-        if(F_solver == F_solver_exact)
+        if((F_solver == F_solver_exact) || (NS_solver == NS_solver_exact))
         {
           NS_f_prec_str = "";
           return 0;
@@ -580,7 +580,7 @@ namespace PreconditionerHelpers
       }
       else
       {
-        if(P_solver == P_solver_exact)
+        if((P_solver == P_solver_exact) || (NS_solver == NS_solver_exact))
         {
           NS_p_prec_str = "";
           return 0;
@@ -612,30 +612,34 @@ namespace PreconditionerHelpers
       NS_prec_str = "";
 
       // Create the NS LSC preconditioner.
-      NavierStokesSchurComplementPreconditioner* ns_prec_pt =
-        new NavierStokesSchurComplementPreconditioner(problem_pt);
+      NavierStokesSchurComplementPreconditioner* ns_prec_pt = 0;
 
-      // Give LSC the bulk mesh (Navier-Stokes mesh).
-      ns_prec_pt->set_navier_stokes_mesh(mesh_pt);
+      if(NS_solver != NS_solver_exact)
+      {
+        ns_prec_pt = new NavierStokesSchurComplementPreconditioner(problem_pt);
 
-      if(f_prec_pt != 0)
-      {
-        ns_prec_pt->set_f_preconditioner(f_prec_pt);
-        NS_prec_str+="Fa" + NS_f_prec_str;
-      }
-      else
-      {
-        NS_prec_str+="Fe" + NS_f_prec_str;
-      }
+        // Give LSC the bulk mesh (Navier-Stokes mesh).
+        ns_prec_pt->set_navier_stokes_mesh(mesh_pt);
 
-      if(p_prec_pt != 0)
-      {
-        ns_prec_pt->set_p_preconditioner(p_prec_pt);
-        NS_prec_str+="Pa" + NS_p_prec_str;
-      }
-      else
-      {
-        NS_prec_str+="Pe" + NS_p_prec_str;
+        if(f_prec_pt != 0)
+        {
+          ns_prec_pt->set_f_preconditioner(f_prec_pt);
+          NS_prec_str+="Fa" + NS_f_prec_str;
+        }
+        else
+        {
+          NS_prec_str+="Fe" + NS_f_prec_str;
+        }
+
+        if(p_prec_pt != 0)
+        {
+          ns_prec_pt->set_p_preconditioner(p_prec_pt);
+          NS_prec_str+="Pa" + NS_p_prec_str;
+        }
+        else
+        {
+          NS_prec_str+="Pe" + NS_p_prec_str;
+        }
       }
 
       return ns_prec_pt;

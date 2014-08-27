@@ -5104,7 +5104,7 @@ namespace GenericProblemSetup
 
    if(NSPP::Delta_t < 0.0)
    {
-     dt = 1e-2;
+     dt = 1e-1;
      doing_adaptive_time_stepping = true;
    }
    else
