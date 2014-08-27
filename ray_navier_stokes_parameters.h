@@ -53,7 +53,7 @@ namespace NavierStokesHelpers
 
   int Dim = -1;
 
-  inline void setup_commandline_flags()
+  inline void specify_command_line_flags()
   {
     CommandLineArgs::specify_command_line_flag("--visc", 
         &Vis);
@@ -66,7 +66,7 @@ namespace NavierStokesHelpers
   }
 
 
-  inline void generic_setup()
+  inline void setup_command_line_flags()
   {
 
     /////////////////
@@ -220,7 +220,7 @@ namespace NavierStokesHelpers
       global_error += nodal_error;
     }
 
-    global_error /= double(n_node*3);
+    global_error /= double(n_node*dim);
 
     // Return square root
     return sqrt(global_error);

@@ -58,7 +58,7 @@ namespace NSHelpers = NavierStokesHelpers;
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-namespace Global_Parameters
+namespace ProblemHelpers
 {
 
   // Problem specific parameters
@@ -66,6 +66,40 @@ namespace Global_Parameters
   int Prob_id = -1;
 
   const double Length = 1.0;
+
+
+
+
+  inline void specify_command_line_flags()
+  {
+    CommandLineArgs::specify_command_line_flag("--noel", &Noel);
+
+    CommandLineArgs::specify_command_line_flag("--prob_id", &Prob_id);
+  }
+
+
+  inline void setup_command_line_flags()
+  {
+    if(!CommandLineArgs::command_line_flag_has_been_set("--noel"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set --noel" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    if(!CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set --prob_id" << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+  }
+
+
 
   inline std::string prob_str()
   {
@@ -84,7 +118,6 @@ namespace Global_Parameters
           OOMPH_EXCEPTION_LOCATION);
     }
     return prob_str;
-
   }
 
 
@@ -147,7 +180,7 @@ namespace Global_Parameters
 
 }
 
-namespace GlobalParam = Global_Parameters;
+namespace ProbHelpers = ProblemHelpers;
 
 
 //==start_of_problem_class============================================
@@ -222,7 +255,7 @@ class CubeProblem : public Problem
                 const double time=time_pt()->time();
 
                 double ux 
-                  = GlobalParam::get_prescribed_inflow_for_quarter(time,y,z);
+                  = ProbHelpers::get_prescribed_inflow_for_quarter(time,y,z);
 
                 nod_pt->set_value(0,ux);
                 nod_pt->set_value(1,0.0);
@@ -313,7 +346,7 @@ class CubeProblem : public Problem
               {
 
                 const double ux 
-                  = GlobalParam::get_prescribed_inflow_for_quarter(y,z);
+                  = ProbHelpers::get_prescribed_inflow_for_quarter(y,z);
 
                 nod_pt->set_value(0,ux);
                 nod_pt->set_value(1,0.0);
@@ -451,8 +484,8 @@ CubeProblem<ELEMENT>::CubeProblem()
 
 
   // Setup mesh
-  const unsigned noel = GlobalParam::Noel;
-  const double length = GlobalParam::Length;
+  const unsigned noel = ProbHelpers::Noel;
+  const double length = ProbHelpers::Length;
 
   if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
   {
@@ -551,7 +584,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSHelpers::Rey;
-//    el_pt->re_st_pt() = &NSHelpers::Rey;
+    //    el_pt->re_st_pt() = &NSHelpers::Rey;
   } // end loop over elements
 
 
@@ -593,10 +626,10 @@ double CubeProblem<ELEMENT>::global_temporal_error_norm()
 std::string create_label()
 {
 
-  std::string label = Global_Parameters::prob_str()
+  std::string label = ProblemHelpers::prob_str()
     + NSHelpers::create_label()
     + PrecHelpers::NS_prec_str
-    + Global_Parameters::noel_str();
+    + ProblemHelpers::noel_str();
   return label;
 }
 
@@ -605,40 +638,6 @@ std::string create_label()
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 
-
-
-
-inline void problem_specific_setup_commandline_flags()
-{
-  CommandLineArgs::specify_command_line_flag("--noel", 
-      &GlobalParam::Noel);
-
-  CommandLineArgs::specify_command_line_flag("--prob_id", 
-      &GlobalParam::Prob_id);
-}
-
-
-inline void problem_specific_generic_setup()
-{
-  if(!CommandLineArgs::command_line_flag_has_been_set("--noel"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "Please set --noel" << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-
-  if(!CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
-  {
-    std::ostringstream err_msg;
-    err_msg << "Please set --prob_id" << std::endl;
-    throw OomphLibError(err_msg.str(),
-        OOMPH_CURRENT_FUNCTION,
-        OOMPH_EXCEPTION_LOCATION);
-  }
-
-}
 
 
 //==start_of_main======================================================
@@ -680,7 +679,7 @@ int main(int argc, char **argv)
   //
   // --itstimedir [results_dir]
   //
-  GenProbHelpers::setup_commandline_flags();
+  GenProbHelpers::specify_command_line_flags();
 
   // From NavierStokesHelpers, set:
   // --visc 0 or 1
@@ -688,7 +687,7 @@ int main(int argc, char **argv)
   // --rey_start - only set if looping through reynolds numbers
   // --rey_incre - same as above
   // --rey_end - same as above
-  NSHelpers::setup_commandline_flags();
+  NSHelpers::specify_command_line_flags();
 
   // From PreconditionerHelpers, set:
   // --f_solver 0 (exact) or 1 (amg)
@@ -739,21 +738,21 @@ int main(int argc, char **argv)
   // REPEAT FOR p solver if it is also using AMG
   // THERE ARE 6 things to set!
   //
-  PrecHelpers::setup_commandline_flags();
+  PrecHelpers::specify_command_line_flags();
 
   // --noel number of elements in 1D
   // --prob_id - currently, the only prob id is 0
-  problem_specific_setup_commandline_flags();
+  ProbHelpers::specify_command_line_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
 
 
-  GenProbHelpers::generic_setup();
-  NSHelpers::generic_setup();
-  PrecHelpers::generic_setup();
-  problem_specific_generic_setup();
+  GenProbHelpers::setup_command_line_flags();
+  NSHelpers::setup_command_line_flags();
+  PrecHelpers::setup_command_line_flags();
+  ProbHelpers::setup_command_line_flags();
 
 
 
@@ -762,157 +761,162 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
   std::string label = "";
 
+  // Build the problem 
+  CubeProblem <QTaylorHoodElement<3> >problem;
+
+
+  // Solve the problem 
+  //              problem.newton_solve();
+
+  if(GenProbHelpers::Distribute_problem)
   {
-    // Build the problem 
-    CubeProblem <QTaylorHoodElement<3> >problem;
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+    const unsigned nproc = comm_pt->nproc();
 
-
-    // Solve the problem 
-    //              problem.newton_solve();
-
-    if(GenProbHelpers::Distribute_problem)
+    if(nproc == 1)
     {
-      oomph_info << "RAYINFO: I am distributing the problem" << std::endl;
-      
-      problem.distribute();
-
-      oomph_info << "problem.distributed() = " << problem.distributed() << std::endl; 
-      
-    }
-
-    label = create_label();
-    //  NSPP::Label_str = create_label();
-
-    time_t rawtime;
-    time(&rawtime);
-
-    std::cout << "RAYDOING: "
-      << label
-      << " on " << ctime(&rawtime) << std::endl;
-
-    if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
-    {
-      problem.newton_solve();
-
-
-
-      if(GenProbHelpers::Doc_soln_flag)
-      {
-        GenProbHelpers::doc_solution(problem.bulk_mesh_pt(),
-            GenProbHelpers::Soln_dir_str,
-            label);
-      }
+      oomph_info << "RAYINFO: only 1 core, "
+                 << "not distributing problem." << std::endl;
     }
     else
     {
-      GenProbHelpers::unsteady_run(&problem,
-                                   problem.bulk_mesh_pt(),
-                                   &doc_linear_solver_info,
-                                   label,
-                                   GenProbHelpers::Soln_dir_str);
+      oomph_info << "RAYINFO: I am distributing the problem" << std::endl;
+
+      problem.distribute();
     }
-
-    //  GenericProblemSetup::unsteady_run(&problem,
-    //                                    &doc_linear_solver_info,
-    //                                    problem.bulk_mesh_pt());
-
-
   }
+
+  GenProbHelpers::Distribute_problem = problem.distributed();
+  oomph_info << "Problem.distributed() is " 
+             << GenProbHelpers::Distribute_problem << std::endl; 
+
+  label = create_label();
+
+  time_t rawtime;
+  time(&rawtime);
+
+  std::cout << "RAYDOING: "
+    << label
+    << " on " << ctime(&rawtime) << std::endl;
+
+
+  // There are two types of solves, one for steady state, another for
+  // time stepping.
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
+  {
+    problem.newton_solve();
+
+    if(GenProbHelpers::Doc_soln_flag)
+    {
+      GenProbHelpers::doc_solution(problem.bulk_mesh_pt(),
+          GenProbHelpers::Soln_dir_str,
+          label);
+    }
+  }
+  else
+  {
+    GenProbHelpers::unsteady_run(&problem,
+        problem.bulk_mesh_pt(),
+        &doc_linear_solver_info,
+        label,
+        GenProbHelpers::Soln_dir_str);
+  }
+
 
   //////////////////////////////////////////////////////////////////////////
   ////////////// Outputting results ////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////
 
-    if(GenProbHelpers::Solver_type != GenProbHelpers::Solver_type_DIRECT_SOLVE)
+  if(GenProbHelpers::Solver_type != GenProbHelpers::Solver_type_DIRECT_SOLVE)
+  {
+    // Get the global oomph-lib communicator 
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+
+    // my rank and number of processors. 
+    // This is used later for putting the data.
+    const unsigned my_rank = comm_pt->my_rank();
+    const unsigned nproc = comm_pt->nproc();
+
+    // Variable to indicate if we want to output to a file or not.
+    bool output_to_file = false;
+
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    if(GenProbHelpers::Doc_time_flag)
     {
-      // Get the global oomph-lib communicator 
-      const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
-  
-      // my rank and number of processors. 
-      // This is used later for putting the data.
-      const unsigned my_rank = comm_pt->my_rank();
-      const unsigned nproc = comm_pt->nproc();
-  
-      // Variable to indicate if we want to output to a file or not.
-      bool output_to_file = false;
-  
-      // The output file.
-      std::ofstream outfile;
-  
-      // If we want to output to a file, we create the outfile.
-      if(GenProbHelpers::Doc_time_flag)
-      {
-        output_to_file = true;
-        std::ostringstream filename_stream;
-        filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
-          << label
-          <<"NP"<<nproc<<"R"<<my_rank;
-        outfile.open(filename_stream.str().c_str());
-      }
-  
-      // Stringstream to hold the results. We do not output the results
-      // (timing/iteration counts) as we get it since it will interlace with the
-      // other processors and becomes hard to read.
-      std::ostringstream results_stream;
-  
-      // Get the 3D vector which holds the iteration counts and timing results.
-      Vector<Vector<Vector<double> > > iters_times
-        = GenProbHelpers::Doc_linear_solver_info_pt->iterations_and_times();
-  
-      // Since this is a steady state problem, there is only
-      // one "time step", thus it is essentially a 2D vector 
-      // (the outer-most vector is of size 1).
-  
-      // Loop over the time steps and output the iterations, prec setup time and
-      // linear solver time.
-      unsigned ntimestep = iters_times.size();
-      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-      {
-        ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
-      }
-      
-      ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-      ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
-  
-      // Now doing the preconditioner setup time.
-      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-      {
-        ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
-      }
-  
-      ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-      ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
-      // Now doing the linear solver time.
-      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-      {
-        ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
-      }
-      
-      ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-      ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream); 
-  
-      // Print the result to oomph_info one processor at a time...
-      // This still doesn't seem to always work, since there are other calls
-      // to oomph_info before this one...
-      for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
-      {
-        if(proc_i == my_rank)
-        {
-          oomph_info << "\n" 
-            << "========================================================\n"
-            << results_stream.str()
-            << "========================================================\n"
-            << "\n" << std::endl;
-        }
-        MPI_Barrier(MPI_COMM_WORLD);
-      }
-  
-      if(output_to_file)
-      {
-        outfile << "\n" << results_stream.str();
-        outfile.close();
-      }
+      output_to_file = true;
+      std::ostringstream filename_stream;
+      filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
+        << label
+        <<"NP"<<nproc<<"R"<<my_rank;
+      outfile.open(filename_stream.str().c_str());
     }
+
+    // Stringstream to hold the results. We do not output the results
+    // (timing/iteration counts) as we get it since it will interlace with the
+    // other processors and becomes hard to read.
+    std::ostringstream results_stream;
+
+    // Get the 3D vector which holds the iteration counts and timing results.
+    Vector<Vector<Vector<double> > > iters_times
+      = GenProbHelpers::Doc_linear_solver_info_pt->iterations_and_times();
+
+    // Since this is a steady state problem, there is only
+    // one "time step", thus it is essentially a 2D vector 
+    // (the outer-most vector is of size 1).
+
+    // Loop over the time steps and output the iterations, prec setup time and
+    // linear solver time.
+    unsigned ntimestep = iters_times.size();
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+    }
+
+    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
+
+    // Now doing the preconditioner setup time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+    }
+
+    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
+    // Now doing the linear solver time.
+    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+    {
+      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+    }
+
+    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream); 
+
+    // Print the result to oomph_info one processor at a time...
+    // This still doesn't seem to always work, since there are other calls
+    // to oomph_info before this one...
+    for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
+    {
+      if(proc_i == my_rank)
+      {
+        oomph_info << "\n" 
+          << "========================================================\n"
+          << results_stream.str()
+          << "========================================================\n"
+          << "\n" << std::endl;
+      }
+      MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    if(output_to_file)
+    {
+      outfile << "\n" << results_stream.str();
+      outfile.close();
+    }
+  }
 
 
 

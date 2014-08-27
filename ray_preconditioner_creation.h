@@ -287,7 +287,7 @@ namespace PreconditionerHelpers
 
 
 
-  inline void setup_commandline_flags()
+  inline void specify_command_line_flags()
   {
     // Flag to output the preconditioner, used for debugging.
     // string
@@ -391,7 +391,7 @@ namespace PreconditionerHelpers
   }
 
 
-  inline void generic_setup()
+  inline void setup_command_line_flags()
   {
     if(CommandLineArgs::command_line_flag_has_been_set("--print_f_hypre"))
     {
@@ -692,7 +692,7 @@ namespace PreconditionerHelpers
       if(ns_prec_pt != 0)
       {
         lgr_prec_pt->set_navier_stokes_lsc_preconditioner(ns_prec_pt);
-        Lgr_prec_str+="Nl";
+        Lgr_prec_str+="Nl" + NS_prec_str;
       }
       else
       {

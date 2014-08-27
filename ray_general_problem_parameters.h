@@ -69,7 +69,7 @@ namespace GeneralProblemHelpers
   bool Doc_time_flag = false;
   std::string Itstime_dir_str = "";
 
-  inline void setup_commandline_flags()
+  inline void specify_command_line_flags()
   {
     // This is used within the driver code and within here.
     // In the driver code, we may want to set different boundary conditions
@@ -106,7 +106,7 @@ namespace GeneralProblemHelpers
   }
 
 
-  inline void generic_setup()
+  inline void setup_command_line_flags()
   {
     if(!CommandLineArgs::command_line_flag_has_been_set("--time_type"))
     {
