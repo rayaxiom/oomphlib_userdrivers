@@ -831,7 +831,7 @@ CubeProblem<ELEMENT>::CubeProblem()
   F_matrix_preconditioner_pt
     = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
   P_matrix_preconditioner_pt
-    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::P_amg_param,0);
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::P_amg_param,1);
 
   NS_matrix_preconditioner_pt = PrecHelpers::create_lsc_preconditioner(
       this,
