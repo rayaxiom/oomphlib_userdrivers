@@ -2,40 +2,97 @@
 set -u
 
 TAG="RAYAVGAVGITS"
+PREC="WeNlFa2v2Strn0-75cRSGsPe"
+############################################
+
 LINE=""
+VISC="Sim"
 
-RESFILE="*N4NP*"
+RESFILE="CuPo${VISC}R200${PREC}A30N4*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-RESFILE="*N6NP*"
+
+RESFILE="CuPo${VISC}R200${PREC}A30N6*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-RESFILE="*N8NP*"
+
+RESFILE="CuPo${VISC}R200${PREC}A30N8*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-RESFILE="*N10NP*"
+
+RESFILE="CuPo${VISC}R200${PREC}A30N10*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-RESFILE="*N12NP*"
+
+RESFILE="CuPo${VISC}R200${PREC}A30N12*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-RESFILE="*N14NP*"
+
+RESFILE="CuPo${VISC}R200${PREC}A30N14*"
 TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
 LINE="$LINE $TOKEN"
 
-#RESFILE="*N16NP*"
-#TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
-#LINE="$LINE $TOKEN"
 
-#RESFILE="*N18NP*"
-#TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
-#LINE="$LINE $TOKEN"
+RESFILE="CuPo${VISC}R200${PREC}A30N16*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N18*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
 
 echo $LINE
+LINE=""
+
+VISC="Str"
+RESFILE="CuPo${VISC}R200${PREC}A30N4*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N6*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N8*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N10*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N12*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N14*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N16*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+RESFILE="CuPo${VISC}R200${PREC}A30N18*"
+TOKEN=$(grep "$TAG" $RESFILE | awk '{print $NF}')
+LINE="$LINE $TOKEN"
+
+
+echo $LINE
+
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RES_DIR="2v2Strn0-7cRSGs"
+RES_DIR="2v2Strn0-7cRSGs_oomph"
 mkdir -p $RES_DIR
 
 PROGRAM="lgr_cube"
