@@ -797,7 +797,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSHelpers::Rey;
-    el_pt->re_st_pt() = &NSHelpers::Re_St;
+    el_pt->re_st_pt() = &NSHelpers::Rey;
 //    el_pt->re_invfr_pt() = &NSHelpers::Rey;
   } // end loop over elements
 

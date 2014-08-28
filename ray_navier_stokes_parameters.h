@@ -41,7 +41,7 @@ namespace NavierStokesHelpers
   int Vis = -1;
   double Rey = -1.0;
   double Re_invFr = -1.0; // NOT SET FROM CL
-  double Re_St = 0.0;
+//  double Re_St = 0.0;
 
   double Rey_start = -1.0;
   double Rey_incre = -1.0;
@@ -54,8 +54,6 @@ namespace NavierStokesHelpers
     CommandLineArgs::specify_command_line_flag("--visc", 
         &Vis);
     CommandLineArgs::specify_command_line_flag("--rey", &Rey);
-    CommandLineArgs::specify_command_line_flag("--re_st", &Re_St);
-
 
     CommandLineArgs::specify_command_line_flag("--rey_start", &Rey_start);
     CommandLineArgs::specify_command_line_flag("--rey_incre", &Rey_incre);

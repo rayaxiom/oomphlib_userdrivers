@@ -25,8 +25,7 @@ GENHELPER+="$DOCSOLN $ITSTIMEDIR"
 
 VISC="" ## CHANGE THIS --visc 0, 1 VARYING THIS #############################
 REY="--rey 200"
-RE_ST="--re_st 50"
-NSHELPER="$RE_ST $VISC $REY"
+NSHELPER="$VISC $REY"
 
 #################
 WSOLVER="--w_solver 0"
