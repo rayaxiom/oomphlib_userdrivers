@@ -18,9 +18,30 @@ GENHELPER="$TIMETYPE $SOLVERTYPE $DISTPROB $MAXSOLVERITER "
 GENHELPER+="$DT $TIMESTART $TIMEEND "
 GENHELPER+="$DOCSOLN $ITSTIMEDIR"
 
-NSHELPER=""
+##############################
+VISC="--visc 0"
+REY="--rey 200"
+NSHELPER="$VISC $REY"
 
-PRECHELPER=""
+##############################
+WSOLVER="--w_solver 0"
+NSSOLVER="--ns_solver 1"
+PSOLVER="--p_solver 0"
+FSOLVER="--f_solver 1"
+F_ITER="--f_amg_iter 1"
+F_SMITER="--f_amg_smiter 2"
+F_SMOOTHER="--f_amg_sim_smoo 1"
+F_DAMP="--f_amg_damp -1"
+F_STRN="--f_amg_str 0.668"
+F_COARSE="--f_amg_coarse 1"
+F_PRINT="--print_f_hypre"
+
+PRECHELPER="$WSOLVER $NSSOLVER $FSOLVER $PSOLVER "
+PRECHELPER+="$F_ITER $F_SMITER $F_SMOOTHER $F_DAMP $F_STRN $F_COARSE "
+PRECHELPER+="$F_PRINT"
+
+
+##############################
 
 PROBHELPER="--prob_id 0 --ang 30 --noel 4 "
 

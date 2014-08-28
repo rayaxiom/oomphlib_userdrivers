@@ -1197,11 +1197,90 @@ int main(int argc, char **argv)
   // Store command line arguments
   CommandLineArgs::setup(argc,argv);
 
-
+  // From GeneralProblemHelpers, we need to set:
+  // --time_type, 
+  //   0 = steady state, 
+  //   1 = adaptive, 
+  //   2 = fixed.
+  // --solver_type, 
+  //   0 = exact solver, 
+  //   1 = OOMPH-LIB's GMRES, 
+  //   2 = trilinos GMRES
+  // -- dist_prob (no arguments)
+  //
+  // --max_solver_iter - set an integer
+  //
+  // --dt - only set if doing fixed time stepping.
+  // --time_start - always set if not steady state
+  // --time_end - always set if not steady state
+  //
+  // -- doc_soln [soln_dir]
+  //
+  // --itstimedir [results_dir]
+  //
   GenProbHelpers::specify_command_line_flags();
 
+  // From NavierStokesHelpers, set:
+  // --visc 0 or 1
+  // --rey a double
+  // --rey_start - only set if looping through reynolds numbers
+  // --rey_incre - same as above
+  // --rey_end - same as above
+  NSHelpers::specify_command_line_flags();
 
- 
+  // From PreconditionerHelpers, set:
+  // --f_solver 0 (exact) or 1 (amg)
+  // --p_solver 0 (exact) or 1 (amg)
+  //
+  // if f_solver or p_solver is 1, we NEED to additionally set (for f_solver)
+  // --f_amg_iter (usually 1)
+  //
+  // --f_amg_smiter (usually 2)
+  //
+  // --f_amg_sim_smoo
+  //   0 = Jacobi, IMPORTANT: set --f_amg_damp (to something like 1).
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR 
+  //
+  // OR set this (NOT BOTH):
+  // --f_amg_com_smoo
+  //    
+  //   6 = Schwarz
+  //   7 = Pilut
+  //   8 = ParaSails
+  //   9 = Euclid
+  //
+  // --f_amg_str - strength of dependence
+  //
+  // --f_amg_coarse:
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
+  //
+  // --print_f_hypre - to print the hypre parameters to confirm.
+  //    The information is extracted from the preconditioner after it has
+  //    been created, so it is good to always do this.
+  //
+  // REPEAT FOR p solver if it is also using AMG
+  // THERE ARE 6 things to set!
+  //
+  PrecHelpers::specify_command_line_flags();
+
+
+
   // --prob_id
   // --ang
   // --noel
@@ -1212,46 +1291,17 @@ int main(int argc, char **argv)
   CommandLineArgs::doc_specified_flags();
 
   GenProbHelpers::setup_command_line_flags();
-
+  NSHelpers::setup_command_line_flags();
+  PrecHelpers::setup_command_line_flags();
   ProbHelpers::setup_command_line_flags();
 
-  
-  
-  
+
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
+  std::string label = "";
 
-  // dim = 3
-//  NSPP::generic_problem_setup(dim);
-//  LPH::generic_setup();
-//CL::generic_setup(); 
-
-
-  NSHelpers::Rey = 200;
-  NSHelpers::Dim = 3;
-  NSHelpers::Vis = 0;
-
-  NavierStokesEquations<3>::Gamma[0] = 0.0;
-  NavierStokesEquations<3>::Gamma[1] = 0.0;
-  NavierStokesEquations<3>::Gamma[2] = 0.0;
-
-  PrecHelpers::W_solver = 0;
-  PrecHelpers::NS_solver = 1;
-  PrecHelpers::P_solver = 0;
-  PrecHelpers::F_solver = 1;
-  PrecHelpers::F_amg_param.Iterations = 1;
-  PrecHelpers::F_amg_param.Smoother_iterations = 2;
-  PrecHelpers::F_amg_param.Simple_smoother = 1;
-  PrecHelpers::F_amg_param.Strength = 0.668;
-  PrecHelpers::F_amg_param.Coarsening = 1;
-  PrecHelpers::F_amg_param.Print_parameters = true;
-
-
-
-  //////////////////////////////////////  
-
-  // Build the problem 
+  // Build the problem
   CubeProblem <QTaylorHoodElement<3> >problem;
 
   // Solve the problem 
