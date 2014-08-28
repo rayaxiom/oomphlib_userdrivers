@@ -239,9 +239,29 @@ void rotate_backward(const double& x, const double& y, const double z,
     // 1) First form the parabolic profile
 
     // Note: +0.51, so at time = 0, there is still come velocity
-    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
+//    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
+    const double ux_scaling = t/1.0;
     return get_prescribed_inflow_for_quarter(y,z) * ux_scaling;
   } 
+
+
+void get_prescribed_inflow(const double& t,
+                           const double& y,
+                           const double& z,
+                           double& ux)
+{    
+  const double time_end = 1.0;
+     
+  // For the velocity profile in the x direction.
+  // 1) First form the parabolic profile
+  ux = 0.0;
+  if((y > 0.5)&&(z > 0.5))
+  {  
+    const double ux_scaling = t / time_end;
+    ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+  }  
+} 
+
 
 }
 
@@ -387,11 +407,13 @@ public:
            ProbHelpers::rotate_backward(
                x,y,z,-ang_rad,-ang_rad,-ang_rad,x_new);
 
-           if((x_new[1] > 0.5) && (x_new[2] > 0.5))
+//           if((x_new[1] > 0.5) && (x_new[2] > 0.5))
            {
              const double time=time_pt()->time();
-             double ux = ProbHelpers::get_prescribed_inflow_for_quarter
-               (time,x_new[1],x_new[2]);
+             double ux = 0.0;
+             
+             ProbHelpers::get_prescribed_inflow
+               (time,x_new[1],x_new[2],ux);
 
              // Now rotate the velocity profile
              Vector<double>u_new;
@@ -817,7 +839,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSHelpers::Rey;
-//    el_pt->re_st_pt() = &NSPP::Rey;
+    el_pt->re_st_pt() = &NSHelpers::Rey;
   } // end loop over elements
 
 

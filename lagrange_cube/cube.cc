@@ -36,10 +36,6 @@
 #include "meshes/simple_cubic_mesh.h"
 //#include "meshes/simple_cubic_tet_mesh.h"
 
-// Get the mesh
-#include "meshes/tetgen_mesh.h"
-#include "meshes/brick_from_tet_mesh.h"
-
 // My own header
 #include "./../rayheader.h"
 using namespace std;
@@ -51,6 +47,30 @@ namespace NSPP = NavierStokesProblemParameters;
 namespace LPH = LagrangianPreconditionerHelpers;
 namespace CL = CubeLagrange;
 
+
+
+namespace RAYRAY
+{
+
+void get_prescribed_inflow(const double& t,
+                           const double& y,
+                           const double& z,
+                           double& ux)
+{    
+  const double time_end = 1.0;
+     
+  // For the velocity profile in the x direction.
+  // 1) First form the parabolic profile
+  ux = 0.0;
+  if((y > 0.5)&&(z > 0.5))
+  {  
+    const double ux_scaling = t / time_end;
+    ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+  }  
+}    
+
+
+}
 
 // Rx = [1 0   0
 //       0 cx -sx
@@ -160,13 +180,105 @@ namespace oomph
      }
    }
  };
-
-
 } // end of namespace oomph
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
+
+
+//==start_of_namespace==============================
+/// Namespace for physical parameters
+//==================================================
+namespace Global_Variables
+{
+ double Ang_deg = 30;
+
+ double Ang = Ang_deg * (MathematicalConstants::Pi / 180.0);
+
+ /// Storage for number of iterations during Newton steps 
+ Vector<unsigned> Iterations;
+
+ /// Storage for linear solver times during Newton steps 
+ Vector<double> Linear_solver_time;
+
+// /// Traction at the outflow boundary
+// void prescribed_traction(const double& t,
+//                          const Vector<double>& x,
+//                          const Vector<double> &n,
+//                          Vector<double>& traction)
+// {
+//  traction.resize(3);
+//  traction[0]=1.0;
+//  traction[1]=0.0;
+//  traction[2]=0.0;
+// } 
+
+// /// Traction at the outflow boundary
+// void get_prescribed_inflow(const double& t,
+//                            const Vector<double>& x,
+//                            Vector<double>& presc_inflow)
+// {
+//   // Get the x and y coordinates.
+//   double y = x[1];
+//   double z = x[2];
+//
+//   // For the velocity profile in the x direction.
+//   // 1) First form the parabolic profile
+//   double ux = 0.0;
+//   if((y > 0.5)&&(z > 0.5))
+//   {
+////     // 2) Now make it move in time
+////     const double trig_scaling = 0.025;
+////     const double ux_scaling = 1.0 
+////                               - cos(trig_scaling
+////                                     *MathematicalConstants::Pi
+////                                     *t);
+////
+////     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+//     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+//   }
+//
+//
+//  presc_inflow.resize(3);
+//  presc_inflow[0]=ux;
+//  presc_inflow[1]=0.0;
+//  presc_inflow[2]=0.0;
+// } 
+
+
+
+
+// void get_prescribed_inflow_full(const double& t,
+//                            const double& y,
+//                            const double& z,
+//                            double& ux)
+// {
+//   // For the velocity profile in the x direction.
+//   // 1) First form the parabolic profile
+//   ux = 0.0;
+//   {
+//     // 2) Now make it move in time
+////     const double trig_scaling = 0.025;
+////     const double ux_scaling = (1.0 
+////                               - cos(trig_scaling
+////                                     *MathematicalConstants::Pi
+////                                     *t)) * 2.0;
+//
+//     const double ux_scaling = t / Time_end;
+//     ux = (y-0.0)*(1.0-y)*(z-0.0)*(1.0-z) * ux_scaling;
+////     ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z);
+//   }
+// } 
+
+} // end_of_namespace
+
+
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
 
 
 //==start_of_problem_class============================================
@@ -210,8 +322,6 @@ public:
 
  void actions_before_implicit_timestep()
   {
-    Doc_linear_solver_info_pt->clear_current_time_step();
-
    {
     // Inflow in upper half of inflow boundary
     const unsigned ibound=Inflow_boundary; 
@@ -231,7 +341,7 @@ public:
 
       double ux = 0.0;
 
-      CL::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
+      RAYRAY::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
 
       // Now rotate the velocity profile
       Vector<double>u_new;
@@ -252,7 +362,7 @@ public:
  void actions_before_distribute()
  {
 
-   if(this->distributed())
+   if(NSPP::Distribute_problem)
    {
      GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
      rebuild_global_mesh();
@@ -261,7 +371,7 @@ public:
 
  void actions_after_distribute()
  {
-   if(this->distributed())
+   if(NSPP::Distribute_problem)
    {
      create_parall_outflow_lagrange_elements(Outflow_boundary,
          Bulk_mesh_pt,
@@ -290,6 +400,11 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
+   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   {
+    // Initialise counters for each newton solve.
+    Doc_linear_solver_info_pt->setup_new_time_step();
+   }
 //   {
 //    // Inflow in upper half of inflow boundary
 //    const unsigned ibound=Inflow_boundary; 
@@ -324,9 +439,11 @@ public:
      NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
  }
+ /// Run an unsteady simulation
+ void unsteady_run(); 
  
- /// Global error norm for adaptive time-stepping
- double global_temporal_error_norm();
+ /// Doc the solution
+ void doc_solution(const unsigned& nt);
 
  /// Create traction elements on outflow boundary
 // template<class ELEMENT>
@@ -422,85 +539,18 @@ CubeProblem<ELEMENT>::CubeProblem()
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;
   Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
-
-  if(NSPP::Delta_t < 0.0)
-  {
-    add_time_stepper_pt(new BDF<2>(true));
-  }
-  else
-  {
-    add_time_stepper_pt(new BDF<2>);
-  }
+  add_time_stepper_pt(new BDF<2>);
   // Setup mesh
 
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
 
-  
-
-//  if(RaySpace::Use_tetgen_mesh)
-//  {
-//
-//
-//  //Create fluid bulk mesh, sub-dividing "corner" elements
-//  string mesh_folder = "tetgen_files/0d00625/";
-//
-//  string node_file_name=mesh_folder+"cube.1.node";
-//  string element_file_name=mesh_folder+"cube.1.ele";
-//  string face_file_name=mesh_folder+"cube.1.face";
-//  bool split_corner_elements=true;
-//
-//
-//      Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
-//          element_file_name,
-//          face_file_name,
-//          split_corner_elements,
-//          time_stepper_pt());
-//
-//
-////    Bulk_mesh_pt = new TetgenMesh<ELEMENT>(node_file_name,
-////          element_file_name,
-////          face_file_name,
-////          split_corner_elements,
-////          time_stepper_pt());
-////    Bulk_mesh_pt->setup_boundary_element_info();
-//  }
-//  else
-  {
   Bulk_mesh_pt = 
     new SlopingCubicMesh<ELEMENT>(CL::Noel,CL::Noel,CL::Noel,
                                   CL::Lx, CL::Ly, CL::Lz,
                                   CL::Angx,CL::Angy,CL::Angz,
                                   time_stepper_pt());
-  }
-
-
-
-//  {
-//    const unsigned n_bound = Bulk_mesh_pt->nboundary();
-//    oomph_info << "n_bound = " << n_bound << std::endl;
-//
-//    for(unsigned ibound=0;ibound<n_bound;ibound++)
-//    {
-//      oomph_info << "Boundary no: " << ibound << std::endl; 
-//
-//      unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-//      for (unsigned inod=0;inod<num_nod;inod++)
-//      {
-//        // Loop over values (u, v and w velocities)
-//        Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-//
-//        const double x = nod_pt->x(0);
-//        const double y = nod_pt->x(1);
-//        const double z = nod_pt->x(2);
-//
-//        oomph_info << x << " " << y << " " << z << std::endl;
-//
-//      }
-//    } // end loop over boundaries!
-//  }
-  
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
@@ -595,7 +645,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     //Set the Reynolds number
     el_pt->re_pt() = &NSPP::Rey;
-//    el_pt->re_st_pt() = &NSPP::Rey;
+    el_pt->re_st_pt() = &NSPP::Rey;
   } // end loop over elements
 
 
@@ -627,14 +677,49 @@ CubeProblem<ELEMENT>::CubeProblem()
                                    NSPP::Solver_type,this,Prec_pt);
 } // end_of_constructor
 
-
   template<class ELEMENT>
-double CubeProblem<ELEMENT>::global_temporal_error_norm()
+void CubeProblem <ELEMENT>::unsteady_run()
 {
-  return GenericProblemSetup::global_temporal_error_norm(this,
-      3,Bulk_mesh_pt);
-} // end of global_temporal_error_norm
 
+  //Set value of dt
+  const double dt = NSPP::Delta_t;
+
+
+  // Initialise all history values for an impulsive start
+  assign_initial_values_impulsive(dt);
+  cout << "IC = impulsive start" << std::endl;
+
+  //Now do many timesteps
+  unsigned ntsteps = NSPP::Time_end / dt;
+  std::cout << "NTIMESTEP IS: " << ntsteps << std::endl; 
+
+
+  // Doc initial condition
+  if(NSPP::Doc_soln)
+  {
+  doc_solution(0);
+  }
+
+  // increment counter
+
+  //Loop over the timesteps
+  for(unsigned t=1;t<=ntsteps;t++)
+  {
+    cout << "TIMESTEP " << t << std::endl;
+
+    //Take one fixed timestep
+    unsteady_newton_solve(dt);
+
+    //Output the time
+    oomph_info << "Time is now " << time_pt()->time() << std::endl;
+
+    if(NSPP::Doc_soln)
+    {
+    // Doc solution
+    doc_solution(t);
+    }
+  }
+} // end of unsteady run
 
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
@@ -911,6 +996,45 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 //} // end of create_traction_elements
 
 
+//==start_of_doc_solution=================================================
+/// Doc the solution
+//========================================================================
+template<class ELEMENT>
+void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
+{ 
+
+  std::ofstream some_file;
+  std::stringstream filename;
+  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
+
+  // Number of plot points
+  unsigned npts=5;
+
+  // Output solution
+  some_file.open(filename.str().c_str());
+  Bulk_mesh_pt->output(some_file,npts);
+  some_file.close();
+
+
+
+
+// ofstream some_file;
+// char filename[100];
+//
+// // Number of plot points
+// unsigned npts;
+// npts=5; 
+//
+// // Output solution 
+// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
+//         doc_info.number());
+// some_file.open(filename);
+// Bulk_mesh_pt->output(some_file,npts);
+// some_file.close();
+
+} // end_of_doc_solution
+
+
 std::string create_label()
 {
   // We want the unique problem label, then the generic problem label, then
@@ -965,7 +1089,6 @@ int main(int argc, char **argv)
   NSPP::Time_end = 1.0; 
 
 
-//  RaySpace::Use_tetgen_mesh = true;
 
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
@@ -992,34 +1115,6 @@ int main(int argc, char **argv)
 
   //////////////////////////////////////  
 
-//  if(RaySpace::Use_tetgen_mesh)
-//  {
-//   // Build the problem 
-//  CubeProblem <QTaylorHoodElement<3> >problem;
-//
-//
-//  // Solve the problem 
-//  //              problem.newton_solve();
-//
-//  if(NSPP::Distribute_problem)
-//  {
-//    problem.distribute();
-//  }
-//
-//  NSPP::Label_str = create_label();
-//
-//  time_t rawtime;
-//  time(&rawtime);
-//
-//  std::cout << "RAYDOING: "
-//    << NSPP::Label_str
-//    << " on " << ctime(&rawtime) << std::endl;
-//
-//  problem.unsteady_run(); 
-//  
-//  }
-//  else
-  {
   // Build the problem 
   CubeProblem <QTaylorHoodElement<3> >problem;
 
@@ -1041,14 +1136,8 @@ int main(int argc, char **argv)
     << NSPP::Label_str
     << " on " << ctime(&rawtime) << std::endl;
 
-  GenericProblemSetup::doc_solution(problem.bulk_mesh_pt(),0);
+  problem.unsteady_run();
 
-  GenericProblemSetup::unsteady_run(&problem,
-                                    &doc_linear_solver_info,
-                                    problem.bulk_mesh_pt());
-
-
-  }
 
   //////////////////////////////////////////////////////////////////////////
   ////////////// Outputting results ////////////////////////////////////////
@@ -1103,8 +1192,7 @@ int main(int argc, char **argv)
     }
     
     ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-    ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
-
+    
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
@@ -1112,7 +1200,7 @@ int main(int argc, char **argv)
     }
 
     ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
+
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
@@ -1120,8 +1208,7 @@ int main(int argc, char **argv)
     }
     
     ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream); 
-
+    
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
     // to oomph_info before this one...
@@ -1144,6 +1231,9 @@ int main(int argc, char **argv)
       outfile.close();
     }
   }
+
+
+
 
 
 
