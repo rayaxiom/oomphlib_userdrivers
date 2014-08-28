@@ -37,7 +37,7 @@
 //#include "meshes/simple_cubic_tet_mesh.h"
 
 // My own header
-#include "./../rayheader.h"
+//#include "./../rayheader.h"
 
 #include "./../ray_preconditioner_creation.h"
 #include "./../ray_navier_stokes_parameters.h"
@@ -50,8 +50,8 @@ using namespace std;
 using namespace oomph;
 
 // Alias the namespace for convenience.
-namespace NSPP = NavierStokesProblemParameters;
-namespace LPH = LagrangianPreconditionerHelpers;
+//namespace NSPP = NavierStokesProblemParameters;
+//namespace LPH = LagrangianPreconditionerHelpers;
 
 
 namespace GenProbHelpers = GeneralProblemHelpers;
@@ -1163,11 +1163,15 @@ std::string create_label()
   // i.e.
   // SqPo + NSPP::label + LPH::label Ang Noel.
   
+//  std::string label = CL::prob_str()
+//                      + NSPP::create_label() 
+//                      + LPH::create_label() 
+//                      + CL::ang_deg_str() + CL::noel_str();
   std::string label = ProbHelpers::prob_str()
-                      + NSPP::create_label() 
-                      + LPH::create_label() 
-                      + ProbHelpers::ang_deg_str() 
-                      + ProbHelpers::noel_str();
+     + NSHelpers::create_label()
+     + PrecHelpers::Lgr_prec_str
+     + ProbHelpers::ang_deg_str()
+     + ProbHelpers::noel_str();
   return label;
 }
 
@@ -1194,11 +1198,11 @@ int main(int argc, char **argv)
   DocLinearSolverInfo doc_linear_solver_info;
   // Again, pass this to the NSPP and LPH
   GenProbHelpers::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+//  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
   // Set the Label_pt
-  LPH::Label_str_pt = &NSPP::Label_str;
-  LPH::Vis_pt = &NSPP::Vis;
+//  LPH::Label_str_pt = &NSPP::Label_str;
+//  LPH::Vis_pt = &NSPP::Vis;
 //  CL::Prob_id_pt = &NSPP::Prob_id;
 
 //  NSPP::Time_start = 0.0;
@@ -1209,8 +1213,8 @@ int main(int argc, char **argv)
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
-  NSPP::setup_commandline_flags();
-  LPH::setup_commandline_flags();
+//  NSPP::setup_commandline_flags();
+//  LPH::setup_commandline_flags();
 //  CL::setup_commandline_flags(); 
 
   // Parse the above flags.
@@ -1222,8 +1226,8 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
 
   // dim = 3
-  NSPP::generic_problem_setup(dim);
-  LPH::generic_setup();
+//  NSPP::generic_problem_setup(dim);
+//  LPH::generic_setup();
 //CL::generic_setup(); 
 
   GenProbHelpers::Solver_type = 2;
@@ -1235,6 +1239,12 @@ int main(int argc, char **argv)
 
 
   NSHelpers::Rey = 200;
+  NSHelpers::Dim = 3;
+  NSHelpers::Vis = 0;
+
+  NavierStokesEquations<3>::Gamma[0] = 0.0;
+  NavierStokesEquations<3>::Gamma[1] = 0.0;
+  NavierStokesEquations<3>::Gamma[2] = 0.0;
 
   PrecHelpers::W_solver = 0;
   PrecHelpers::NS_solver = 1;
@@ -1271,19 +1281,19 @@ int main(int argc, char **argv)
 //    problem.distribute();
 //  }
 
-  NSPP::Label_str = create_label();
+  std::string label_str = create_label();
 
   time_t rawtime;
   time(&rawtime);
 
   std::cout << "RAYDOING: "
-    << NSPP::Label_str
+    << label_str
     << " on " << ctime(&rawtime) << std::endl;
 
     GenProbHelpers::unsteady_run(&problem,
         problem.bulk_mesh_pt(),
         &doc_linear_solver_info,
-        NSPP::Label_str,
+        label_str,
         GenProbHelpers::Soln_dir_str);
 
 
@@ -1318,7 +1328,7 @@ int main(int argc, char **argv)
       output_to_file = true;
       std::ostringstream filename_stream;
       filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
-        << NSPP::Label_str
+        << label_str
         <<"NP"<<nproc<<"R"<<my_rank;
       outfile.open(filename_stream.str().c_str());
     }
