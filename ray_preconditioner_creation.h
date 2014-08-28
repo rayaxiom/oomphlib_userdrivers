@@ -303,6 +303,11 @@ namespace PreconditionerHelpers
     CommandLineArgs::specify_command_line_flag(
         "--sigma",&Scaling_sigma);
 
+    // double
+    CommandLineArgs::specify_command_line_flag(
+        "--sigma_mult",&Scaling_sigma_multiplier);
+
+
     // int
     CommandLineArgs::specify_command_line_flag(
         "--w_solver",&W_solver);
@@ -675,6 +680,11 @@ namespace PreconditionerHelpers
         std::ostringstream strs;
         strs << "Sigmult" << Scaling_sigma_multiplier;
         Lgr_prec_str += strs.str();
+      }
+
+      if(CommandLineArgs::command_line_flag_has_been_set("--bdw"))
+      {
+        lgr_prec_pt->use_block_diagonal_w_block();
       }
 
       // Now do the W solver

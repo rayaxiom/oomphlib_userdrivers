@@ -4,14 +4,14 @@ set -u
 
 PROGRAM="navier_stokes_cube"
 
-TIME_TYPE="--time_type 1" # Steady state
-SOLVER_TYPE="--solver_type 2" # trilinos
-DIST_PROB="--dist_prob" 
-MAX_SOLVER_ITER="--max_solver_iter 100"
+TIME_TYPE="--time_type 1" # Adaptive
+SOLVER_TYPE="--solver_type 1" # oomph
+DIST_PROB="--dist_prob" # problem will take care of this.
+MAX_SOLVER_ITER="--max_solver_iter 1000" # Allow for high iteration count.
 
-DT=""
-TIME_START="--time_start 0"
-TIME_END="--time_end 1"
+DT="" # Do not set for adaptive
+TIME_START="--time_start 0" # Start from 0
+TIME_END="--time_end 1" # End at 1
 
 SOLN_DIR="tmp_soln"
 RES_DIR="tmp_itstime"
@@ -31,7 +31,7 @@ GenProbHelper+="$DOC_SOLN $ITSTIMEDIR"
 #################################
 
 VISC="--visc 0"
-REY="--rey 100"
+REY="--rey 200"
 REY_START=""
 REY_INCRE=""
 REY_END=""
@@ -41,7 +41,7 @@ NavierStokesHelper="$VISC $REY $REY_START $REY_INCRE $REY_END"
 ###############################
 
 PROB_ID="--prob_id 0"
-NOEL="--noel 4"
+NOEL="--noel 16"
 
 ##
 ProbSpecificParam="$NOEL $PROB_ID"
@@ -78,11 +78,11 @@ LGR_PREC="$SIGMA $W_SOLVER $NS_SOLVER $F_SOLVER $P_SOLVER"
 
 F_AMG_ITER="--f_amg_iter 1"
 F_AMG_SMITER="--f_amg_smiter 2"
-F_AMG_SIM_SMOO="--f_amg_sim_smoo 1"
+F_AMG_SIM_SMOO="--f_amg_sim_smoo 0"
 F_AMG_COM_SMOO=""
-F_AMG_DAMP=""
+F_AMG_DAMP="--f_amg_damp 0.5"
 F_AMG_STR="--f_amg_str 0.75"
-F_AMG_COARSE="--f_amg_coarse 1"
+F_AMG_COARSE="--f_amg_coarse 0"
 F_AMG_PRINT="--print_f_hypre"
 
 ##
@@ -122,7 +122,7 @@ F_AMG_PREC+="$F_AMG_STR $F_AMG_COARSE $F_AMG_PRINT"
 
 P_AMG_ITER="--p_amg_iter 1"
 P_AMG_SMITER="--p_amg_smiter 2"
-P_AMG_SIM_SMOO="--p_amg_sim_smoo 1"
+P_AMG_SIM_SMOO="--p_amg_sim_smoo 1" # 0 Jacobi, 1 GS, 
 P_AMG_COM_SMOO=""
 P_AMG_DAMP=""
 P_AMG_STR="--p_amg_str 0.7"
