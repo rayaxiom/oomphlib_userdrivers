@@ -1,0 +1,11 @@
+commit 54da2e6f64532fa658da06a12e8e22ebff50b967
+Author: Raymon White <raymonwhite42@gmail.com>
+Date:   Thu Aug 28 12:10:33 2014 +0100
+
+    cube.cc now performs as it does before. The problem was that
+    I didn't set the Strouhol number.... why do we need this to lower
+    iteration counts, I do not know.
+    
+    lgr_cube.cc also performs the same. But now I am switching two things:
+    1) Changing it to oomph lib's GMRES
+    2) Changing the inflow to vary with cos and the time.
