@@ -489,7 +489,7 @@ namespace GeneralProblemHelpers
       doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
     }
 
-    const double time_tol = 1e-5;
+    const double time_tol = 1e-4;
 
     while(problem_pt->time_pt()->time() < Time_end)
     {
@@ -534,7 +534,7 @@ namespace GeneralProblemHelpers
 //=============================================================================
 /// Namespace to format results.
 //=============================================================================
-namespace ResultsFormat
+namespace ResultsFormat2
 {
   inline void format_rayits(
       const unsigned& intimestep,      

@@ -56,6 +56,7 @@ namespace PreconditionerHelpers
   int P_solver = -1;
 
   double Scaling_sigma = 0.0;
+  double Scaling_sigma_multiplier = 0.0;
 
 
 
@@ -658,6 +659,23 @@ namespace PreconditionerHelpers
 
       // First set the meshes
       lgr_prec_pt->set_meshes(mesh_pt);
+
+      if(CommandLineArgs::command_line_flag_has_been_set("--sigma"))
+      {
+        lgr_prec_pt->scaling_sigma() = Scaling_sigma;
+        std::ostringstream strs;
+        strs << "Sig" << Scaling_sigma;
+        Lgr_prec_str += strs.str();
+      }
+
+      if(CommandLineArgs::command_line_flag_has_been_set("--sigma_mult"))
+      {
+        lgr_prec_pt->scaling_sigma_multiplier() = Scaling_sigma_multiplier;
+
+        std::ostringstream strs;
+        strs << "Sigmult" << Scaling_sigma_multiplier;
+        Lgr_prec_str += strs.str();
+      }
 
       // Now do the W solver
       if(w_solver == -1)

@@ -1,11 +1,15 @@
-commit 54da2e6f64532fa658da06a12e8e22ebff50b967
+commit cbffc6885dff27f8fbfdd43ef113bc1e513350dd
 Author: Raymon White <raymonwhite42@gmail.com>
-Date:   Thu Aug 28 12:10:33 2014 +0100
+Date:   Thu Aug 28 15:26:34 2014 +0100
 
-    cube.cc now performs as it does before. The problem was that
-    I didn't set the Strouhol number.... why do we need this to lower
-    iteration counts, I do not know.
-    
-    lgr_cube.cc also performs the same. But now I am switching two things:
-    1) Changing it to oomph lib's GMRES
-    2) Changing the inflow to vary with cos and the time.
+    Committing a load of new scripts for f calibration, this time
+    setting Womersley number to 50
+    new file:   format_res.sh
+    new file:   git_rev_revision
+    new file:   git_rev_user_driver
+    new file:   run_test1_2v2Strn0-75cRSGs_oomph.sh
+    new file:   run_test2_2v2Strn0-75cRSEuclid_oomph.sh
+    new file:   run_test3_2v2Strn0-25cRSGs_oomph.sh
+    new file:   run_test4_2v2Strn0-50cRSGs_oomph.sh
+    new file:   run_test5_2v2Strn0-80cRSGs_oomph.sh
+    new file:   run_test6_2v2Strn0-90cRSGs_oomph.sh
