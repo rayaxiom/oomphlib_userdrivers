@@ -49,10 +49,6 @@ using namespace std;
 
 using namespace oomph;
 
-// Alias the namespace for convenience.
-//namespace NSPP = NavierStokesProblemParameters;
-//namespace LPH = LagrangianPreconditionerHelpers;
-
 
 namespace GenProbHelpers = GeneralProblemHelpers;
 namespace PrecHelpers = PreconditionerHelpers;
@@ -1191,36 +1187,37 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
-  // Problem dimension.
-  const unsigned dim = 3;
-
   // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
-  // Again, pass this to the NSPP and LPH
+
+  // The TWO things:
   GenProbHelpers::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-//  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  NSHelpers::Dim = 3;
 
-  // Set the Label_pt
-//  LPH::Label_str_pt = &NSPP::Label_str;
-//  LPH::Vis_pt = &NSPP::Vis;
-//  CL::Prob_id_pt = &NSPP::Prob_id;
-
-//  NSPP::Time_start = 0.0;
-//  NSPP::Time_end = 1.0; 
-
-
-
-  // Store commandline arguments
+  // Store command line arguments
   CommandLineArgs::setup(argc,argv);
 
-//  NSPP::setup_commandline_flags();
-//  LPH::setup_commandline_flags();
-//  CL::setup_commandline_flags(); 
+
+  GenProbHelpers::specify_command_line_flags();
+
+
+ 
+  // --prob_id
+  // --ang
+  // --noel
+  ProbHelpers::specify_command_line_flags();
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
 
+  GenProbHelpers::setup_command_line_flags();
+
+  ProbHelpers::setup_command_line_flags();
+
+  
+  
+  
   ////////////////////////////////////////////////////
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
@@ -1229,13 +1226,6 @@ int main(int argc, char **argv)
 //  NSPP::generic_problem_setup(dim);
 //  LPH::generic_setup();
 //CL::generic_setup(); 
-
-  GenProbHelpers::Solver_type = 2;
-  GenProbHelpers::Time_type = 2;
-  GenProbHelpers::Delta_t = 0.1;
-  GenProbHelpers::Time_start = 0.0;
-  GenProbHelpers::Time_end = 1.0;
-  GenProbHelpers::Max_solver_iteration = 100;
 
 
   NSHelpers::Rey = 200;
@@ -1256,15 +1246,6 @@ int main(int argc, char **argv)
   PrecHelpers::F_amg_param.Strength = 0.668;
   PrecHelpers::F_amg_param.Coarsening = 1;
   PrecHelpers::F_amg_param.Print_parameters = true;
-
-  ProbHelpers::Ang_deg = 30.0;
-  ProbHelpers::Ang_rad  
-    = ProbHelpers::Ang_deg * (MathematicalConstants::Pi / 180.0);
-  ProbHelpers::Noel = 4;
-  ProbHelpers::Prob_id = 0;
-
-//  ProbHelpers::setup_command_line_flags();
-
 
 
 
