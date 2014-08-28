@@ -1286,6 +1286,10 @@ int main(int argc, char **argv)
   // --noel
   ProbHelpers::specify_command_line_flags();
 
+  // --noel number of elements in 1D
+  // --prob_id - currently, the only prob id is 0
+//  problem_specific_setup_commandline_flags();
+
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
@@ -1307,29 +1311,58 @@ int main(int argc, char **argv)
   // Solve the problem 
   //              problem.newton_solve();
 
-//  if(NSPP::Distribute_problem)
-//  {
-//    problem.distribute();
-//  }
+  if(GenProbHelpers::Distribute_problem)
+  {
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+    const unsigned nproc = comm_pt->nproc();
 
-  std::string label_str = create_label();
+    if(nproc == 1)
+    {
+      oomph_info << "RAYINFO: only 1 core, "
+                 << "not distributing problem." << std::endl;
+    }
+    else
+    {
+      oomph_info << "RAYINFO: I am distributing the problem" << std::endl;
+
+      problem.distribute();
+    }
+  }
+
+  GenProbHelpers::Distribute_problem = problem.distributed();
+  oomph_info << "Problem.distributed() is " 
+             << GenProbHelpers::Distribute_problem << std::endl; 
+
+  label = create_label();
 
   time_t rawtime;
   time(&rawtime);
 
   std::cout << "RAYDOING: "
-    << label_str
+    << label
     << " on " << ctime(&rawtime) << std::endl;
 
+  // There are two types of solves, one for steady state, another for
+  // time stepping.
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
+  {
+    problem.newton_solve();
+
+    if(GenProbHelpers::Doc_soln_flag)
+    {
+      GenProbHelpers::doc_solution(problem.bulk_mesh_pt(),
+          GenProbHelpers::Soln_dir_str,
+          label);
+    }
+  }
+  else
+  {
     GenProbHelpers::unsteady_run(&problem,
         problem.bulk_mesh_pt(),
         &doc_linear_solver_info,
-        label_str,
+        label,
         GenProbHelpers::Soln_dir_str);
-
-
-
-  //problem.unsteady_run();
+  }
 
 
   //////////////////////////////////////////////////////////////////////////
@@ -1359,7 +1392,7 @@ int main(int argc, char **argv)
       output_to_file = true;
       std::ostringstream filename_stream;
       filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
-        << label_str
+        << label
         <<"NP"<<nproc<<"R"<<my_rank;
       outfile.open(filename_stream.str().c_str());
     }

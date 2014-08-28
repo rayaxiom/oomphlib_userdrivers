@@ -235,8 +235,7 @@ void rotate_backward(const double& x, const double& y, const double z,
     // 1) First form the parabolic profile
 
     // Note: +0.51, so at time = 0, there is still come velocity
-//    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
-    const double ux_scaling = t/1.0;
+    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
     return get_prescribed_inflow_for_quarter(y,z) * ux_scaling;
   } 
 
@@ -403,13 +402,11 @@ public:
            ProbHelpers::rotate_backward(
                x,y,z,-ang_rad,-ang_rad,-ang_rad,x_new);
 
-//           if((x_new[1] > 0.5) && (x_new[2] > 0.5))
+           if((x_new[1] > 0.5) && (x_new[2] > 0.5))
            {
              const double time=time_pt()->time();
-             double ux = 0.0;
-             
-             ProbHelpers::get_prescribed_inflow
-               (time,x_new[1],x_new[2],ux);
+             double ux = ProbHelpers::get_prescribed_inflow_for_quarter
+               (time,x_new[1],x_new[2]);
 
              // Now rotate the velocity profile
              Vector<double>u_new;
@@ -419,6 +416,12 @@ public:
              nod_pt->set_value(0,u_new[0]);
              nod_pt->set_value(1,u_new[1]);
              nod_pt->set_value(2,u_new[2]);
+           }
+           else
+           {
+             nod_pt->set_value(0,0.0);
+             nod_pt->set_value(1,0.0);
+             nod_pt->set_value(2,0.0);
            }
          }
        }
