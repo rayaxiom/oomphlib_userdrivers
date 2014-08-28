@@ -43,6 +43,8 @@
 #include "./../ray_navier_stokes_parameters.h"
 #include "./../ray_general_problem_parameters.h"
 
+
+
 using namespace std;
 
 using namespace oomph;
@@ -59,13 +61,12 @@ namespace NSHelpers = NavierStokesHelpers;
 
 namespace ProblemHelpers
 {
-
-  unsigned Noel = 4; //set via commandline
-  int Prob_id = 0; // set via commandline
-  double Ang_deg = 30.0; // set via commandline
+  unsigned Noel = 0; //set via commandline
+  int Prob_id = -1; // set via commandline
+  double Ang_deg = 0.0; // set via commandline
 
   // set via ang_deg
-  double Ang_rad =  Ang_deg * (MathematicalConstants::Pi / 180.0);
+  double Ang_rad = 0.0;
 
   const double Length = 1.0;
 
@@ -143,71 +144,71 @@ namespace ProblemHelpers
     return strs.str();
   }
 
-  // Rx = [1 0   0
-  //       0 cx -sx
-  //       0 sx  cx];
-  //
-  // Ry = [cy 0 sy
-  //       0  1 0
-  //      -sy 0 cy];
-  //
-  // Rz = [cz -sz 0
-  //       sz  cz  0
-  //       0   0  1];
-  //
-  // R = Rz*Ry*Rx
-  //
-  // Rx = x_new
-  void rotate_forward(const double& x, const double& y, const double z,
-      const double& phix, const double& phiy, const double& phiz,
-      Vector<double>& x_new)
-  {
-    x_new.resize(3,0);
-    x_new[0] = (cos(phiy)*cos(phiz))*x 
-      + (cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))*y 
-      + (sin(phix)*sin(phiz) + cos(phix)*cos(phiz)*sin(phiy))*z;
+// Rx = [1 0   0
+//       0 cx -sx
+//       0 sx  cx];
+//
+// Ry = [cy 0 sy
+//       0  1 0
+//      -sy 0 cy];
+//
+// Rz = [cz -sz 0
+//       sz  cz  0
+//       0   0  1];
+//
+// R = Rz*Ry*Rx
+//
+// Rx = x_new
+void rotate_forward(const double& x, const double& y, const double z,
+    const double& phix, const double& phiy, const double& phiz,
+    Vector<double>& x_new)
+{
+  x_new.resize(3,0);
+  x_new[0] = (cos(phiy)*cos(phiz))*x 
+    + (cos(phiz)*sin(phix)*sin(phiy) - cos(phix)*sin(phiz))*y 
+    + (sin(phix)*sin(phiz) + cos(phix)*cos(phiz)*sin(phiy))*z;
 
-    x_new[1] = (cos(phiy)*sin(phiz))*x 
-      + (cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz))*y 
-      + (cos(phix)*sin(phiy)*sin(phiz) - cos(phiz)*sin(phix))*z;
+  x_new[1] = (cos(phiy)*sin(phiz))*x 
+    + (cos(phix)*cos(phiz) + sin(phix)*sin(phiy)*sin(phiz))*y 
+    + (cos(phix)*sin(phiy)*sin(phiz) - cos(phiz)*sin(phix))*z;
 
-    x_new[2] = (-sin(phiy))*x 
-      + (cos(phiy)*sin(phix))*y
-      + ( cos(phix)*cos(phiy))*z;
-  }
+  x_new[2] = (-sin(phiy))*x 
+    + (cos(phiy)*sin(phix))*y
+    + ( cos(phix)*cos(phiy))*z;
+}
 
 
-  // Rx = [1 0   0
-  //       0 cx -sx
-  //       0 sx  cx];
-  //
-  // Ry = [cy 0 sy
-  //       0  1 0
-  //      -sy 0 cy];
-  //
-  // Rz = [cz -sz 0
-  //       sz  cz  0
-  //       0   0  1];
-  //
-  // R = Rx*Ry*Rz (note the ordering)
-  //
-  // Rx = x_new
-  void rotate_backward(const double& x, const double& y, const double z,
-      const double& phix, const double& phiy, const double& phiz,
-      Vector<double>& x_new)
-  {
-    x_new.resize(3,0);
+// Rx = [1 0   0
+//       0 cx -sx
+//       0 sx  cx];
+//
+// Ry = [cy 0 sy
+//       0  1 0
+//      -sy 0 cy];
+//
+// Rz = [cz -sz 0
+//       sz  cz  0
+//       0   0  1];
+//
+// R = Rx*Ry*Rz (note the ordering)
+//
+// Rx = x_new
+void rotate_backward(const double& x, const double& y, const double z,
+    const double& phix, const double& phiy, const double& phiz,
+    Vector<double>& x_new)
+{
+  x_new.resize(3,0);
 
-    x_new[0] = (cos(phiy)*cos(phiz))*x 
-      -(cos(phiy)*sin(phiz))*y 
-      + (sin(phiy))*z;
-    x_new[1] = (cos(phix)*sin(phiz) + cos(phiz)*sin(phix)*sin(phiy))*x 
-      + (cos(phix)*cos(phiz) - sin(phix)*sin(phiy)*sin(phiz))*y 
-      -(cos(phiy)*sin(phix))*z;
-    x_new[2] = (sin(phix)*sin(phiz) - cos(phix)*cos(phiz)*sin(phiy))*x 
-      + (cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))*y 
-      + (cos(phix)*cos(phiy))*z;
-  }
+  x_new[0] = (cos(phiy)*cos(phiz))*x 
+    -(cos(phiy)*sin(phiz))*y 
+    + (sin(phiy))*z;
+  x_new[1] = (cos(phix)*sin(phiz) + cos(phiz)*sin(phix)*sin(phiy))*x 
+    + (cos(phix)*cos(phiz) - sin(phix)*sin(phiy)*sin(phiz))*y 
+    -(cos(phiy)*sin(phix))*z;
+  x_new[2] = (sin(phix)*sin(phiz) - cos(phix)*cos(phiz)*sin(phiy))*x 
+    + (cos(phiz)*sin(phix) + cos(phix)*sin(phiy)*sin(phiz))*y 
+    + (cos(phix)*cos(phiy))*z;
+}
 
 
   inline double get_prescribed_inflow_for_quarter(const double& y, 
@@ -238,33 +239,35 @@ namespace ProblemHelpers
     // 1) First form the parabolic profile
 
     // Note: +0.51, so at time = 0, there is still come velocity
-    //    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
+//    const double ux_scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.51;
     const double ux_scaling = t/1.0;
     return get_prescribed_inflow_for_quarter(y,z) * ux_scaling;
   } 
 
 
-  void get_prescribed_inflow(const double& t,
-      const double& y,
-      const double& z,
-      double& ux)
-  {    
-    const double time_end = 1.0;
-
-    // For the velocity profile in the x direction.
-    // 1) First form the parabolic profile
-    ux = 0.0;
-    if((y > 0.5)&&(z > 0.5))
-    {  
-      const double ux_scaling = t / time_end;
-      ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
-    }  
-  } 
+void get_prescribed_inflow(const double& t,
+                           const double& y,
+                           const double& z,
+                           double& ux)
+{    
+  const double time_end = 1.0;
+     
+  // For the velocity profile in the x direction.
+  // 1) First form the parabolic profile
+  ux = 0.0;
+  if((y > 0.5)&&(z > 0.5))
+  {  
+    const double ux_scaling = t / time_end;
+    ux = (y-0.5)*(1.0-y)*(z-0.5)*(1.0-z) * ux_scaling;
+  }  
+} 
 
 
 }
 
 namespace ProbHelpers = ProblemHelpers;
+
+
 
 
 namespace oomph
@@ -311,12 +314,13 @@ namespace oomph
      }
    }
  };
+
+
 } // end of namespace oomph
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-
 
 
 //==start_of_problem_class============================================
@@ -338,7 +342,7 @@ public:
   {
 //    GenericProblemSetup::clean_up_solver_memory();
 //    LPH::clean_up_memory();
-//
+
 //    delete Surface_mesh_pt;
 //    delete Bulk_mesh_pt;
 //   delete Prec_pt;
@@ -359,43 +363,72 @@ public:
 //////////////////////////////
 
  void actions_before_implicit_timestep()
-  {
+ {
+   if(GenProbHelpers::Time_type != GenProbHelpers::Time_type_STEADY)
    {
+     // NOTE: before an implicit time step, we clear the previous times.
+     // (This has no effect if no times were added i.e.
+     // we are starting the first implicit time step)
+     //
+     // The logic for this is that we want to keep only the time step we
+     // use, not the rejected ones.
+     //
+     // In the unsteady solve loop, it is there at we add new storage for
+     // a new time step.
      Doc_linear_solver_info_pt->clear_current_time_step();
-    // Inflow in upper half of inflow boundary
-    const unsigned ibound=Inflow_boundary; 
-    const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
-    
-    const double ang_rad = ProbHelpers::Ang_rad;
 
-    for (unsigned inod=0;inod<num_nod;inod++)
+     // Inflow in upper half of inflow boundary
+     const unsigned ibound=Inflow_boundary; 
+     const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
      {
-      Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-      const double x=nod_pt->x(0);
-      const double y=nod_pt->x(1);
-      const double z=nod_pt->x(2);
+       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
 
-      const double time=time_pt()->time();
+       // Only set if it is on a single boundary
 
-      // Rotate x y and z back
-      Vector<double>x_new;
-      ProbHelpers::rotate_backward(
-          x,y,z,-ang_rad,-ang_rad,-ang_rad,x_new);
+//       std::set<unsigned>* bnd_pt = 0;
 
-      double ux;
-      ProbHelpers::get_prescribed_inflow(time,x_new[1],x_new[2],ux);
+//       nod_pt->get_boundaries_pt(bnd_pt);
 
-      // Now rotate the velocity profile
-      Vector<double>u_new;
-      ProbHelpers::rotate_forward(
-          ux,0,0,ang_rad,ang_rad,ang_rad,u_new);
+//       if(bnd_pt != 0)
+       {
+//         if(bnd_pt->size() < 2)
+         {
+           const double x=nod_pt->x(0);
+           const double y=nod_pt->x(1);
+           const double z=nod_pt->x(2);
 
-      nod_pt->set_value(0,u_new[0]);
-      nod_pt->set_value(1,u_new[1]);
-      nod_pt->set_value(2,u_new[2]);
+
+           // Locally cache the angle for convenience.
+           double ang_rad = ProbHelpers::Ang_rad;
+
+           // Rotate x y and z back
+           Vector<double>x_new;
+           ProbHelpers::rotate_backward(
+               x,y,z,-ang_rad,-ang_rad,-ang_rad,x_new);
+
+//           if((x_new[1] > 0.5) && (x_new[2] > 0.5))
+           {
+             const double time=time_pt()->time();
+             double ux = 0.0;
+             
+             ProbHelpers::get_prescribed_inflow
+               (time,x_new[1],x_new[2],ux);
+
+             // Now rotate the velocity profile
+             Vector<double>u_new;
+             ProbHelpers::rotate_forward(
+                 ux,0,0,ang_rad,ang_rad,ang_rad,u_new);
+
+             nod_pt->set_value(0,u_new[0]);
+             nod_pt->set_value(1,u_new[1]);
+             nod_pt->set_value(2,u_new[2]);
+           }
+         }
+       }
      }
    }
-  } // end of actions_before_implicit_timestep
+ } // end of actions_before_implicit_timestep
 
 
 
@@ -442,11 +475,6 @@ public:
  /// Update the problem specs before solve. 
  void actions_before_newton_solve()
  {
-//   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-//   {
-//    // Initialise counters for each newton solve.
-//    Doc_linear_solver_info_pt->setup_new_time_step();
-//   }
 //   {
 //    // Inflow in upper half of inflow boundary
 //    const unsigned ibound=Inflow_boundary; 
@@ -482,12 +510,9 @@ public:
      GenProbHelpers::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
  }
-
- /// Run an unsteady simulation
- void unsteady_run(); 
  
- /// Doc the solution
- void doc_solution(const unsigned& nt);
+ /// Global error norm for adaptive time-stepping
+ double global_temporal_error_norm();
 
  /// Create traction elements on outflow boundary
 // template<class ELEMENT>
@@ -503,13 +528,15 @@ public:
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
 
-private:
+//private:
 
  /// Solver
  IterativeLinearSolver* Solver_pt;
 
  /// Solver
  Preconditioner* Prec_pt;
+
+ Preconditioner* NS_matrix_preconditioner_pt;
 
  /// Inexact solver for P block
  Preconditioner* P_matrix_preconditioner_pt;
@@ -572,19 +599,44 @@ private:
   template<class ELEMENT>
 CubeProblem<ELEMENT>::CubeProblem()
 { 
-  // Assign boundary IDs defined in rayheader.h
   Left_boundary = 4;
   Right_boundary = 2;
   Front_boundary = 5;
   Back_boundary = 0;
   Bottom_boundary = 1;
-  Top_boundary = 3; 
+  Top_boundary = 3;
 
   Inflow_boundary=Left_boundary;
   Outflow_boundary=Right_boundary;
   Doc_linear_solver_info_pt = GenProbHelpers::Doc_linear_solver_info_pt;
-  add_time_stepper_pt(new BDF<2>);
-  // Setup mesh
+
+
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
+  {
+    oomph_info 
+      << "RAYINFO: Doing steady state, no time stepper added." << std::endl;
+  }
+  else if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_ADAPT)
+  {
+    oomph_info 
+      << "RAYINFO: Adding adaptive time stepper" << std::endl;
+    add_time_stepper_pt(new BDF<2>(true));
+  }
+  else if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_FIXED)
+  {
+    oomph_info << "RAYINFO: Adding non-adaptive time stepper" << std::endl;
+    add_time_stepper_pt(new BDF<2>);
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "Time stepper for Time_type: "
+      << GenProbHelpers::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
 
 
 //  Bulk_mesh_pt = 
@@ -594,11 +646,60 @@ CubeProblem<ELEMENT>::CubeProblem()
   const double length = ProbHelpers::Length;
   const double ang_rad = ProbHelpers::Ang_rad;
 
-  Bulk_mesh_pt = 
-    new SlopingCubicMesh<ELEMENT>(noel,noel,noel,
-                                  length,length,length,
-                                  ang_rad,ang_rad,ang_rad,
-                                  time_stepper_pt());
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
+  {
+    Bulk_mesh_pt = 
+      new SlopingCubicMesh<ELEMENT>(noel,noel,noel,
+          length, length, length,
+          ang_rad, ang_rad, ang_rad);
+  }
+  else if((GenProbHelpers::Time_type == GenProbHelpers::Time_type_ADAPT)
+      ||GenProbHelpers::Time_type == GenProbHelpers::Time_type_FIXED)
+  {
+    Bulk_mesh_pt = 
+      new SlopingCubicMesh<ELEMENT>(noel,noel,noel, 
+          length, length, length,
+          ang_rad,ang_rad,ang_rad,
+          time_stepper_pt());
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "No mesh set up for Time_type: "
+      << GenProbHelpers::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
+
+
+
+
+//  {
+//    const unsigned n_bound = Bulk_mesh_pt->nboundary();
+//    oomph_info << "n_bound = " << n_bound << std::endl;
+//
+//    for(unsigned ibound=0;ibound<n_bound;ibound++)
+//    {
+//      oomph_info << "Boundary no: " << ibound << std::endl; 
+//
+//      unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+//      for (unsigned inod=0;inod<num_nod;inod++)
+//      {
+//        // Loop over values (u, v and w velocities)
+//        Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//
+//        const double x = nod_pt->x(0);
+//        const double y = nod_pt->x(1);
+//        const double z = nod_pt->x(2);
+//
+//        oomph_info << x << " " << y << " " << z << std::endl;
+//
+//      }
+//    } // end loop over boundaries!
+//  }
+  
 
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
@@ -666,7 +767,8 @@ CubeProblem<ELEMENT>::CubeProblem()
             const double z = nod_pt->x(2);
             
             ProbHelpers::rotate_backward(
-                x,y,z,-ang_rad,-ang_rad,-ang_rad,
+                x,y,z,
+                -ang_rad,-ang_rad,-ang_rad,
                 x_old);
 
             if ((x_old[1]<0.5)&&x_old[2]<0.5)
@@ -706,28 +808,67 @@ CubeProblem<ELEMENT>::CubeProblem()
   // Setup equation numbering scheme
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
+
+  F_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
+  P_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::P_amg_param,1);
+
+  NS_matrix_preconditioner_pt = PrecHelpers::create_lsc_preconditioner(
+      this,
+      Bulk_mesh_pt,
+      F_matrix_preconditioner_pt,
+      P_matrix_preconditioner_pt);
+
+  Vector<Mesh*> mesh_pt(2,0);
+  mesh_pt[0] = Bulk_mesh_pt;
+  mesh_pt[1] = Surface_mesh_pt;
+  Prec_pt = PrecHelpers::create_lgr_precondiitoner(
+      mesh_pt,
+      PrecHelpers::W_solver,
+      NS_matrix_preconditioner_pt);
+
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+
+  Solver_pt = GenProbHelpers::setup_solver(
+      GenProbHelpers::Max_solver_iteration,
+      solver_tol,newton_tol,
+      this,Prec_pt);
+
+
+
+
 //  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-  {
-    Vector<Mesh*> mesh_pt;
+//  {
+//    Vector<Mesh*> mesh_pt;
 //    if(NSPP::Prob_id == CL::PID_CU_PO_QUARTER)
-    {
-      mesh_pt.resize(2,0);
-      mesh_pt[0] = Bulk_mesh_pt;
-      mesh_pt[1] = Surface_mesh_pt;
-    }
-
-    LPH::Mesh_pt = mesh_pt;
-    LPH::Problem_pt = this;
-    Prec_pt = LPH::get_preconditioner();
-  }
-
- const double solver_tol = 1.0e-6;
- const double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(GenProbHelpers::Max_solver_iteration,
-                                   solver_tol,newton_tol,
-                                   GenProbHelpers::Solver_type,this,Prec_pt);
+//    {
+//      mesh_pt.resize(2,0);
+//      mesh_pt[0] = Bulk_mesh_pt;
+//      mesh_pt[1] = Surface_mesh_pt;
+//    }
+//
+//    LPH::Mesh_pt = mesh_pt;
+//    LPH::Problem_pt = this;
+//    Prec_pt = LPH::get_preconditioner();
+//  }
+//
+// const double solver_tol = 1.0e-6;
+// const double newton_tol = 1.0e-6;
+// GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
+//                                   solver_tol,newton_tol,
+//                                   NSPP::Solver_type,this,Prec_pt);
 } // end_of_constructor
 
+  template<class ELEMENT>
+double CubeProblem<ELEMENT>::global_temporal_error_norm()
+{
+  return NSHelpers::global_temporal_error_norm(
+      this,
+      NSHelpers::Dim,
+      Bulk_mesh_pt);
+} // end of global_temporal_error_norm
 
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
@@ -1009,45 +1150,6 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 //} // end of create_traction_elements
 
 
-//==start_of_doc_solution=================================================
-/// Doc the solution
-//========================================================================
-template<class ELEMENT>
-void CubeProblem<ELEMENT>::doc_solution(const unsigned& nt)
-{ 
-
-//  std::ofstream some_file;
-//  std::stringstream filename;
-//  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
-
-//  // Number of plot points
-//  unsigned npts=5;
-//
-//  // Output solution
-//  some_file.open(filename.str().c_str());
-//  Bulk_mesh_pt->output(some_file,npts);
-//  some_file.close();
-
-
-
-
-// ofstream some_file;
-// char filename[100];
-//
-// // Number of plot points
-// unsigned npts;
-// npts=5; 
-//
-// // Output solution 
-// sprintf(filename,"%s/soln%i.dat",doc_info.directory().c_str(),
-//         doc_info.number());
-// some_file.open(filename);
-// Bulk_mesh_pt->output(some_file,npts);
-// some_file.close();
-
-} // end_of_doc_solution
-
-
 std::string create_label()
 {
   // We want the unique problem label, then the generic problem label, then
@@ -1133,6 +1235,24 @@ int main(int argc, char **argv)
 
 
   NSHelpers::Rey = 200;
+
+  PrecHelpers::W_solver = 0;
+  PrecHelpers::NS_solver = 1;
+  PrecHelpers::P_solver = 0;
+  PrecHelpers::F_solver = 1;
+  PrecHelpers::F_amg_param.Iterations = 1;
+  PrecHelpers::F_amg_param.Smoother_iterations = 2;
+  PrecHelpers::F_amg_param.Simple_smoother = 1;
+  PrecHelpers::F_amg_param.Strength = 0.668;
+  PrecHelpers::F_amg_param.Coarsening = 1;
+  PrecHelpers::F_amg_param.Print_parameters = true;
+
+  ProbHelpers::Ang_deg = 30.0;
+  ProbHelpers::Ang_rad  
+    = ProbHelpers::Ang_deg * (MathematicalConstants::Pi / 180.0);
+  ProbHelpers::Noel = 4;
+  ProbHelpers::Prob_id = 0;
+
 //  ProbHelpers::setup_command_line_flags();
 
 
@@ -1142,7 +1262,6 @@ int main(int argc, char **argv)
 
   // Build the problem 
   CubeProblem <QTaylorHoodElement<3> >problem;
-
 
   // Solve the problem 
   //              problem.newton_solve();
@@ -1176,7 +1295,8 @@ int main(int argc, char **argv)
   ////////////// Outputting results ////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////
 
-  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+  if(GenProbHelpers::Solver_type != 
+     GenProbHelpers::Solver_type_DIRECT_SOLVE)
   {
     // Get the global oomph-lib communicator 
     const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
@@ -1193,11 +1313,11 @@ int main(int argc, char **argv)
     std::ofstream outfile;
 
     // If we want to output to a file, we create the outfile.
-    if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
+    if(GenProbHelpers::Doc_time_flag)
     {
       output_to_file = true;
       std::ostringstream filename_stream;
-      filename_stream << NSPP::Itstime_dir_str<<"/"
+      filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
         << NSPP::Label_str
         <<"NP"<<nproc<<"R"<<my_rank;
       outfile.open(filename_stream.str().c_str());
@@ -1221,27 +1341,29 @@ int main(int argc, char **argv)
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_rayits(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-    
+    ResultsFormat2::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavavgits(&iters_times,&results_stream);
+
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_prectime(intimestep,&iters_times,&results_stream);
     }
 
-    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-
+    ResultsFormat2::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgprectime(&iters_times,&results_stream);
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_solvertime(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-    
+    ResultsFormat2::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgsolvertime(&iters_times,&results_stream); 
+
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
     // to oomph_info before this one...
@@ -1264,9 +1386,6 @@ int main(int argc, char **argv)
       outfile.close();
     }
   }
-
-
-
 
 
 

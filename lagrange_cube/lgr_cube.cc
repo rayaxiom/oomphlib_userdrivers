@@ -36,10 +36,6 @@
 #include "meshes/simple_cubic_mesh.h"
 //#include "meshes/simple_cubic_tet_mesh.h"
 
-// Get the mesh
-#include "meshes/tetgen_mesh.h"
-#include "meshes/brick_from_tet_mesh.h"
-
 // My own header
 //#include "./../rayheader.h"
 
@@ -437,7 +433,6 @@ public:
 
  void actions_before_distribute()
  {
-
    if(this->distributed())
    {
      GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
@@ -643,46 +638,6 @@ CubeProblem<ELEMENT>::CubeProblem()
 //  Bulk_mesh_pt = 
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z,time_stepper_pt());
 
-  
-
-//  if(RaySpace::Use_tetgen_mesh)
-//  {
-//
-//
-//  //Create fluid bulk mesh, sub-dividing "corner" elements
-//  string mesh_folder = "tetgen_files/0d00625/";
-//
-//  string node_file_name=mesh_folder+"cube.1.node";
-//  string element_file_name=mesh_folder+"cube.1.ele";
-//  string face_file_name=mesh_folder+"cube.1.face";
-//  bool split_corner_elements=true;
-//
-//
-//      Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
-//          element_file_name,
-//          face_file_name,
-//          split_corner_elements,
-//          time_stepper_pt());
-//
-//
-////    Bulk_mesh_pt = new TetgenMesh<ELEMENT>(node_file_name,
-////          element_file_name,
-////          face_file_name,
-////          split_corner_elements,
-////          time_stepper_pt());
-////    Bulk_mesh_pt->setup_boundary_element_info();
-//  }
-//  else
-//  {
-//  Bulk_mesh_pt = 
-//    new SlopingCubicMesh<ELEMENT>(CL::Noel,CL::Noel,CL::Noel,
-//                                  CL::Lx, CL::Ly, CL::Lz,
-//                                  CL::Angx,CL::Angy,CL::Angz,
-//                                  time_stepper_pt());
-//  }
-
-
-  // Setup mesh
   const unsigned noel = ProbHelpers::Noel;
   const double length = ProbHelpers::Length;
   const double ang_rad = ProbHelpers::Ang_rad;
@@ -902,7 +857,6 @@ CubeProblem<ELEMENT>::CubeProblem()
 //                                   NSPP::Solver_type,this,Prec_pt);
 } // end_of_constructor
 
-
   template<class ELEMENT>
 double CubeProblem<ELEMENT>::global_temporal_error_norm()
 {
@@ -911,7 +865,6 @@ double CubeProblem<ELEMENT>::global_temporal_error_norm()
       NSHelpers::Dim,
       Bulk_mesh_pt);
 } // end of global_temporal_error_norm
-
 
 //============start_of_fluid_traction_elements==============================
 /// Create fluid traction elements 
@@ -992,7 +945,8 @@ void CubeProblem<ELEMENT>::create_parall_outflow_lagrange_elements
         const double y = nod_pt->x(1);
         const double z = nod_pt->x(2);
 
-        double ang_rad = ProbHelpers::Ang_rad;
+        const double ang_rad = ProbHelpers::Ang_rad;
+
         Vector<double>x_old;
         ProbHelpers::rotate_backward(
             x,y,z,
@@ -1461,28 +1415,28 @@ int main(int argc, char **argv)
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_rayits(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-    ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavavgits(&iters_times,&results_stream);
 
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_prectime(intimestep,&iters_times,&results_stream);
     }
 
-    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgprectime(&iters_times,&results_stream);
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_solvertime(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream); 
+    ResultsFormat2::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgsolvertime(&iters_times,&results_stream); 
 
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
