@@ -1,9 +1,21 @@
 #!/bin/bash
 set -u
 
-TAG="RAYAVGAVGITS"
-PREC="WeNlFa2v2Strn0-75cRSGsPe"
+CURRENTDIR=`pwd`
+
+## Change this for each folder.
+RESDIR=""
+PREC=""
+TAG=""
+
+
+
+function get_results()
+{
+
 ############################################
+cd $RESDIR
+
 
 LINE=""
 VISC="Sim"
@@ -93,6 +105,121 @@ LINE="$LINE $TOKEN"
 
 
 echo $LINE
+
+cd $CURRENTDIR
+
+
+}
+
+
+#RESDIR:
+#test1_2v2Strn0-75cRSGs_oomph
+#test2_2v2Strn0-75cRSEuclid_oomph
+#test3_2v2Strn0-25cRSGs_oomph
+#test4_2v2Strn0-50cRSGs_oomph
+#test5_2v2Strn0-80cRSGs_oomph
+#test6_2v2Strn0-90cRSGs_oomph
+#test7_2v2Strn0-668cRSGs_oomph
+
+#PREC:
+#WeNlFa2v2Strn0-75cRSGsPe
+#WeNlFa2v2Strn0-75cRSEuclidPe
+#WeNlFa2v2Strn0-25cRSGsPe
+#WeNlFa2v2Strn0-5cRSGsPe
+#WeNlFa2v2Strn0-8cRSGsPe
+#WeNlFa2v2Strn0-9cRSGsPe
+#WeNlFa2v2Strn0-668cRSGsPe
+
+#TAG:
+#RAYAVGAVGITS
+#RAYAVGAVGPRECSETUP
+#RAYAVGAVGLINSOLVER
+
+
+TAG="RAYAVGAVGITS"
+
+
+RESDIR="test3_2v2Strn0-25cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-25cRSGsPe"
+get_results
+
+RESDIR="test4_2v2Strn0-50cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-5cRSGsPe"
+get_results
+
+RESDIR="test7_2v2Strn0-668cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-668cRSGsPe"
+get_results
+
+RESDIR="test1_2v2Strn0-75cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-75cRSGsPe"
+get_results
+
+RESDIR="test5_2v2Strn0-80cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-8cRSGsPe"
+get_results
+
+RESDIR="test6_2v2Strn0-90cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-9cRSGsPe"
+get_results
+echo ""
+##########################
+TAG="RAYAVGAVGPRECSETUP"
+
+
+RESDIR="test3_2v2Strn0-25cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-25cRSGsPe"
+get_results
+
+RESDIR="test4_2v2Strn0-50cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-5cRSGsPe"
+get_results
+
+RESDIR="test7_2v2Strn0-668cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-668cRSGsPe"
+get_results
+
+RESDIR="test1_2v2Strn0-75cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-75cRSGsPe"
+get_results
+
+RESDIR="test5_2v2Strn0-80cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-8cRSGsPe"
+get_results
+
+RESDIR="test6_2v2Strn0-90cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-9cRSGsPe"
+get_results
+
+echo ""
+##########################
+TAG="RAYAVGAVGLINSOLVER"
+
+
+RESDIR="test3_2v2Strn0-25cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-25cRSGsPe"
+get_results
+
+RESDIR="test4_2v2Strn0-50cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-5cRSGsPe"
+get_results
+
+RESDIR="test7_2v2Strn0-668cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-668cRSGsPe"
+get_results
+
+RESDIR="test1_2v2Strn0-75cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-75cRSGsPe"
+get_results
+
+RESDIR="test5_2v2Strn0-80cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-8cRSGsPe"
+get_results
+
+RESDIR="test6_2v2Strn0-90cRSGs_oomph"
+PREC="WeNlFa2v2Strn0-9cRSGsPe"
+get_results
+
 
 
 
