@@ -1,0 +1,12 @@
+commit 04876d9a387faf54514a3586f8f05ac8c960b235
+Author: Raymon White <raymonwhite42@gmail.com>
+Date:   Sat Aug 30 23:57:11 2014 +0100
+
+    Added test 7 to lgr_cube, this is for strength of dependence 0.668
+    new file:   test2_f_calibration_with_strouhol/run_test7_2v2Strn0-668cRSGs_oomph.sh
+    
+    Format script is edited to include test7
+    modified:   test2_f_calibration_with_strouhol/format_res.sh
+    
+    Got the results from wulfling, check
+    modified:   test2_f_calibration_with_strouhol/from_wulfling/test2_f_calibration_with_strouhol.tar.gz
