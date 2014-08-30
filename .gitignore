@@ -12,6 +12,11 @@ time_stepping/unstructured_three_d_fluid
 time_stepping/two_d_fp
 lagrange_cube/cube
 
+poisson_three_d/poisson_3d
+poisson_three_d/test_5_weak_scaling_using_BPF/poisson_3d
+
+
+
 tags
 
 # Validate file
