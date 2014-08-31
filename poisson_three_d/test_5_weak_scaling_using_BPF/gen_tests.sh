@@ -236,12 +236,6 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
 generate_tests
 
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
-generate_tests
 
 # First generate tests for NDOF=200000#######################################
 NDOF="200000"
@@ -273,12 +267,6 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
 generate_tests
 
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
-generate_tests
 
 # First generate tests for NDOF=400000 ######################################
 NDOF="400000"
@@ -310,50 +298,6 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
 generate_tests
 
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
-generate_tests
-
-### Now do the same but for NDOF=800000 ####################################
-
-NDOF="800000"
-NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0"
-generate_tests
-
-NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,8"
-generate_tests
-
-NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,4,8,12"
-generate_tests
-
-NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
-generate_tests
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
-generate_tests
 
 ###############################################################################
 ## Add the qsub files, these are created manually, remember that!
@@ -361,143 +305,87 @@ generate_tests
 # First generate tests for NDOF=50000
 NDOF="50000"
 NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 # First generate tests for NDOF=200000
 NDOF="200000"
 NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 # First generate tests for NDOF=200000
 NDOF="400000"
 NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="poisson3d_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 
-### Now do the same but for NDOF=800000
-
-NDOF="800000"
-NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-#############################################################################
-
-ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_5_weak_scaling_using_BPF/"
-
-rm -rf $ABS_SCRATCH_DIR
-mkdir -p $ABS_SCRATCH_DIR
-
-RES_DIR="qsub_output"
-
-mkdir -p $ABS_SCRATCH_DIR$RES_DIR
-
-# The loop below will copy to scratch the following:
+##############################################################################
 #
-# The program
-# The grepstuff.sh file
-# All testlist.list
-# All qsubs
+#ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/poisson_three_d/test_5_weak_scaling_using_BPF/"
 #
+#rm -rf $ABS_SCRATCH_DIR
+#mkdir -p $ABS_SCRATCH_DIR
 #
-## now loop through the above array
-for i in "${Files_to_copy[@]}"
-do
-  rsync -av $i $ABS_SCRATCH_DIR
-done
-
-# Copy the revisions into the RES_DIR
-rsync -av git_rev_oomphlib $ABS_SCRATCH_DIR$RES_DIR/
-rsync -av git_rev_user_drivers $ABS_SCRATCH_DIR$RES_DIR/
-
-
+#RES_DIR="qsub_output"
 #
-### Loop through the files to copy
-#rsync -av $PROGRAM $SCRATCH_PATH
-#rsync -av grepstuff.sh $SCRATCH_PATH
+#mkdir -p $ABS_SCRATCH_DIR$RES_DIR
 #
+## The loop below will copy to scratch the following:
+##
+## The program
+## The grepstuff.sh file
+## All testlist.list
+## All qsubs
+##
+##
+### now loop through the above array
+#for i in "${Files_to_copy[@]}"
+#do
+#  rsync -av $i $ABS_SCRATCH_DIR
+#done
 #
-#rsync -av testlist_np1.list $SCRATCH_PATH
-#rsync -av testlist_np2.list $SCRATCH_PATH
-#rsync -av testlist_np4.list $SCRATCH_PATH
-#rsync -av testlist_np8.list $SCRATCH_PATH
+## Copy the revisions into the RES_DIR
+#rsync -av git_rev_oomphlib $ABS_SCRATCH_DIR$RES_DIR/
+#rsync -av git_rev_user_drivers $ABS_SCRATCH_DIR$RES_DIR/
 #
-# Remember to write these, these are not generated by this script or any
-## other script
-#rsync -av testlist_np1.qsub $SCRATCH_PATH
-#rsync -av testlist_np2.qsub $SCRATCH_PATH
-#rsync -av testlist_np3.qsub $SCRATCH_PATH
-#rsync -av testlist_np4.qsub $SCRATCH_PATH
-#rsync -av testlist_np8.qsub $SCRATCH_PATH
-
-
 
 
 

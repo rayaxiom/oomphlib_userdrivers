@@ -38,10 +38,13 @@
 
 #include "meshes/simple_cubic_mesh.h"
 
-#include "./../rayheader.h"
+#include "./../ray_general_problem_parameters.h"
+#include "./../ray_preconditioner_creation.h"
+//#include "./../rayheader.h"
 
 
-namespace NSPP = NavierStokesProblemParameters;
+namespace GenProbHelpers = GeneralProblemHelpers;
+namespace PrecHelpers = PreconditionerHelpers;
 
 using namespace std;
 
@@ -113,7 +116,7 @@ namespace oomph
     // AMG coarsening strategy.
     hypre_preconditioner_pt->amg_coarsening() =AMG_coarsening;
 
-    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+    PrecHelpers::print_hypre_parameters(
             hypre_preconditioner_pt);
     return prec_pt;
   }
@@ -296,7 +299,7 @@ public:
 
  void actions_after_newton_step()
  {
-   NSPP::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
+   GenProbHelpers::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
  }
 
  
@@ -525,8 +528,8 @@ int main(int argc, char **argv)
 //    {
 //      output_to_file = true;
 //      std::ostringstream filename_stream;
-//      filename_stream << NSPP::Itstime_dir_str<<"/"
-//        << NSPP::Label_str
+//      filename_stream << ??::Itstime_dir_str<<"/"
+//        << ??::Label_str
 //        <<"NP"<<nproc<<"R"<<my_rank;
 //      outfile.open(filename_stream.str().c_str());
 //    }
@@ -549,29 +552,29 @@ int main(int argc, char **argv)
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_rayits(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-    ResultsFormat::format_rayavavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavavgits(&iters_times,&results_stream);
     
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_prectime(intimestep,&iters_times,&results_stream);
     }
 
-    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgprectime(&iters_times,&results_stream);
 
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_solvertime(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-    ResultsFormat::format_avavgsolvertime(&iters_times,&results_stream);
+    ResultsFormat2::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgsolvertime(&iters_times,&results_stream);
     
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
