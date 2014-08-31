@@ -240,14 +240,14 @@ PREC_LSC_AMG_STR="$WSOLVER_EXACT $NSSOLVER_LSC "
 PREC_LSC_AMG_STR+="$FSOLVER_AMG $PSOLVER_AMG"
 PREC_LSC_AMG_STR+="$P_PREC $F_2v2cRSGs_Strn075"
 
-function generate_exact()
+function generate_exact_4_14()
 {
 
 PRECLIST="0 1"
 VISCLIST="0 1"
 ANGLIST="0 67"
 REYLIST="100 200 500"
-NOELLIST="4 6 8 10 12 14 16"
+NOELLIST="4 6 8 10 12 14"
 
 for PREC in $PRECLIST
 do
@@ -341,6 +341,57 @@ done
 }
 
 
+function generate_exact_16()
+{
+
+PRECLIST="0 1"
+VISCLIST="0 1"
+ANGLIST="0 67"
+REYLIST="100 200 500"
+NOELLIST="16"
+
+for PREC in $PRECLIST
+do
+  for VISC in $VISCLIST
+  do
+    for ANG in $ANGLIST
+    do
+      for REY in $REYLIST
+      do
+        for NOEL in $NOELLIST
+        do
+
+PRECPARAM=""
+if [ "$PREC" = "0" ]; then
+  PRECPARAM="$PREC_EXACT"
+elif [ "$PREC" = "1" ]; then
+  PRECPARAM="$PREC_LSC_EXACT"
+elif [ "$PREC" = "2" ]; then
+  if [ "$VISC" = "0" ]; then
+    PRECPARAM="$PREC_LSC_AMG_SIM"
+  elif [ "$VISC" = "1" ]; then
+    PRECPARAM="$PREC_LSC_AMG_STR"
+  else
+    PRECPARAM="NULL"
+  fi
+else
+  PRECPARAM="NULL"
+fi
+
+
+
+NSHELPER="--visc $VISC --rey $REY"
+PROBHELPER="--prob_id 0 --ang $ANG --noel $NOEL"
+PARAM="$GENHELPER $NSHELPER $PROBHELPER $PRECPARAM"
+echo "$RUN_COMMAND ./$PROGRAM $PARAM" >> $TESTLIST
+        done
+      done
+    done
+  done
+done
+}
+
+
 #############################################################################
 # First compile the program and move it into this folder.
 cd ..
@@ -353,8 +404,11 @@ Files_to_copy+=("git_rev_user_drivers")
 #############################################################################
 
 rm -rf $TESTLIST
-generate_exact
+
 generate_amg
+generate_exact_4_14
+generate_exact_16
+
 
 Files_to_copy+=($TESTLIST)
 Files_to_copy+=("CuPo_full.qsub")
