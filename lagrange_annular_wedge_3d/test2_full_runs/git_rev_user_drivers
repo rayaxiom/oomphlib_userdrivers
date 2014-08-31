@@ -1,0 +1,5 @@
+commit c4c444aea595bf8c6da1b74533762b777ec00200
+Author: Raymon White <raymonwhite42@gmail.com>
+Date:   Sun Aug 31 12:27:26 2014 +0100
+
+    Now can set inital DT for adaptive time stepping via --dt
