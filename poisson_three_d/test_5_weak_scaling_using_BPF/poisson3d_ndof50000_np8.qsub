@@ -10,6 +10,6 @@ FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof50000_np8.list`
 $FULL_RUNCOMMAND
 
 
-mv testlist_ndof50000_np8.qsub.*.$SGE_TASK_ID ./qsub_output/
+mv poisson3d_ndof50000_np8.qsub.*.$SGE_TASK_ID ./qsub_output/
 
 
