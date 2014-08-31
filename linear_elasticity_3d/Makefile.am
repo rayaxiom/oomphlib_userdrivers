@@ -1,11 +1,19 @@
 noinst_PROGRAMS= \
-periodic_load_3d
+lin_elas_qele \
+lin_elas_lele
 
 #------------------------------------------------------------------------
-periodic_load_3d_SOURCES = periodic_load_3d.cc
+lin_elas_qele_SOURCES = lin_elas_qele.cc
 
-periodic_load_3d_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -llinear_elasticity -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+lin_elas_qele_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -llinear_elasticity -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
+
+
+lin_elas_lele_SOURCES = lin_elas_lele.cc
+
+lin_elas_lele_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -llinear_elasticity -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+
 
 # Include path for library headers: All library headers live in 
 # the include directory which we specify with -I
