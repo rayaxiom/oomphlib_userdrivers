@@ -461,7 +461,16 @@ namespace GeneralProblemHelpers
     double dt = 0.0;
     if(Time_type == Time_type_ADAPT)
     {
-      dt = 1e-1;
+      if(!CommandLineArgs::command_line_flag_has_been_set("--dt"))
+      {
+        dt = 1e-1;
+        oomph_info << "Doing adaptive but no dt supplied, using DELTA_T = " << dt << std::endl;
+      }
+      else
+      {
+        dt = Delta_t;
+        oomph_info << "Doing adaptive, DELTA_T = " << dt << std::endl; 
+      }
     }
     else
     {

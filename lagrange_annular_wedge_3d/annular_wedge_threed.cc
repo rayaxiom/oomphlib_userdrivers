@@ -244,11 +244,24 @@ public:
 //    GenericProblemSetup::clean_up_solver_memory();
 //    LPH::clean_up_memory();
 //
-//    delete Surface_mesh_pt;
-//    delete Bulk_mesh_pt;
-//   delete Prec_pt;
-//   delete P_matrix_preconditioner_pt;
-//   delete F_matrix_preconditioner_pt;
+    delete Solver_pt;
+    delete Surface_mesh_pt;
+    delete Bulk_mesh_pt;
+    delete Prec_pt;
+    if(NS_matrix_preconditioner_pt != 0)
+    {
+      delete NS_matrix_preconditioner_pt;
+    }
+
+    if(P_matrix_preconditioner_pt != 0)
+    {
+      delete P_matrix_preconditioner_pt;
+    }
+
+    if(F_matrix_preconditioner_pt != 0)
+    {
+      delete F_matrix_preconditioner_pt;
+    }
   }
 
  ///Fix pressure in element e at pressure dof pdof and set to pvalue
