@@ -1,0 +1,6 @@
+commit ca3332fa8d8a51be03c41496ff8adba66809a4cd
+Author: Raymon White <raymonwhite42@gmail.com>
+Date:   Mon Aug 25 22:28:44 2014 +0100
+
+    Made slight change in block_preconditioner.h to fix a race condition
+    in the LSC preconditioner.
