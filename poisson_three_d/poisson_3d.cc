@@ -496,18 +496,23 @@ int main(int argc, char **argv)
 
   CubeProblem<MyPoissonElement<3,2> > problem;
 
-  problem.distribute();
-  problem.newton_solve();
-
-
-
       // Get the global oomph-lib communicator 
     const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
-
     // my rank and number of processors. 
     // This is used later for putting the data.
     const unsigned my_rank = comm_pt->my_rank();
     const unsigned nproc = comm_pt->nproc();
+
+  if(nproc > 1)
+  {
+    problem.distribute();
+  }
+
+  problem.newton_solve();
+
+
+
+
 
     // Variable to indicate if we want to output to a file or not.
     bool output_to_file = false;
