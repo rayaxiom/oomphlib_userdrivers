@@ -219,21 +219,21 @@ NPROC="2"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,8"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1"
 generate_tests
 
 NPROC="4"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,4,8,12"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
 NPROC="8"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
 generate_tests
 
 
@@ -250,21 +250,21 @@ NPROC="2"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,8"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1"
 generate_tests
 
 NPROC="4"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,4,8,12"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
 NPROC="8"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
 generate_tests
 
 
@@ -281,21 +281,21 @@ NPROC="2"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,8"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1"
 generate_tests
 
 NPROC="4"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,4,8,12"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
 NPROC="8"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
 generate_tests
 
 
