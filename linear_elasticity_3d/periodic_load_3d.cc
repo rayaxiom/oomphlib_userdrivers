@@ -37,11 +37,14 @@
 
 #include "meshes/simple_cubic_mesh.h"
 
-#include "./../rayheader.h"
+//#include "./../rayheader.h"
 
+#include "./../ray_general_problem_parameters.h"
+#include "./../ray_preconditioner_creation.h"
 
+namespace GenProbHelpers = GeneralProblemHelpers;
+namespace PrecHelpers = PreconditionerHelpers;
 
-namespace NSPP = NavierStokesProblemParameters;
 
 using namespace std;
 
@@ -114,7 +117,7 @@ namespace oomph
     // AMG coarsening strategy.
     hypre_preconditioner_pt->amg_coarsening() =AMG_coarsening;
 
-    Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings(
+    PrecHelpers::print_hypre_parameters(
             hypre_preconditioner_pt);
     return prec_pt;
   }
@@ -300,15 +303,20 @@ public:
 
  void actions_before_distribute()
  {
-   GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
-   rebuild_global_mesh();
+   if(this->distributed())
+   {
+     GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
+     rebuild_global_mesh();
+   }
  }
 
  void actions_after_distribute()
  {
-   assign_traction_elements();
-   rebuild_global_mesh();
-   
+   if(this->distributed())
+   {
+     assign_traction_elements();
+     rebuild_global_mesh();
+   }
  }
 
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
@@ -327,7 +335,7 @@ public:
 
  void actions_after_newton_step()
  {
-   NSPP::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
+   GenProbHelpers::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
  }
  
  /// Doc the solution
@@ -733,7 +741,18 @@ int main(int argc, char* argv[])
  // Set up problem
  PeriodicLoadProblem<MyLinearElasticityElement<3,3> > problem;
 
- problem.distribute();
+ // Get the global oomph-lib communicator 
+ const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+ // my rank and number of processors. 
+ // This is used later for putting the data.
+ const unsigned my_rank = comm_pt->my_rank();
+ const unsigned nproc = comm_pt->nproc();
+
+
+ if(nproc > 1)
+ {
+   problem.distribute();
+ }
  
  // Solve
  problem.newton_solve();
