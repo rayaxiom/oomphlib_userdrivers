@@ -2,10 +2,9 @@
 #$ -S /bin/bash
 #$ -cwd                        # Job runs in current directory (where you run qsub)
 #$ -V                          # Job inherits environment (settings from loaded modules etc)
-#$ -pe smp.pe 16               # Reserve whole node.
-#$ -l ivybridge
+#$ -pe smp.pe 12               # Reserve whole node.
+#$ -l highmem
 #$ -t 1-10
-export OMP_NUM_THREADS=8
 
 FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof50000_np8.list`
 $FULL_RUNCOMMAND
