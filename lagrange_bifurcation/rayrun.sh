@@ -1,6 +1,70 @@
 #!/bin/bash
 
 
-mpirun -np 1 ./unstructured_three_d_fluid --time_type 1 --solver_type 1 --dist_prob --max_solver_iter 1000  --time_start 0.0 --time_end 1.0  --itstimedir res_iter_times --visc 0 --rey 100 --prob_id 0 --w_solver 0 --ns_solver 1 --f_solver 1 --p_solver 1 --p_amg_iter 1 --p_amg_smiter 2 --p_amg_sim_smoo 1   --p_amg_str 0.7 --p_amg_coarse 0 --print_p_hypre --f_amg_iter 2 --f_amg_smiter 2 --print_f_hypre --f_amg_sim_smoo 1 --f_amg_damp -1.0 --f_amg_coarse 1 --f_amg_str 0.25 --mesh_area 0.2
+PROGRAM="unstructured_three_d_fluid"
+
+TIME_TYPE="--time_type 1"
+SOLVER_TYPE="--solver_type 1"
+DIST_PROB="--dist_prob"
+MAX_SOLVER_ITER="--max_solver_iter 1000"  
+TIME_START="--time_start 0.0" 
+TIME_END="--time_end 1.0"
+ITSTIMEDIR="--itstimedir res_iter_times"
+VISC="--visc 0"
+REY="--rey 100"
+PROB_ID="--prob_id 0"
+W_SOLVER="--w_solver 0"
+NS_SOLVER="--ns_solver 1"
+F_SOLVER="--f_solver 1"
+P_SOLVER="--p_solver 1"
+P_ITER="--p_amg_iter 1"
+P_SMITER="--p_amg_smiter 2"
+P_SMOOTHER="--p_amg_sim_smoo 1"
+P_STR="--p_amg_str 0.7"
+P_COARSE="--p_amg_coarse 0"
+P_PRINT="--print_p_hypre"
+F_ITER="--f_amg_iter 2"
+F_SMITER="--f_amg_smiter 2"
+F_PRINT="--print_f_hypre"
+F_SMOOTHER="--f_amg_sim_smoo 1"
+F_DAMP="--f_amg_damp -1.0"
+F_COARSE="--f_amg_coarse 1"
+F_STR="--f_amg_str 0.75"
+MESH_AREA="--mesh_area 0.2"
+
+
+PARAM=""
+
+PARAM+="$TIME_TYPE "
+PARAM+="$SOLVER_TYPE "
+PARAM+="$DIST_PROB "
+PARAM+="$MAX_SOLVER_ITER "
+PARAM+="$TIME_START "
+PARAM+="$TIME_END "
+PARAM+="$ITSTIMEDIR "
+PARAM+="$VISC "
+PARAM+="$REY "
+PARAM+="$PROB_ID "
+PARAM+="$W_SOLVER "
+PARAM+="$NS_SOLVER "
+PARAM+="$F_SOLVER "
+PARAM+="$P_SOLVER "
+PARAM+="$P_ITER "
+PARAM+="$P_SMITER "
+PARAM+="$P_SMOOTHER "
+PARAM+="$P_STR "
+PARAM+="$P_COARSE "
+PARAM+="$P_PRINT "
+PARAM+="$F_ITER "
+PARAM+="$F_SMITER "
+PARAM+="$F_PRINT "
+PARAM+="$F_SMOOTHER "
+PARAM+="$F_DAMP "
+PARAM+="$F_COARSE "
+PARAM+="$F_STR "
+PARAM+="$MESH_AREA"
+
+mpirun -np 1 ./$PROGRAM $PARAM
+
 
 
