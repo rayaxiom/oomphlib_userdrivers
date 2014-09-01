@@ -40,22 +40,127 @@
 #include "meshes/brick_from_tet_mesh.h" 
 
 // My own header
-#include "./../rayheader.h"
-
-
+//#include "./../rayheader.h"
+#include "./../ray_preconditioner_creation.h"
+#include "./../ray_navier_stokes_parameters.h"
+#include "./../ray_general_problem_parameters.h"
 
 using namespace std;
 using namespace oomph;
 
+
+namespace GenProbHelpers = GeneralProblemHelpers;
+namespace PrecHelpers = PreconditionerHelpers;
+namespace NSHelpers = NavierStokesHelpers;
+
 // Alias the namespace for convenience.
-namespace NSPP = NavierStokesProblemParameters;
-namespace LPH = LagrangianPreconditionerHelpers;
-namespace BL = BifurcationLagrange;
+//namespace NSPP = NavierStokesProblemParameters;
+//namespace LPH = LagrangianPreconditionerHelpers;
+//namespace BL = BifurcationLagrange;
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////
+namespace ProblemHelpers
+{
 
+  int Prob_id = -1;
+
+  std::string Prob_str = "";
+  std::string Mesh_folder_str = "";
+  double Mesh_area = 0.0;
+
+  inline void specify_command_line_flags()
+  {
+    CommandLineArgs::specify_command_line_flag("--prob_id", &Prob_id);
+    CommandLineArgs::specify_command_line_flag("--mesh_area", &Mesh_area);
+  }
+
+  inline void setup_command_line_flags()
+  {
+        // Check the problem id
+    if(!CommandLineArgs::command_line_flag_has_been_set("--prob_id"))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please set --prob_id" << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION); 
+    }
+
+
+        // Set Noel_str, used for book keeping.
+    if(CommandLineArgs::command_line_flag_has_been_set("--mesh_area"))
+    {
+   // Set the string to load the files.
+   // The Mesh_area parameter is a double.
+   // The actual mesh files are in tetgen_files/xdyz
+   // where d represents the decimal place.
+   // So we need to replace the decimal in the RNS::Mesh_area parameter with
+   // d.
+   std::ostringstream tmp_stringstream;
+   tmp_stringstream << Mesh_area;
+   Mesh_folder_str = tmp_stringstream.str();
+   std::replace(Mesh_folder_str.begin(), Mesh_folder_str.end(),
+                '.','d');
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Please supply the min element area using --mesh_area\n"
+        << std::endl;
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+
+  }
+
+
+ // Get the prescribed inflow velocity for the steady state problem.
+ // This is assumed that x and y are in the range [-1,1].
+ inline double get_prescribed_inflow(const double& x,
+                                     const double& y)
+ {
+   return (1 - x) * (x- (-1)) * (1 - y) * (y - (-1));
+ }
+
+
+ // Scale the steady state prescribed velocity inflow above
+ // by the time.
+ inline double get_prescribed_inflow(const double& t,
+                                     const double& x,
+                                     const double& y)
+ {
+   const double scaling = -cos(MathematicalConstants::Pi*t)/2.0 + 0.5;
+   return (get_prescribed_inflow(x,y) * scaling);
+ } 
+
+
+ inline std::string prob_str()
+ {
+   std::string prob_str = "";
+   if(Prob_id == 0)
+   {
+     prob_str = "Bi";
+   }
+   else
+   {
+      std::ostringstream error_message;
+      error_message << "No other problem ids done." << std::endl;
+
+      throw OomphLibError(error_message.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+   }
+   return prob_str;
+ }
+
+}
+
+namespace ProbHelpers = ProblemHelpers;
 
 //======start_problem_class===========================================
 /// Unstructured fluid problem
@@ -72,13 +177,22 @@ public:
  /// Destructor (empty)
  ~UnstructuredFluidProblem(){}
 
- /// Doc the solution
- void doc_solution(const unsigned& nt);
 
  void actions_before_implicit_timestep()
  {
-   if(!NSPP::Steady_state)
+   if(GenProbHelpers::Time_type != GenProbHelpers::Time_type_STEADY)
    {
+     // NOTE: before an implicit time step, we clear the previous times.
+     // (This has no effect if no times were added i.e.
+     // we are starting the first implicit time step)
+     //
+     // The logic for this is that we want to keep only the time step we
+     // use, not the rejected ones.
+     //
+     // In the unsteady solve loop, it is there at we add new storage for
+     // a new time step.
+     Doc_linear_solver_info_pt->clear_current_time_step();
+
      const unsigned ibound = Inflow_boundary_id[0];
      const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
      for (unsigned inod = 0; inod < num_nod; inod++) 
@@ -89,7 +203,7 @@ public:
 
        const double time = time_pt()->time();
 
-       const double uz = BL::get_prescribed_inflow(time,x,y);
+       const double uz = ProbHelpers::get_prescribed_inflow(time,x,y);
 
        nod_pt->set_value(0,0.0);
        nod_pt->set_value(1,0.0);
@@ -102,59 +216,54 @@ public:
  void actions_before_newton_solve()
  {
 
-   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-   {
-    // Initialise counters for each newton solve.
-    Doc_linear_solver_info_pt->setup_new_time_step();
-   }
-
-
-
-
-   if(NSPP::Steady_state)
-   {
-     // Set the inflow, this is boundary 0
-     const unsigned ibound = Inflow_boundary_id[0];
-     const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
-     for (unsigned inod = 0; inod < num_nod; inod++) 
-     {
-       Node*  nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
-       const double x = nod_pt->x(0);
-       const double y = nod_pt->x(1);
-       //const double z = nod_pt->x(2);
-
-       // x and y are in the range [-1,1]
-       const double uz = BL::get_prescribed_inflow(x,y);
-
-       nod_pt->set_value(0,0.0);
-       nod_pt->set_value(1,0.0);
-       nod_pt->set_value(2,uz);
-     }
-   }
+//   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+//   {
+//    // Initialise counters for each newton solve.
+//    Doc_linear_solver_info_pt->setup_new_time_step();
+//   }
+//
+//
+//
+//
+//   if(NSPP::Steady_state)
+//   {
+//     // Set the inflow, this is boundary 0
+//     const unsigned ibound = Inflow_boundary_id[0];
+//     const unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
+//     for (unsigned inod = 0; inod < num_nod; inod++) 
+//     {
+//       Node*  nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+//       const double x = nod_pt->x(0);
+//       const double y = nod_pt->x(1);
+//       //const double z = nod_pt->x(2);
+//
+//       // x and y are in the range [-1,1]
+//       const double uz = BL::get_prescribed_inflow(x,y);
+//
+//       nod_pt->set_value(0,0.0);
+//       nod_pt->set_value(1,0.0);
+//       nod_pt->set_value(2,uz);
+//     }
+//   }
  }
 
  void actions_after_newton_step()
  {
-   if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+   if(GenProbHelpers::Solver_type !=
+       GenProbHelpers::Solver_type_DIRECT_SOLVE)
    {
-     NSPP::doc_iter_times(this,Doc_linear_solver_info_pt);
+     GenProbHelpers::doc_iter_times(this,Doc_linear_solver_info_pt);
    }
  }
 
  void actions_before_distribute()
  {
-
-   if(NSPP::Distribute_problem)
-   {
-     GenericProblemSetup::delete_flux_elements(Surface_mesh_pt);
+     GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
      rebuild_global_mesh();
-   }
  }
 
  void actions_after_distribute()
  {
-   if(NSPP::Distribute_problem)
-   {
      const unsigned n_outflow_boundary = Outflow_boundary_id.size();
      for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
      {
@@ -165,10 +274,8 @@ public:
            Surface_mesh_pt);
      }
      rebuild_global_mesh();
-   }
  }
 
- void unsteady_run();
 
  /// Global error norm for adaptive time-stepping
  double global_temporal_error_norm();
@@ -178,6 +285,9 @@ public:
                                               Mesh* const &bulk_mesh_pt,
                                               Mesh* const &surface_mesh_pt);
  //private:
+ /// Pointer to the "bulk" mesh
+ Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
+
 
  /// Bulk fluid mesh
 // TetgenMesh<ELEMENT>* Bulk_mesh_pt;
@@ -188,6 +298,11 @@ public:
  Vector<double> Tangent_direction;
 
  Preconditioner* Prec_pt;
+
+ Preconditioner* NS_matrix_preconditioner_pt;
+
+ Preconditioner* P_matrix_preconditioner_pt;
+ Preconditioner* F_matrix_preconditioner_pt;
 
  IterativeLinearSolver* Solver_pt;
 
@@ -211,16 +326,40 @@ public:
   template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
-Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
+Doc_linear_solver_info_pt = GenProbHelpers::Doc_linear_solver_info_pt;
+
   // Add a new time stepper if not doing steady state.
-  if(!NSPP::Steady_state)
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
   {
+    oomph_info 
+      << "RAYINFO: Doing steady state, no time stepper added." << std::endl;
+  }
+  else if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_ADAPT)
+  {
+    oomph_info 
+      << "RAYINFO: Adding adaptive time stepper" << std::endl;
     add_time_stepper_pt(new BDF<2>(true));
+  }
+  else if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_FIXED)
+  {
+    oomph_info << "RAYINFO: Adding non-adaptive time stepper" << std::endl;
+    add_time_stepper_pt(new BDF<2>);
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "Time stepper for Time_type: "
+      << GenProbHelpers::Time_type << std::endl;
+
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
   }
 
 
+
   //Create fluid bulk mesh, sub-dividing "corner" elements
-  string mesh_folder = "tetgen_files/" + BL::Mesh_folder_str +"/";
+  string mesh_folder = "tetgen_files/" + ProbHelpers::Mesh_folder_str +"/";
 
   string node_file_name=mesh_folder+"fsi_bifurcation_fluid.1.node";
   string element_file_name=mesh_folder+"fsi_bifurcation_fluid.1.ele";
@@ -228,27 +367,27 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
   bool split_corner_elements=true;
 
   // Check if we want the tetrahedral or hexahedral
-  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
+//  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
+//  {
+//    if(NSPP::Steady_state)
+//    {
+//      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+//          element_file_name,
+//          face_file_name,
+//          split_corner_elements);
+//    }
+//    else
+//    {
+//      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+//          element_file_name,
+//          face_file_name,
+//          split_corner_elements,
+//          time_stepper_pt());
+//    }
+//  }
+//  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
   {
-    if(NSPP::Steady_state)
-    {
-      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
-          element_file_name,
-          face_file_name,
-          split_corner_elements);
-    }
-    else
-    {
-      Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
-          element_file_name,
-          face_file_name,
-          split_corner_elements,
-          time_stepper_pt());
-    }
-  }
-  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
-  {
-    if(NSPP::Steady_state)
+    if(GenProbHelpers::Time_type != GenProbHelpers::Time_type_STEADY)
     {
       Bulk_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
           element_file_name,
@@ -264,15 +403,15 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
           time_stepper_pt());
     }
   }
-  else
-  {
-        std::ostringstream err_msg;
-        err_msg << "Please set --mesh_type" << std::endl;
-
-        throw OomphLibError(err_msg.str(),
-            OOMPH_CURRENT_FUNCTION,
-            OOMPH_EXCEPTION_LOCATION);
-  }
+//  else
+//  {
+//       std::ostringstream err_msg;
+//        err_msg << "Please set --mesh_type" << std::endl;
+//
+//        throw OomphLibError(err_msg.str(),
+//            OOMPH_CURRENT_FUNCTION,
+//            OOMPH_EXCEPTION_LOCATION);
+//  }
 
   oomph_info << "Calling setup_boundary_element_info()" << std::endl; 
   // Find elements next to boundaries
@@ -383,28 +522,38 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
     ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Bulk_mesh_pt->element_pt(e));
 
     //Set the Reynolds number
-    el_pt->re_pt() = &NSPP::Rey;
-//    el_pt->re_st_pt() = &NSPP::Rey;
+    el_pt->re_pt() = &NSHelpers::Rey;
+    el_pt->re_st_pt() = &NSHelpers::Rey;
   } 
 
 
+  F_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
+  P_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::P_amg_param,1);
 
-  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
-  {
-    Vector<Mesh*> mesh_pt(2,0);
-      mesh_pt[0] = Bulk_mesh_pt;
-      mesh_pt[1] = Surface_mesh_pt;
+  NS_matrix_preconditioner_pt = PrecHelpers::create_lsc_preconditioner(
+      this,
+      Bulk_mesh_pt,
+      F_matrix_preconditioner_pt,
+      P_matrix_preconditioner_pt);
 
-    LPH::Mesh_pt = mesh_pt;
-    LPH::Problem_pt = this;
-    Prec_pt = LPH::get_preconditioner();
-  }
+  Vector<Mesh*> mesh_pt(2,0);
+  mesh_pt[0] = Bulk_mesh_pt;
+  mesh_pt[1] = Surface_mesh_pt;
+  Prec_pt = PrecHelpers::create_lgr_precondiitoner(
+      mesh_pt,
+      PrecHelpers::W_solver,
+      NS_matrix_preconditioner_pt);
 
- const double solver_tol = 1.0e-6;
- const double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
-                                   solver_tol,newton_tol,
-                                   NSPP::Solver_type,this,Prec_pt);
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+
+  Solver_pt = GenProbHelpers::setup_solver(
+      GenProbHelpers::Max_solver_iteration,
+      solver_tol,newton_tol,
+      this,Prec_pt);
+
 
 
 } // end constructor
@@ -414,36 +563,10 @@ Doc_linear_solver_info_pt = NSPP::Doc_linear_solver_info_pt;
 template<class ELEMENT>
 double UnstructuredFluidProblem<ELEMENT>::global_temporal_error_norm()
 {
- double global_error = 0.0;
-   
- //Find out how many nodes there are in the problem
- unsigned n_node = Bulk_mesh_pt->nnode();
-
- //Loop over the nodes and calculate the estimated error in the values
- for(unsigned i=0;i<n_node;i++)
-  {
-   // Get error in solution: Difference between predicted and actual
-   // value for nodal value 0
-   double error0 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),0);
-
-   double error1 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),1);
-
-   double error2 = Bulk_mesh_pt->node_pt(i)->time_stepper_pt()->
-    temporal_error_in_value(Bulk_mesh_pt->node_pt(i),2);
-
-
-
-   //Add the square of the individual error to the global error
-   global_error += error0*error0 + error1*error1 + error2*error2;
-  }
-    
- // Divide by the number of nodes
- global_error /= double(n_node*3);
-
- // Return square root...
- return sqrt(global_error);
+  return NSHelpers::global_temporal_error_norm(
+      this,
+      NSHelpers::Dim,
+      Bulk_mesh_pt);
 
 } // end of global_temporal_error_norm
 
@@ -509,98 +632,14 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
 } // end of create_parall_outflow_lagrange_elements
 
 
-  template<class ELEMENT>
-void UnstructuredFluidProblem <ELEMENT>::unsteady_run()
-{
-
-  //Set value of dt
-  //double dt = NSPP::Delta_t;
-  double dt = 1e-2;
-
-
-  // Initialise all history values for an impulsive start
-  assign_initial_values_impulsive(dt);
-  oomph_info << "IC = impulsive start" << std::endl;
-
-  //Now do many timesteps
-  unsigned ntsteps = NSPP::Time_end / dt;
-  oomph_info << "NTIMESTEP IS: " << ntsteps << std::endl; 
-
-
-  // Doc initial condition
-  if(NSPP::Doc_soln)
-  {
-        doc_solution(0); 
-  }
-
-  // increment counter
-
-  double time_tol = 1e-4;
-  //Loop over the timesteps
-//  for(unsigned t=1;t<=ntsteps;t++)
-  unsigned t = 0;
-  while(time_pt()->time() < NSPP::Time_end)
-  {
-    oomph_info << "TIMESTEP: " << t << std::endl;
-
-    //Take one fixed timestep
-    dt = adaptive_unsteady_newton_solve(dt, time_tol);
-
-    //Output the time
-    oomph_info << "Time is now " << time_pt()->time() << std::endl;
-
-    if(NSPP::Doc_soln)
-    {
-      // Doc solution
-          doc_solution(t); 
-    }
-    t++;
-  }
-} // end of unsteady run
-
-//========================================================================
-/// Doc the solution
-//========================================================================
-template<class ELEMENT>
-void UnstructuredFluidProblem<ELEMENT>::doc_solution(const unsigned&nt)
-{ 
-
-  std::ofstream some_file;
-  std::stringstream filename;
-  filename << NSPP::Soln_dir_str<<"/"<<NSPP::Label_str <<"t"<<nt<<".dat";
-
-  // Number of plot points
-  unsigned npts=5;
-
-  // Output solution
-  some_file.open(filename.str().c_str());
-  Bulk_mesh_pt->output(some_file,npts);
-  some_file.close();
-
-
-// ofstream some_file;
-// char filename[100];
-//
-// // Number of plot points
-// unsigned npts;
-// npts=5;
-//  
-// 
-// // Output fluid solution
-// sprintf(filename,"%s/fluid_soln%i.dat",doc_info.directory().c_str(),
-//         doc_info.number());
-// some_file.open(filename);
-// Bulk_mesh_pt->output(some_file,npts);
-// some_file.close();
-}
 
 std::string create_label()
 {
   
-  std::string label = BL::prob_str()
-                      + NSPP::create_label() 
-                      + LPH::create_label() 
-                      + BL::mesh_area_str();
+  std::string label = ProbHelpers::prob_str()
+                      + NSHelpers::create_label()
+                      + PrecHelpers::Lgr_prec_str
+                      + ProbHelpers::Mesh_folder_str;
   return label;
 }
 
@@ -616,26 +655,105 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
-  // Problem dimension.
-  const unsigned dim = 3;
-
   // Set up doc info - used to store information on solver and iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
-  // Again, pass this to the NSPP and LPH
-  NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
-  LPH::Doc_linear_solver_info_pt = &doc_linear_solver_info;
 
-  // Set the Label_pt
-  LPH::Label_str_pt = &NSPP::Label_str;
-  LPH::Vis_pt = &NSPP::Vis;
-  BL::Prob_id_pt = &NSPP::Prob_id;
+  // The TWO things:
+  GenProbHelpers::Doc_linear_solver_info_pt = &doc_linear_solver_info;
+  NSHelpers::Dim = 3;
 
   // Store command line arguments
   CommandLineArgs::setup(argc,argv);
 
-  NSPP::setup_commandline_flags();
-  LPH::setup_commandline_flags();
-  BL::setup_commandline_flags();
+  // From GeneralProblemHelpers, we need to set:
+  // --time_type, 
+  //   0 = steady state, 
+  //   1 = adaptive, 
+  //   2 = fixed.
+  // --solver_type, 
+  //   0 = exact solver, 
+  //   1 = OOMPH-LIB's GMRES, 
+  //   2 = trilinos GMRES
+  // -- dist_prob (no arguments)
+  //
+  // --max_solver_iter - set an integer
+  //
+  // --dt - only set if doing fixed time stepping.
+  // --time_start - always set if not steady state
+  // --time_end - always set if not steady state
+  //
+  // -- doc_soln [soln_dir]
+  //
+  // --itstimedir [results_dir]
+  //
+  GenProbHelpers::specify_command_line_flags();
+
+
+  // From NavierStokesHelpers, set:
+  // --visc 0 or 1
+  // --rey a double
+  // --rey_start - only set if looping through reynolds numbers
+  // --rey_incre - same as above
+  // --rey_end - same as above
+  NSHelpers::specify_command_line_flags();
+
+  // From PreconditionerHelpers, set:
+  // --f_solver 0 (exact) or 1 (amg)
+  // --p_solver 0 (exact) or 1 (amg)
+  //
+  // if f_solver or p_solver is 1, we NEED to additionally set (for f_solver)
+  // --f_amg_iter (usually 1)
+  //
+  // --f_amg_smiter (usually 2)
+  //
+  // --f_amg_sim_smoo
+  //   0 = Jacobi, IMPORTANT: set --f_amg_damp (to something like 1).
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR 
+  //
+  // OR set this (NOT BOTH):
+  // --f_amg_com_smoo
+  //    
+  //   6 = Schwarz
+  //   7 = Pilut
+  //   8 = ParaSails
+  //   9 = Euclid
+  //
+  // --f_amg_str - strength of dependence
+  //
+  // --f_amg_coarse:
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
+  //
+  // --print_f_hypre - to print the hypre parameters to confirm.
+  //    The information is extracted from the preconditioner after it has
+  //    been created, so it is good to always do this.
+  //
+  // REPEAT FOR p solver if it is also using AMG
+  // THERE ARE 6 things to set!
+  //
+  PrecHelpers::specify_command_line_flags();
+
+  // --prob_id
+  // --ang
+  // --noel
+  ProbHelpers::specify_command_line_flags();
+
+
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
@@ -647,86 +765,111 @@ int main(int argc, char **argv)
   // Now set up the flags/parameters for the problem//
   ////////////////////////////////////////////////////
 
-  // dim = 3
-  NSPP::generic_problem_setup(dim);
-  LPH::generic_setup();
-  BL::generic_setup();
+  GenProbHelpers::setup_command_line_flags();
+  NSHelpers::setup_command_line_flags();
+  PrecHelpers::setup_command_line_flags();
+  ProbHelpers::setup_command_line_flags();
 
+  std::string label = "";
 
-
-  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
-  {
-    //Set up the problem
-    UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
-
-  if(NSPP::Distribute_problem)
-  {
-    problem.distribute();
-  }
-
-  NSPP::Label_str = create_label();
-
-  time_t rawtime;
-  time(&rawtime);
-
-  std::cout << "RAYDOING: "
-    << NSPP::Label_str
-    << " on " << ctime(&rawtime) << std::endl;
-
-
-    // Solve the problem
-    if(NSPP::Steady_state)
-    {
-      problem.newton_solve();
-
-      //Output solution
-      problem.doc_solution(0);
-    }
-    else
-    {
-      problem.unsteady_run();
-    }
-  }
-  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
+//  if(NSPP::Mesh_type == NSPP::MeshType_TETRAHEDRAL)
+//  {
+//    //Set up the problem
+//    UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
+//
+//    if(NSPP::Distribute_problem)
+//    {
+//      problem.distribute();
+//    }
+//
+//    NSPP::Label_str = create_label();
+//
+//    time_t rawtime;
+//    time(&rawtime);
+//
+//    std::cout << "RAYDOING: "
+//      << NSPP::Label_str
+//      << " on " << ctime(&rawtime) << std::endl;
+//
+//
+//    // Solve the problem
+//    if(NSPP::Steady_state)
+//    {
+//      problem.newton_solve();
+//
+//      //Output solution
+//      problem.doc_solution(0);
+//    }
+//    else
+//    {
+//      problem.unsteady_run();
+//    }
+//  }
+//  else if(NSPP::Mesh_type == NSPP::MeshType_HEXAHEDRAL)
   {
     //Set up the problem
     UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
 
-
-  if(NSPP::Distribute_problem)
+  if(GenProbHelpers::Distribute_problem)
   {
-    problem.distribute();
-  }
+    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+    const unsigned nproc = comm_pt->nproc();
 
-  NSPP::Label_str = create_label();
-
-  time_t rawtime;
-  time(&rawtime);
-
-  std::cout << "RAYDOING: "
-    << NSPP::Label_str
-    << " on " << ctime(&rawtime) << std::endl;
-
-
-    if(NSPP::Steady_state)
+    if(nproc == 1)
     {
-      // Solve the problem
-      problem.newton_solve();
-
-      //Output solution
-      problem.doc_solution(0);
+      oomph_info << "RAYINFO: only 1 core, "
+                 << "not distributing problem." << std::endl;
     }
     else
     {
-      problem.unsteady_run();
+      oomph_info << "RAYINFO: I am distributing the problem" << std::endl;
+
+      problem.distribute();
     }
+  }
+  GenProbHelpers::Distribute_problem = problem.distributed();
+  oomph_info << "Problem.distributed() is " 
+             << GenProbHelpers::Distribute_problem << std::endl; 
+
+  label = create_label();
+    time_t rawtime;
+    time(&rawtime);
+
+    std::cout << "RAYDOING: "
+      << label
+      << " on " << ctime(&rawtime) << std::endl;
+
+  // There are two types of solves, one for steady state, another for
+  // time stepping.
+  if(GenProbHelpers::Time_type == GenProbHelpers::Time_type_STEADY)
+  {
+    problem.newton_solve();
+
+    if(GenProbHelpers::Doc_soln_flag)
+    {
+      GenProbHelpers::doc_solution(problem.bulk_mesh_pt(),
+          GenProbHelpers::Soln_dir_str,
+          label);
+    }
+  }
+  else
+  {
+    GenProbHelpers::unsteady_run(&problem,
+        problem.bulk_mesh_pt(),
+        &doc_linear_solver_info,
+        label,
+        GenProbHelpers::Soln_dir_str);
+  }
+
   }
 
   //////////////////////////////////////////////////////////////////////////
   ////////////// Outputting results ////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////
 
-  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+
+  if(GenProbHelpers::Solver_type != 
+     GenProbHelpers::Solver_type_DIRECT_SOLVE)
   {
     // Get the global oomph-lib communicator 
     const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
@@ -743,12 +886,12 @@ int main(int argc, char **argv)
     std::ofstream outfile;
 
     // If we want to output to a file, we create the outfile.
-    if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
+    if(GenProbHelpers::Doc_time_flag)
     {
       output_to_file = true;
       std::ostringstream filename_stream;
-      filename_stream << NSPP::Itstime_dir_str<<"/"
-        << NSPP::Label_str
+      filename_stream << GenProbHelpers::Itstime_dir_str<<"/"
+        << label
         <<"NP"<<nproc<<"R"<<my_rank;
       outfile.open(filename_stream.str().c_str());
     }
@@ -760,7 +903,7 @@ int main(int argc, char **argv)
 
     // Get the 3D vector which holds the iteration counts and timing results.
     Vector<Vector<Vector<double> > > iters_times
-      = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
+      = GenProbHelpers::Doc_linear_solver_info_pt->iterations_and_times();
 
     // Since this is a steady state problem, there is only
     // one "time step", thus it is essentially a 2D vector 
@@ -771,27 +914,29 @@ int main(int argc, char **argv)
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_rayits(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_rayavgits(&iters_times,&results_stream);
-    
+    ResultsFormat2::format_rayavgits(&iters_times,&results_stream);
+    ResultsFormat2::format_rayavavgits(&iters_times,&results_stream);
+
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_prectime(intimestep,&iters_times,&results_stream);
     }
 
-    ResultsFormat::format_avgprectime(&iters_times,&results_stream);
-
+    ResultsFormat2::format_avgprectime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgprectime(&iters_times,&results_stream);
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      ResultsFormat2::format_solvertime(intimestep,&iters_times,&results_stream);
     }
     
-    ResultsFormat::format_avgsolvertime(&iters_times,&results_stream);
-    
+    ResultsFormat2::format_avgsolvertime(&iters_times,&results_stream);
+    ResultsFormat2::format_avavgsolvertime(&iters_times,&results_stream); 
+
     // Print the result to oomph_info one processor at a time...
     // This still doesn't seem to always work, since there are other calls
     // to oomph_info before this one...
@@ -814,6 +959,7 @@ int main(int argc, char **argv)
       outfile.close();
     }
   }
+
 
 
 #ifdef OOMPH_HAS_MPI
