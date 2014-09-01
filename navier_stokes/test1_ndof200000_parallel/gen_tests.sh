@@ -408,34 +408,34 @@ NPROC="8"
 TESTLIST="ns_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
-##############################################################################
+#############################################################################
+
+ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/navier_stokes/test1_ndof200000_parallel/"
+
+rm -rf $ABS_SCRATCH_DIR
+mkdir -p $ABS_SCRATCH_DIR
+
+RES_DIR="qsub_output"
+
+mkdir -p $ABS_SCRATCH_DIR$RES_DIR
+
+# The loop below will copy to scratch the following:
 #
-#ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/navier_stokes/test1_ndof200000_parallel/"
+# The program
+# The grepstuff.sh file
+# All testlist.list
+# All qsubs
 #
-#rm -rf $ABS_SCRATCH_DIR
-#mkdir -p $ABS_SCRATCH_DIR
 #
-#RES_DIR="qsub_output"
-#
-#mkdir -p $ABS_SCRATCH_DIR$RES_DIR
-#
-## The loop below will copy to scratch the following:
-##
-## The program
-## The grepstuff.sh file
-## All testlist.list
-## All qsubs
-##
-##
-### now loop through the above array
-#for i in "${Files_to_copy[@]}"
-#do
-#  rsync -av $i $ABS_SCRATCH_DIR
-#done
-#
-## Copy the revisions into the RES_DIR
-#rsync -av git_rev_oomphlib $ABS_SCRATCH_DIR$RES_DIR/
-#rsync -av git_rev_user_drivers $ABS_SCRATCH_DIR$RES_DIR/
+## now loop through the above array
+for i in "${Files_to_copy[@]}"
+do
+  rsync -av $i $ABS_SCRATCH_DIR
+done
+
+# Copy the revisions into the RES_DIR
+rsync -av git_rev_oomphlib $ABS_SCRATCH_DIR$RES_DIR/
+rsync -av git_rev_user_drivers $ABS_SCRATCH_DIR$RES_DIR/
 
 
 #
