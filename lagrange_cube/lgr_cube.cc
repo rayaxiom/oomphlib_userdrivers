@@ -436,22 +436,16 @@ public:
 
  void actions_before_distribute()
  {
-   if(this->distributed())
-   {
-     GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
-     rebuild_global_mesh();
-   }
+   GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
+   rebuild_global_mesh();
  }
 
  void actions_after_distribute()
  {
-   if(this->distributed())
-   {
-     create_parall_outflow_lagrange_elements(Outflow_boundary,
-         Bulk_mesh_pt,
-         Surface_mesh_pt);
-     rebuild_global_mesh();
-   }
+   create_parall_outflow_lagrange_elements(Outflow_boundary,
+       Bulk_mesh_pt,
+       Surface_mesh_pt);
+   rebuild_global_mesh();
  }
 
 
