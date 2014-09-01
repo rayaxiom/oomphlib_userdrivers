@@ -70,7 +70,7 @@ DISTPROB="--dist_prob"
 MAXSOLVERITER="--max_solver_iter 1000"
 DT="--dt 0.01"
 TIMESTART="--time_start 0.0"
-TIMEEND="--time_end 1.0"
+TIMEEND="--time_end 0.5"
 DOCSOLN=""
 ITSTIMEDIR="--itstimedir $RES_DIR"
 
