@@ -303,20 +303,14 @@ public:
 
  void actions_before_distribute()
  {
-   if(this->distributed())
-   {
-     GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
-     rebuild_global_mesh();
-   }
+   GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
+   rebuild_global_mesh();
  }
 
  void actions_after_distribute()
  {
-   if(this->distributed())
-   {
-     assign_traction_elements();
-     rebuild_global_mesh();
-   }
+   assign_traction_elements();
+   rebuild_global_mesh();
  }
 
  /// After adaptation: Unpin pressure and pin redudant pressure dofs.
