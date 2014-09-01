@@ -1,12 +1,16 @@
 noinst_PROGRAMS= \
-poisson_3d
-
+poisson_3d \
+poisson_3d_no_bpf
 #------------------------------------------------------------------------
 poisson_3d_SOURCES = poisson_3d.cc
 
 poisson_3d_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
+poisson_3d_no_bpf_SOURCES = poisson_3d_no_bpf.cc
+
+poisson_3d_no_bpf_LDADD = -L@libdir@ -lnavier_stokes -lpoisson -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
 # Include path for library headers: All library headers live in 
 # the include directory which we specify with -I
 INCLUDES = -I@includedir@  
