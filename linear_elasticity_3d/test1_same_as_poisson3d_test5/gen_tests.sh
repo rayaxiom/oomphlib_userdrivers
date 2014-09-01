@@ -243,19 +243,19 @@ generate_tests
 # First generate tests for NDOF=200000
 NDOF="200000"
 NPROC="1"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="linl_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="2"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="linl_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="4"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="linl_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
+TESTLIST="linl_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 #############################################################################
