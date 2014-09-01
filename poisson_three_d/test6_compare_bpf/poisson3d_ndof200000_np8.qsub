@@ -1,0 +1,15 @@
+#!/bin/bash
+#$ -S /bin/bash
+#$ -cwd                        # Job runs in current directory (where you run qsub)
+#$ -V                          # Job inherits environment (settings from loaded modules etc)
+#$ -pe smp.pe 12               # Reserve whole node.
+#$ -l highmem
+#$ -t 1-20
+
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist_ndof200000_np8.list`
+$FULL_RUNCOMMAND
+
+mv poisson3d_ndof200000_np8.qsub.*.$SGE_TASK_ID ./qsub_output/
+
+
+
