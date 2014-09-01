@@ -36,7 +36,7 @@ cd $ABS_TEST_DIR
 #############################################################################
 #############################################################################
 
-PROGRAM="periodic_load_3d"
+PROGRAM="lin_elas_lele"
 #parallel R-S, CLJP, HIMS and PIMS
 
 # Initially an empty array. Fill this up later
@@ -145,15 +145,15 @@ if [ "$NDOF" = "50000" ]; then
   fi
 elif [ "$NDOF" = "200000" ]; then
   if [ "$NPROC" = "1" ]; then
-    NOEL="20"
+    NOEL="40"
   elif [ "$NPROC" = "2" ]; then
-    NOEL="24"
+    NOEL="50"
   elif [ "$NPROC" = "4" ]; then
-    NOEL="32"
+    NOEL="63"
   elif [ "$NPROC" = "8" ]; then
-    NOEL="41"
+    NOEL="80"
   else
-    NOEL="51"
+    NOEL="NULL"
   fi
 elif [ "$NDOF" = "400000" ]; then
   if [ "$NPROC" = "1" ]; then
@@ -220,28 +220,21 @@ NPROC="2"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,8"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1"
 generate_tests
 
 NPROC="4"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,4,8,12"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
 NPROC="8"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
 Files_to_copy+=($TESTLIST)
 rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,2,4,6,8,10,12,14"
-generate_tests
-
-NPROC="16"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
 generate_tests
 
 ###############################################################################
@@ -262,10 +255,6 @@ TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
 NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
-
-NPROC="16"
 TESTLIST="testlist_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
