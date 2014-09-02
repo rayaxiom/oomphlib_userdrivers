@@ -62,6 +62,7 @@ namespace GeneralProblemHelpers
   double Delta_t = -1.0;
   double Time_start = -1.0;
   double Time_end = -1.0;
+  double Time_tol = -1.0;
 
   bool Doc_soln_flag = false;
   std::string Soln_dir_str = "";
@@ -92,6 +93,7 @@ namespace GeneralProblemHelpers
         &Max_solver_iteration);
 
     CommandLineArgs::specify_command_line_flag("--dt", &Delta_t);
+    CommandLineArgs::specify_command_line_flag("--time_tol", &Time_tol);
     CommandLineArgs::specify_command_line_flag("--time_start", &Time_start);
     CommandLineArgs::specify_command_line_flag("--time_end", &Time_end);
 
@@ -498,7 +500,15 @@ namespace GeneralProblemHelpers
       doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
     }
 
-    const double time_tol = 1e-4;
+    double time_tol = 0.0;
+    if(CommandLineArgs::command_line_flag_has_been_set("--time_tol"))
+    {
+      time_tol = Time_tol;
+    }
+    else
+    {
+      time_tol = 1e-4;
+    }
 
     while(problem_pt->time_pt()->time() < Time_end)
     {
