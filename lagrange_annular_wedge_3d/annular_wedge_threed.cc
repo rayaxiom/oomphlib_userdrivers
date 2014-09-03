@@ -1080,7 +1080,7 @@ int main(int argc, char **argv)
   time_t rawtime;
   time(&rawtime);
 
-  std::cout << "RAYDOING: "
+  oomph_info << "RAYDOING: "
     << label
     << " on " << ctime(&rawtime) << std::endl;
 
