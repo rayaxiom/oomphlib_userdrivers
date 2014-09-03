@@ -501,14 +501,23 @@ namespace PreconditionerHelpers
           else if(amg_simple_smoother == 3)
           {
             amg_smoother_str = "SORfs";
+            std::ostringstream dampstream;
+            dampstream << h_prec_pt->amg_damping();
+            amg_smoother_str += dampstream.str();
           }
           else if(amg_simple_smoother == 4)
           {
             amg_smoother_str = "SORbs";
+            std::ostringstream dampstream;
+            dampstream << h_prec_pt->amg_damping();
+            amg_smoother_str += dampstream.str();
           }
           else if(amg_simple_smoother == 6)
           {
             amg_smoother_str = "SSOR";
+            std::ostringstream dampstream;
+            dampstream << h_prec_pt->amg_damping();
+            amg_smoother_str += dampstream.str();
           }
           else
           {
