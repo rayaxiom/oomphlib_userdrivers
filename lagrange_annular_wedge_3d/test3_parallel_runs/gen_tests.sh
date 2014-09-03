@@ -99,7 +99,7 @@ TIMETYPE="--time_type 1"
 SOLVERTYPE="--solver_type 2"
 DISTPROB="--dist_prob"
 MAXSOLVERITER="--max_solver_iter 100"
-DT=""
+DT="--dt 0.01"
 TIMESTART="--time_start 0.0"
 TIMEEND="--time_end 0.5"
 DOCSOLN=""
@@ -309,9 +309,9 @@ elif [ "$NDOF" = "200000" ]; then
   elif [ "$NPROC" = "2" ]; then
     NOEL="25"
   elif [ "$NPROC" = "4" ]; then
-    NOEL="31"
+    NOEL="32"
   elif [ "$NPROC" = "8" ]; then
-    NOEL="39"
+    NOEL="40"
   else
     NOEL="NULL"
   fi
@@ -351,9 +351,9 @@ NSSOLVER="$NSSOLVER_LSC"
 PSOLVER="$PSOLVER_AMG"
 P_ITER="--p_amg_iter 1"
 P_SMITER="--p_amg_smiter 2"
-P_SIM_SMOO="--p_amg_sim_smoo 0" # Jacobi
+P_SIM_SMOO="--p_amg_sim_smoo 4" # Jacobi SOR bs = 4
 P_DAMP="--p_amg_damp 0.8"
-P_COARSE="--p_amg_coarse 0" # CLJP
+P_COARSE="--p_amg_coarse 6" # CLJP # Falgout = 6
 P_STR="--p_amg_str 0.7"
 P_PRINT="--print_p_hypre"
 
@@ -365,8 +365,8 @@ P_PREC+="$P_PRINT"
 FSOLVER="$FSOLVER_AMG"
 F_ITER="--f_amg_iter 1"
 F_SMITER="--f_amg_smiter 2"
-F_SIM_SMOO="--f_amg_sim_smoo 0"
-F_DAMP="--f_amg_damp 0.5"
+F_SIM_SMOO="--f_amg_sim_smoo 4" # SOR bs = 4
+F_DAMP="--f_amg_damp 0.75"
 F_COARSE="--f_amg_coarse $AMG_COARSE" ##### THIS VARIES
 F_STR="--f_amg_str 0.75"
 F_PRINT="--print_f_hypre"
@@ -464,24 +464,24 @@ Files_to_copy+=($TESTLIST)
 
 
 
-##############################################################################
-#ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/lagrange_cube/test5_parallel_runs/"
-#
-#rm -rf $ABS_SCRATCH_DIR
-#mkdir -p $ABS_SCRATCH_DIR
-#
-#QSUB_OUT_DIR="qsub_output"
-#
-#mkdir -p $ABS_SCRATCH_DIR$QSUB_OUT_DIR
-#
-#
-#
-#
-#for i in "${Files_to_copy[@]}"
-#do
-#  rsync -av $i $ABS_SCRATCH_DIR
-#done
-#
+#############################################################################
+ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/lagrange_annular_wedge_3d/test3_parallel_runs"
+
+rm -rf $ABS_SCRATCH_DIR
+mkdir -p $ABS_SCRATCH_DIR
+
+QSUB_OUT_DIR="qsub_output"
+
+mkdir -p $ABS_SCRATCH_DIR$QSUB_OUT_DIR
+
+
+
+
+for i in "${Files_to_copy[@]}"
+do
+  rsync -av $i $ABS_SCRATCH_DIR
+done
+
 
 
 
