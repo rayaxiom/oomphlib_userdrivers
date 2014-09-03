@@ -366,7 +366,7 @@ FSOLVER="$FSOLVER_AMG"
 F_ITER="--f_amg_iter 1"
 F_SMITER="--f_amg_smiter 2"
 F_SIM_SMOO="--f_amg_sim_smoo 4" # SOR bs = 4
-F_DAMP="--f_amg_damp 0.75"
+F_DAMP="--f_amg_damp 1"
 F_COARSE="--f_amg_coarse $AMG_COARSE" ##### THIS VARIES
 F_STR="--f_amg_str 0.75"
 F_PRINT="--print_f_hypre"
