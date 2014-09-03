@@ -3,7 +3,7 @@
 #$ -cwd                        # Job runs in current directory (where you run qsub)
 #$ -V                          # Job inherits environment (settings from loaded modules etc)
 #$ -l vhighmem
-#$ -t 1-288
+#$ -t 1-256
 
 FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" testlist.list`
 $FULL_RUNCOMMAND
