@@ -305,11 +305,11 @@ if [ "$NDOF" = "50000" ]; then
   fi
 elif [ "$NDOF" = "200000" ]; then
   if [ "$NPROC" = "1" ]; then
-    NOEL="20"
+    NOEL="19"
   elif [ "$NPROC" = "2" ]; then
-    NOEL="25"
+    NOEL="24"
   elif [ "$NPROC" = "4" ]; then
-    NOEL="32"
+    NOEL="30"
   elif [ "$NPROC" = "8" ]; then
     NOEL="40"
   else
@@ -430,12 +430,12 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
-NPROC="8"
-TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-Files_to_copy+=($TESTLIST)
-rm -rf $TESTLIST
-RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
-generate_tests
+#NPROC="8"
+#TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
+#Files_to_copy+=($TESTLIST)
+#rm -rf $TESTLIST
+#RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
+#generate_tests
 
 ###############################################################################
 ## Add the qsub files, these are created manually, remember that!
@@ -454,9 +454,9 @@ NPROC="4"
 TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
-NPROC="8"
-TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
-Files_to_copy+=($TESTLIST)
+#NPROC="8"
+#TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
+#Files_to_copy+=($TESTLIST)
 
 #############################################################################
 
