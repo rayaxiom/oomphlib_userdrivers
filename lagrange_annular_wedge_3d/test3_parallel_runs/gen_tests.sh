@@ -465,7 +465,7 @@ Files_to_copy+=($TESTLIST)
 
 
 #############################################################################
-ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/lagrange_annular_wedge_3d/test3_parallel_runs"
+ABS_SCRATCH_DIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized/user_drivers/lagrange_annular_wedge_3d/test3_parallel_runs/"
 
 rm -rf $ABS_SCRATCH_DIR
 mkdir -p $ABS_SCRATCH_DIR
@@ -473,7 +473,7 @@ mkdir -p $ABS_SCRATCH_DIR
 QSUB_OUT_DIR="qsub_output"
 
 mkdir -p $ABS_SCRATCH_DIR$QSUB_OUT_DIR
-
+mkdir -p $ABS_SCRATCH_DIR$RES_DIR
 
 
 
