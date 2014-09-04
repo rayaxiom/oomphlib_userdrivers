@@ -305,13 +305,13 @@ if [ "$NDOF" = "50000" ]; then
   fi
 elif [ "$NDOF" = "200000" ]; then
   if [ "$NPROC" = "1" ]; then
-    NOEL="19"
+    NOEL="14"
   elif [ "$NPROC" = "2" ]; then
-    NOEL="24"
+    NOEL="18"
   elif [ "$NPROC" = "4" ]; then
-    NOEL="30"
+    NOEL="22"
   elif [ "$NPROC" = "8" ]; then
-    NOEL="40"
+    NOEL="28"
   else
     NOEL="NULL"
   fi
