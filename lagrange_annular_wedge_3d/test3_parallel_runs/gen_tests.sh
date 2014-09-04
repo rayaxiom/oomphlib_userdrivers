@@ -351,9 +351,9 @@ NSSOLVER="$NSSOLVER_LSC"
 PSOLVER="$PSOLVER_AMG"
 P_ITER="--p_amg_iter 1"
 P_SMITER="--p_amg_smiter 2"
-P_SIM_SMOO="--p_amg_sim_smoo 4" # Jacobi SOR bs = 4
+P_SIM_SMOO="--p_amg_sim_smoo 0" # Jacobi = 0, SOR bs = 4
 P_DAMP="--p_amg_damp 0.8"
-P_COARSE="--p_amg_coarse 6" # CLJP # Falgout = 6
+P_COARSE="--p_amg_coarse 0" # CLJP # Falgout = 6
 P_STR="--p_amg_str 0.7"
 P_PRINT="--print_p_hypre"
 
@@ -365,8 +365,8 @@ P_PREC+="$P_PRINT"
 FSOLVER="$FSOLVER_AMG"
 F_ITER="--f_amg_iter 1"
 F_SMITER="--f_amg_smiter 2"
-F_SIM_SMOO="--f_amg_sim_smoo 4" # SOR bs = 4
-F_DAMP="--f_amg_damp 1"
+F_SIM_SMOO="--f_amg_sim_smoo 0" # SOR bs = 4
+F_DAMP="--f_amg_damp 0.5"
 F_COARSE="--f_amg_coarse $AMG_COARSE" ##### THIS VARIES
 F_STR="--f_amg_str 0.75"
 F_PRINT="--print_f_hypre"
@@ -430,12 +430,12 @@ rm -rf $TESTLIST
 RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3"
 generate_tests
 
-#NPROC="8"
-#TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
-#Files_to_copy+=($TESTLIST)
-#rm -rf $TESTLIST
-#RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
-#generate_tests
+NPROC="8"
+TESTLIST="testlist_ndof${NDOF}_np${NPROC}.list"
+Files_to_copy+=($TESTLIST)
+rm -rf $TESTLIST
+RUN_COMMAND="mpirun -np ${NPROC} taskset -c 0,1,2,3,4,5,6,7"
+generate_tests
 
 ###############################################################################
 ## Add the qsub files, these are created manually, remember that!
@@ -454,9 +454,9 @@ NPROC="4"
 TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
 Files_to_copy+=($TESTLIST)
 
-#NPROC="8"
-#TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
-#Files_to_copy+=($TESTLIST)
+NPROC="8"
+TESTLIST="awlgr_ndof${NDOF}_np${NPROC}.qsub"
+Files_to_copy+=($TESTLIST)
 
 #############################################################################
 
