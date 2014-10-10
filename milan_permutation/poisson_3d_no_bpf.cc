@@ -36,6 +36,7 @@
 // The Poisson equations
 #include "poisson.h"
 
+#include "meshes/tetgen_mesh.h"
 #include "meshes/simple_cubic_mesh.h"
 
 #include "./../ray_general_problem_parameters.h"
@@ -230,6 +231,8 @@ namespace Global_Parameters
 {
   unsigned Noel = 0;
 
+  string Mesh_folder_str = "";
+
   const unsigned Length = 1;
 
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
@@ -299,7 +302,8 @@ public:
 
  void actions_after_newton_step()
  {
-   GenProbHelpers::doc_iter_times(this,Global_Parameters::Doc_linear_solver_info_pt);
+   GenProbHelpers::doc_iter_times(
+       this, Global_Parameters::Doc_linear_solver_info_pt);
  }
 
  
@@ -369,13 +373,25 @@ CubeProblem<ELEMENT>::CubeProblem()
   Top_boundary = 3;
 
 
-  const unsigned length = Global_Parameters::Length;
-  const unsigned noel = Global_Parameters::Noel;
+//  const unsigned length = Global_Parameters::Length;
+//  const unsigned noel = Global_Parameters::Noel;
 
-  Bulk_mesh_pt = 
-      new SimpleCubicMesh<ELEMENT>(noel,noel,noel,length,length,length);
+//  Bulk_mesh_pt = 
+//      new SimpleCubicMesh<ELEMENT>(noel,noel,noel,length,length,length);
 
   
+  string mesh_folder = "tetgen_files/" 
+    + Global_Parameters::Mesh_folder_str + "/";
+  
+  string node_file_name=mesh_folder+"cube.1.node";
+  string element_file_name=mesh_folder+"cube.1.ele";
+  string face_file_name=mesh_folder+"cube.1.face";
+//  bool split_corner_elements=true;
+
+  Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name);
+
   add_sub_mesh(Bulk_mesh_pt);
 
   // Combine all submeshes into a single Mesh
@@ -387,9 +403,11 @@ CubeProblem<ELEMENT>::CubeProblem()
  // here. Since the boundary values are never changed, we set
  // them here rather than in actions_before_solve(). 
  unsigned n_bound = Bulk_mesh_pt->nboundary();
+ 
  for(unsigned i=0;i<n_bound;i++)
   {
    unsigned n_node = mesh_pt()->nboundary_node(i);
+   
    for (unsigned n=0;n<n_node;n++)
     {
      // Pin the single scalar value at this node
@@ -400,6 +418,7 @@ CubeProblem<ELEMENT>::CubeProblem()
      Bulk_mesh_pt->boundary_node_pt(i,n)->set_value(0,0.0);
     }
   }
+ 
 
  // Loop over elements and set pointers to source function
  unsigned n_element = Bulk_mesh_pt->nelement();
@@ -478,6 +497,9 @@ int main(int argc, char **argv)
 
   CommandLineArgs::specify_command_line_flag("--noel", 
     &Global_Parameters::Noel);
+  CommandLineArgs::specify_command_line_flag("--mesh_area", 
+    &Global_Parameters::Mesh_folder_str);
+
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
     &RayPreconditionerCreationFunctions::AMG_iterations);
   CommandLineArgs::specify_command_line_flag("--amg_smiter", 
@@ -506,26 +528,29 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
 
 
+  
   if(CommandLineArgs::command_line_flag_has_been_set("--use_bpf"))
   {
-    CubeProblem<MyPoissonElement<3,2> > problem;
-
-      // Get the global oomph-lib communicator 
-    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
-    // my rank and number of processors. 
-    // This is used later for putting the data.
-    const unsigned nproc = comm_pt->nproc();
-
-    if(nproc > 1)
-    {
-      problem.distribute();
-    }
-
-    problem.newton_solve();
+//    CubeProblem<MyPoissonElement<3,2> > problem;
+//
+//      // Get the global oomph-lib communicator 
+//    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+//    // my rank and number of processors. 
+//    // This is used later for putting the data.
+//    const unsigned nproc = comm_pt->nproc();
+//
+//    if(nproc > 1)
+//    {
+//      problem.distribute();
+//    }
+//
+//    problem.newton_solve();
+  pause("do not use bpf for this test"); 
+  
   }
   else
   {
-    CubeProblem<QPoissonElement<3,2> >problem;
+    CubeProblem<TPoissonElement<3,2> >problem;
 
 
       // Get the global oomph-lib communicator 
@@ -540,6 +565,12 @@ int main(int argc, char **argv)
     }
 
     problem.newton_solve();
+//    string tmp_soln_dir_str = "tmp_soln";
+//    string tmp_label = "tmp_label";
+//    GenProbHelpers::doc_solution(problem.bulk_mesh_pt(),
+//                                 tmp_soln_dir_str,
+//                                 tmp_label);
+
 
   }
 
