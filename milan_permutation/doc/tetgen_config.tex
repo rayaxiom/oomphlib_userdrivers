@@ -1,0 +1,875 @@
+\documentclass[12pt,twoside,a4paper]{article}
+
+
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{graphics}
+\usepackage{textcomp}
+\usepackage[official]{eurosym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[pdftex]{graphicx}
+\usepackage{sidecap}
+%\usepackage{subfigure} - this is obsolete
+
+
+\usepackage{verbatim}
+%\usepackage[small]{caption}
+\usepackage[font={small,it}]{caption}
+\usepackage[font={small,it},labelformat=simple]{subcaption}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+%\usepackage{subcaption}
+\usepackage{rotating}
+\usepackage{listings}
+\usepackage{fancyvrb}
+\VerbatimFootnotes
+\usepackage[toc,page]{appendix}
+\usepackage{lscape}
+\usepackage{placeins}
+\usepackage[all]{xy}
+\usepackage{wrapfig}
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{nomencl}
+\usepackage[stable]{footmisc}
+
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+\usepackage{algpseudocode} % To use algorithmicx
+
+
+
+
+\usepackage{etex}
+\usepackage{tkz-euclide}
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+\usetikzlibrary{decorations.markings}
+\tikzset{->-/.style={decoration={
+  markings,
+  mark=at position #1 with {\arrow{>}}},postaction={decorate}}}
+
+%\tikzset{->-/.style={decoration={
+%  markings,
+%  mark=at position 0.25 and 0.9 step 0.25 with {\arrow{>}}},postaction={decorate}}}
+
+%\tikzset{->>>>-/.style={decoration={
+%  markings,
+%  mark=at position 0.25 with {\arrow{>}}},postaction={decorate}},
+%  mark=at position 0.5 with {\arrow{>}}},postaction={decorate}};}
+
+\usepackage[utf8]{inputenc}
+
+% Used to create tree diagrams
+\usepackage{forest}
+
+% Silence warnings by hyper link stuff.
+\usepackage{silence}
+\WarningFilter{hyperref}{You have enabled option `breaklinks'.}
+
+\PassOptionsToPackage{hyphens}{url}\usepackage[breaklinks]{hyperref}
+%\usepackage[breaklinks]{hyperref}
+\usepackage[hyphenbreaks]{breakurl}
+
+\usepackage[sort&compress, % on multiple refs sort them and write as range
+            capitalise, % Use Section not section etc.
+            noabbrev, % Use Table not Tab. etc.
+            nameinlink % Make the name (eg Section) part of the hyperlink
+            ]{cleveref}
+
+\usepackage{mathtools}
+
+\usepackage[framemethod=TikZ]{mdframed} % For my framed boxes
+
+% Call subsections sections
+\crefname{subsection}{Section}{Sections}
+\Crefname{subsection}{Section}{Sections}
+
+% just use (...) for equations
+\crefformat{equation}{#2(#1)#3}
+\crefrangeformat{equation}{#3(#1)#4--#5(#2)#6}
+\crefmultiformat{equation}{(#2#1#3)}{ and~(#2#1#3)}{, (#2#1#3)}{ and~(#2#1#3)}
+
+% Except for start of sentences where we need to say "Equations"
+\Crefformat{equation}{Equation~#2(#1)#3}
+\Crefrangeformat{equation}{Equations~#3(#1)#4--#5(#2)#6}
+\Crefmultiformat{equation}{Equations~(#2#1#3)}{ and~(#2#1#3)}{, (#2#1#3)}{ and~(#2#1#3)}
+
+
+% a reference for "this X"
+%\newcommand{\thisref}[1]{this \lcnamecref{#1}}
+%\newcommand{\Thisref}[1]{This \lcnamecref{#1}}
+
+
+%\usepackage[breaklinks=true]{hyperref}
+%\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+
+%\usepackage{hyperref}
+
+\numberwithin{equation}{section}
+
+% Used for figure environment, can now use [H] to put the
+% figure right here and force text to go below it.
+\usepackage{float}
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+% biblatex setup
+\usepackage[backend=biber,
+  citestyle=numeric,
+  firstinits=true, % Only print initials of first names
+  isbn=false,
+  doi=false,
+  url=true, % for websites, see below for removing it from papers etc.
+  backref=true, % print out the page number of reference
+]{biblatex}
+
+% clear urls for papers, proceedings, books
+\AtEveryBibitem{%
+  \ifentrytype{article}{%
+    \clearfield{url}%
+    \clearfield{urldate}%
+    \clearfield{month}%
+  }
+  {}% no "else" operation
+  %
+  \ifentrytype{inproceedings}{%
+    \clearfield{url}%
+    \clearfield{urldate}%
+    \clearfield{month}%
+  }
+  {}% no "else" operation
+  % 
+  \ifentrytype{book}{%
+    \clearfield{url}%
+    \clearfield{urldate}%
+    \clearfield{month}%
+  }
+  {}% no "else" operation
+  \ifentrytype{phdthesis}{%
+    \clearfield{url}%
+    \clearfield{urldate}%
+    \clearfield{month}%
+  }
+  {}% no "else" operation
+
+
+}
+
+
+\renewbibmacro{in:}{%
+  \ifentrytype{article}{}{\printtext{\bibstring{in}\intitlepunct}}}
+
+% makes volume of journal bold and adds colon
+\DeclareFieldFormat[article]{volume}{\textbf{#1}\addcolon\space}
+% removes pagination (p./pp.) before page numbers
+\DeclareFieldFormat{pages}{#1}
+
+\DefineBibliographyStrings{english}{%
+    backrefpage  = {see p.}, % for single page number
+    backrefpages = {see pp.} % for multiple page numbers
+}
+
+
+% Add bibtex files
+\addbibresource{library.bib}
+
+% Change this for autoref
+%\renewcommand{\chapterautorefname}{Chapter}
+%\renewcommand{\figurename}{Figure}
+%\renewcommand{\tablename}{Table}
+%\renewcommand{\partname}{Part}
+%\renewcommand{\appendixname}{Appendix}
+%\equationname	
+%Equation
+%\Itemname	
+%item
+%\chaptername	
+%chapter
+%\sectionname	
+%section
+%\subsectionname	
+%subsection
+%\subsubsectionname	
+%subsubsection
+%\paragraphname	
+%paragraph
+%\Hfootnotename	
+%footnote
+%\AMSname	
+%Equation
+%\theoremname	
+%Theorem
+%\page	
+%page
+\makenomenclature
+\DeclareMathOperator*{\Ext}{Ext. }
+
+% Below are the spacing options.
+%\doublespacing
+%\singlespacing
+%\onehalfspacing
+%\setstretch{1.8}
+
+\newtheorem{definition}{Definition}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{remark}{Remark}[section]
+\newcommand{\pde}{partial differential equation}
+\newcommand{\Pde}{Partial differential equation}
+\newcommand{\pdes}{partial differential equations}
+\newcommand{\Pdes}{Partial differential equations}
+%\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\degree}{^{\circ}}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%% Words
+\newcommand{\oomphlib}{\texttt{oomph-lib}}
+\newcommand{\Oomphlib}{\texttt{Oomph-lib}}
+\newcommand{\SuperLU}{\texttt{SuperLU}}
+\newcommand{\faceelement}{\texttt{FaceElement}}
+\newcommand{\infsup}{\emph{inf-sup}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Maths stuff, these should always go in math mode.
+
+% Generic
+\newcommand{\realnumbers}{\mathbb{R}} % Real numbers
+\newcommand{\complexnumbers}{\mathbb{C}} % Real numbers
+\newcommand{\realvectors}[1]{\mathbb{R}^{#1}} % Real numbers
+\newcommand{\realmatrices}[2]{\mathbb{R}^{#1 \times #2}} % Real numbers
+\newcommand{\tolgeneral}{\varepsilon} % General tol for iterative methods
+\newcommand{\tolnewton}{\varepsilon_N} % Newton tolerance
+\newcommand{\tolkrylov}{\varepsilon_K} % Krylov/GMRES tolerance
+\newcommand{\toltime}{\varepsilon_T} % adaptivetime tolerance
+\newcommand{\tolnumnewton}{10^{-6}}
+\newcommand{\tolnumkrylov}{10^{-6}}
+\newcommand{\tolnumtime}{10^{-4}}
+\newcommand{\bigo}[1]{\mathcal{O}(#1)} % Big-O notation
+\newcommand{\pow}[1]{^{#1}}
+\newcommand{\inv}{\pow{-1}}
+\newcommand{\tran}{^{T}}
+
+
+
+% Stuff about domains%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\domain}{\Omega}
+
+\newcommand{\angleofrot}{\alpha}
+\newcommand{\rotdomain}{\Omega^{[\angleofrot]}}
+\newcommand{\rotdomainang}[1]{\Omega^{[#1]}}
+
+% Boundaries
+\newcommand{\bound}{\partial\domain} % Generic boundary
+\newcommand{\genconstrainedbound}{\bound_\lambda} % Constrained boundary
+\newcommand{\charbound}{\bound_{c}} % Characteristic boundary
+\newcommand{\inbound}{\bound_{i}} % Inflow
+\newcommand{\outbound}{\bound_{o}} % Outflow
+\newcommand{\tractvec}{T}
+
+
+
+% Finite element discretisation stuff
+\newcommand{\eleq}[1]{\mathbf{Q}_{#1}}
+\newcommand{\elep}[1]{\mathbf{P}_{#1}}
+\newcommand{\taylorhood}{\eleq{2}-\eleq{1}}
+\newcommand{\ijdim}{\text{for } i,j = 1,2\,[,3]}
+\newcommand{\idim}{\text{for } i = 1,2\,[,3]}
+\newcommand{\jdim}{\text{for } j = 1,2\,[,3]}
+\newcommand{\vsol}{\psi}
+\newcommand{\psol}{\varphi}
+\newcommand{\vtest}{\Phi}
+\newcommand{\ptest}{\chi}
+\newcommand{\dirichleti}{\Omega_{D_i}}
+\newcommand{\neumanni}{\Omega_{N_i}}
+\newcommand{\pfrac}[2]{\frac{\partial #1}{\partial #2}}
+
+
+% Absolute value and norms
+\DeclarePairedDelimiter\abs{\lvert}{\rvert}%
+\DeclarePairedDelimiter\norm{\lVert}{\rVert}%
+% Swap the definition of \abs* and \norm*, so that \abs
+% and \norm resizes the size of the brackets, and the 
+% starred version does not.
+\makeatletter
+\let\oldabs\abs
+\def\abs{\@ifstar{\oldabs}{\oldabs*}}
+%
+\let\oldnorm\norm
+\def\norm{\@ifstar{\oldnorm}{\oldnorm*}}
+\makeatother
+
+% Systems of linear equations
+\newcommand{\approxchi}{\chi}
+\newcommand{\approxx}[1]{\bar{\approxchi}^{(#1)}} % For the approximate solution
+\newcommand{\comapproxx}[1]{\approxchi^{(#1)}}
+\newcommand{\exactx}{\bar{x}^*}
+% Ax = b %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\linA}{A} % Matrix A
+\newcommand{\linB}{B} % Matrix A
+\newcommand{\linC}{C} % Matrix A
+\newcommand{\linD}{D} % Matrix A
+\newcommand{\linE}{E} % Matrix A
+\newcommand{\linF}{F} % Matrix A
+\newcommand{\linG}{G} % Matrix A
+\newcommand{\linH}{H} % Matrix A
+\newcommand{\linI}{I} % Matrix A
+\newcommand{\linJ}{J} % Matrix A
+\newcommand{\linK}{K} % Matrix A
+\newcommand{\linL}{L} % Matrix A
+\newcommand{\linM}{M} % Matrix A
+\newcommand{\linN}{N} % Matrix A
+\newcommand{\linO}{O} % Matrix A
+\newcommand{\linP}{P} % Matrix A
+\newcommand{\linQ}{Q} % Matrix A
+\newcommand{\linR}{R} % Matrix A
+\newcommand{\linS}{S} % Matrix A
+\newcommand{\linT}{T} % Matrix A
+\newcommand{\linU}{U} % Matrix A
+\newcommand{\linV}{V} % Matrix A
+\newcommand{\linW}{W} % Matrix A
+\newcommand{\linX}{X} % Matrix A
+\newcommand{\linY}{Y} % Matrix A
+\newcommand{\linZ}{Z} % Matrix A
+
+
+\newcommand{\itermat}{\linG{}}
+\newcommand{\itermatwj}{\linG{}_{J_{\omega}}}
+\newcommand{\eye}{\linI{}}
+
+\newcommand{\bxx}{11}
+\newcommand{\bxxc}{1\hat{1}}
+\newcommand{\bxy}{12}
+\newcommand{\bxyc}{1\hat{2}}
+
+\newcommand{\bxcx}{\hat{1}1}
+\newcommand{\bxcxc}{\hat{1}\hat{1}}
+\newcommand{\bxcy}{\hat{1}2}
+\newcommand{\bxcyc}{\hat{1}\hat{2}}
+
+\newcommand{\byx}{21}
+\newcommand{\byxc}{2\hat{1}}
+\newcommand{\byy}{22}
+\newcommand{\byyc}{2\hat{2}}
+
+\newcommand{\bycx}{\hat{2}1}
+\newcommand{\bycxc}{\hat{2}\hat{1}}
+\newcommand{\bycy}{\hat{2}2}
+\newcommand{\bycyc}{\hat{2}\hat{2}}
+
+\newcommand{\bx}{1}
+\newcommand{\by}{2}
+\newcommand{\bxc}{\hat{1}}
+\newcommand{\byc}{\hat{2}}
+
+%\newcommand{\xcx}{\hat{1}1}
+%\newcommand{\xcxc}{\hat{1}\hat{1}}
+%\newcommand{\yy}{11}
+%\newcommand{\ycy}{\hat{1}1}
+%\newcommand{\yyc}{1\hat{1}}
+%\newcommand{\ycyc}{\hat{1}\hat{1}}
+
+
+
+% vectors in linear algebra has a bar on top.
+\newcommand{\linvec}[1]{\bar{#1}}
+\newcommand{\lina}{\linvec{a}} % vector a
+\newcommand{\linb}{\linvec{b}} % vector b
+\newcommand{\linc}{\linvec{c}} % c
+\newcommand{\lind}{\linvec{d}} % d
+\newcommand{\linee}{\linvec{e}} % d
+\newcommand{\linf}{\linvec{f}} % d
+\newcommand{\ling}{\linvec{g}} % d
+\newcommand{\linh}{\linvec{h}} % d
+\newcommand{\lini}{\linvec{i}} % d
+\newcommand{\linj}{\linvec{j}} % d
+\newcommand{\link}{\linvec{k}} % d
+\newcommand{\linl}{\linvec{l}} % \line is defined already
+\newcommand{\linm}{\linvec{m}} % d
+\newcommand{\linn}{\linvec{n}} % d
+\newcommand{\lino}{\linvec{o}} % d
+\newcommand{\linp}{\linvec{p}} % d
+\newcommand{\linx}{\linvec{x}} % 
+\newcommand{\liny}{\linvec{y}} % 
+\newcommand{\linz}{\linvec{z}} % 
+\newcommand{\linr}{\linvec{r}} % r - normally used for residuals
+\newcommand{\linu}{\linvec{u}} % r - normally used for residuals
+\newcommand{\linv}{\linvec{v}} % r - normally used for residuals
+\newcommand{\linw}{\linvec{w}} % r - normally used for residuals
+
+\newcommand{\tangvec}{\hat{t}^{\,i}}
+\newcommand{\normvec}{\hat{n}}
+\newcommand{\constrainedvec}{\hat{c}}
+
+
+\newcommand{\kspace}[1]{\mathcal{K}_#1}
+\newcommand{\knspace}{\kspace{n}}
+\newcommand{\fwj}{\linf{}_{J_{\omega}}}
+\newcommand{\numitererror}[1]{\lind{}^{(#1)}}
+\newcommand{\kthitererror}{\numitererror{k}}
+\newcommand{\initialitererror}{\numitererror{0}}
+
+\newcommand{\tenpower}[1]{\times10^{#1}}
+
+
+
+\newcommand{\coma}{a} % vector a
+\newcommand{\comb}{b} % vector b
+\newcommand{\comc}{c} % c
+\newcommand{\comd}{d} % d
+\newcommand{\comee}{e} % \line is defined already
+\newcommand{\comf}{f} % d
+\newcommand{\comg}{g} % d
+\newcommand{\comh}{h} % d
+\newcommand{\comi}{i} % d
+\newcommand{\comj}{j} % d
+\newcommand{\comk}{k} % d
+\newcommand{\coml}{l} % d
+\newcommand{\comm}{m} % d
+\newcommand{\comn}{n} % d
+\newcommand{\como}{o} % d
+\newcommand{\comp}{p} % d
+\newcommand{\comx}{x} % 
+\newcommand{\comy}{y} % 
+\newcommand{\comz}{z} % 
+\newcommand{\comr}{r} % r - normally used for residuals
+\newcommand{\comu}{u} % r - normally used for residuals
+\newcommand{\comv}{v} % r - normally used for residuals
+\newcommand{\comw}{w} % r - normally used for residuals
+
+\newcommand{\pobound}{\partial\Omega_P}
+\newcommand{\tfbound}{\partial\Omega_T}
+\newcommand{\constrainedbound}{\partial\Omega_\lambda}
+
+
+\newcommand{\linAx}{\linA{}\linx{}}  %Ax = b
+\newcommand{\linAexactx}{\linA{}\exactx{}} %A \tild{x}^*
+\newcommand{\linAappoxx}[1]{\linA{}\approxx{#1}}%A \tilde{x}^#1
+
+% This is quite specific to my thesis, this is the dimensions of my
+% generic linear system Ax = b
+% Dimensions of A is n x n, x is n, b is n
+\newcommand{\genrowdim}{n}
+\newcommand{\gencoldim}{m}
+\newcommand{\dimlinA}{\realmatrices{n}{n}}
+\newcommand{\dimlinx}{\realvectors{n}}
+\newcommand{\forioneton}{i = 1,\ldots,\genrowdim{}}
+\newcommand{\numlgrdof}{N_{\Lambda}} 
+\newcommand{\numpdof}{N_p}
+\newcommand{\numnsdof}{N_{ns}}
+\newcommand{\numvdof}{N_{u}}
+\newcommand{\wscaling}{\sigma}
+% Function spaces
+\newcommand{\Lpspace}[1]{L^{#1}}
+\newcommand{\Ltwo}{\Lpspace{2}}
+\newcommand{\genjac}{\mathcal{F}}
+\newcommand{\nsjac}{\mathcal{F}_{ns}}
+\newcommand{\modnsjac}{\widehat{\mathcal{F}}_{ns}}
+\newcommand{\genprec}{\mathcal{P}}
+\newcommand{\precE}{\mathcal{P}_E}
+\newcommand{\precLSC}{\mathcal{P}_{LSC}}
+\newcommand{\preciLSC}{\widehat{\mathcal{P}}_{LSC}}
+\newcommand{\subL}{\widehat{L}}
+\newcommand{\gendiagM}{\widehat{D}_M}
+\newcommand{\diagvmm}{\hat{M}}
+\newcommand{\modF}{\widehat{F}}
+
+\newcommand{\reyparam}{Re}
+\newcommand{\subprobeig}{\tilde{\lambda}}
+\newcommand{\seigi}{\tilde{\lambda}_i}
+\newcommand{\seigr}{\tilde{\lambda}_r}
+
+%\renewcommand\thesubfigure{(\alph{subfigure})}
+
+%\makeatletter
+%\let\latex@xfloat=\@xfloat
+%\def\@xfloat #1[#2]{%
+%  \latex@xfloat #1[#2]%
+%  \def\baselinestretch{1}
+%  \@normalsize\normalsize
+%  \normalsize
+%}
+%\makeatother
+
+% This is the standardone inch all around border.
+%\usepackage{fullpage}
+
+% This is what I've made myself - max space used, for Tisseur cw.
+% For most stand alone work, use this one.
+%\setlength{\abovecaptionskip}{5pt}
+%\setlength{\belowcaptionskip}{20pt}
+%\setlength{\topmargin}{-1in}
+%\setlength{\textheight}{9.75in}
+%\setlength{\oddsidemargin}{-0.25in}
+%\setlength{\textwidth}{7in}
+
+% This is the geometry package... apparently good!
+%\usepackage[left=2cm,top=4cm,right=2cm]{geometry}
+%\usepackage[a4paper]{geometry}
+%\geometry{top=1.0in, bottom=1.0in, left=1.6in, right=1.0in}
+
+%\setlength{\abovecaptionskip}{-1pt} % required for picture captions
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{listinggray}{gray}{0.9}
+\definecolor{lstbcolor}{rgb}{0.94,0.94,0.94}
+
+
+
+% Common listing stuff
+\lstset{escapechar=@,
+        backgroundcolor=\color{lstbcolor},
+  captionpos=b, % sets the caption-position to bottom
+  extendedchars=true, % lets you use non-ASCII characters; 
+                      % for 8-bits encodings only, 
+                      % does not work with UTF-8
+  numbers=left, % where to put the line-numbers; 
+                % possible values are (none, left, right)
+  numbersep=6pt, % how far the line-numbers are from the code
+  numberstyle=\color{mygray}, % the style that is used for the 
+                                   % line-numbers
+  stepnumber=2, 
+  frame=single,
+  basicstyle=\footnotesize\ttfamily,
+  commentstyle=\itshape\color{blue!80!white},
+  keywordstyle=\bfseries\color{orange!90!black},
+  belowcaptionskip=1\baselineskip,
+  showstringspaces=false,
+  tabsize=2 % sets default tabsize to 2 spaces
+}
+
+
+\lstdefinestyle{raycodecpp}{
+  rangebeginprefix=///\ Start\ of\ ,
+  rangeendprefix=///\ End\ of\ ,
+  includerangemarker=true,
+  identifierstyle=,%\color{blue},
+  stringstyle=\color{orange},
+  language=C++
+%  title=\lstname % show the filename of files included with 
+%                 %\lstinputlisting; also try caption instead of title
+}
+
+
+\lstdefinestyle{raycodetetgenpoly}{
+  rangebeginprefix=\#\#\#\ Start\ of\ ,
+  rangeendprefix=\#\#\#\ End\ of\ ,
+  includerangemarker=true,
+  identifierstyle=,%\color{blue},
+  stringstyle=\color{orange},
+  morecomment=[l]{\#}
+}
+
+
+
+
+% Doing boarder matrices
+\makeatletter
+\def\bbordermatrix#1{\begingroup \m@th
+  \@tempdima 4.75\p@
+  \setbox\z@\vbox{%
+    \def\cr{\crcr\noalign{\kern2\p@\global\let\cr\endline}}%
+    \ialign{$##$\hfil\kern2\p@\kern\@tempdima&\thinspace\hfil$##$\hfil
+      &&\quad\hfil$##$\hfil\crcr
+      \omit\strut\hfil\crcr\noalign{\kern-\baselineskip}%
+      #1\crcr\omit\strut\cr}}%
+  \setbox\tw@\vbox{\unvcopy\z@\global\setbox\@ne\lastbox}%
+  \setbox\tw@\hbox{\unhbox\@ne\unskip\global\setbox\@ne\lastbox}%
+  \setbox\tw@\hbox{$\kern\wd\@ne\kern-\@tempdima\left[\kern-\wd\@ne
+    \global\setbox\@ne\vbox{\box\@ne\kern2\p@}%
+    \vcenter{\kern-\ht\@ne\unvbox\z@\kern-\baselineskip}\,\right]$}%
+  \null\;\vbox{\kern\ht\@ne\box\tw@}\endgroup}
+\makeatother
+
+%\renewcommand*{\algorithmcfname}{ASM Spec.}% Algorithm name
+%\usepackage{dcounter}% http://ctan.org/pkg/dcounter
+%\counterstyle{<section>}%
+%\DeclareDynamicCounter{algocf}% <- algocf will be 'dynamic' within <section>
+
+\newcounter{preccounter}
+\newenvironment{preconditioner}[1][h]
+  {\refstepcounter{preccounter}
+    \renewcommand*{\algorithmcfname}{Preconditioner}
+  \LinesNotNumbered
+    \LinesNumberedHidden
+    \begin{algorithm}[#1]
+  \DontPrintSemicolon 
+      \renewcommand\thealgocf{\arabic{preccounter}}}
+  {\end{algorithm}\addtocounter{algocf}{-1}}
+\newcommand{\precref}[1]{Preconditioner \ref{#1}}
+
+
+\newcommand*{\threesim}{
+\mathrel{\vcenter{\offinterlineskip
+\hbox{$\sim$}\vskip-.35ex\hbox{$\sim$}\vskip-.35ex\hbox{$\sim$}}}}
+
+
+%\newcounter{preccounter}
+%\newenvironment{Preconditioner}
+%  {\refstepcounter{preccounter}%
+%    \renewcommand*{\algorithmcfname}{Preconditioner}%
+%    \begin{algorithm}\renewcommand\thealgocf{\arabic{preccounter}}}
+%  {\end{algorithm}\addtocounter{algocf}{-1}}
+
+%\newcommand{\precref}[1]{Preconditioner \ref{#1}}
+%\newcounter{preccount}
+%\newcounter{temp}
+%
+%\newenvironment{preccount}[1][ps]{%
+%  \setcounter{temp}{\value{algorithm}}%
+%  \setcounter{algorithm}{\value{preccount}}%
+%  \refstepcounter{preccount}%
+%  \begin{algorithm}[#1]%
+%    \floatname{algorithm}{Preconditioner}%
+%  }{\end{algorithm}\setcounter{algorithm}{\value{temp}}}
+%
+%\floatname{preccount}{Preconditioner}
+%\crefname{hdps}{preconditioner}{preconditioners}
+%\Crefname{hdps}{{Preconditioner}{Preconditioners}
+
+%\crefname{algocf}{alg.}{algs.}
+%\Crefname{algocf}{Algo}{Algos}
+%\crefalias{hdps}{algocf}
+
+
+
+% new environment syntax:
+%\newenvironment{name}[num]{before}{after}
+%\newcounter{precc}
+%\newenvironment{preconditioner}
+%  {\stepcounter{precc}
+%    \renewcommand{\algorithmcfname}{Preconditioner}
+%    \begin{algorithm}\renewcommand\thealgocf{\arabic{precc}}}
+%  {\end{algorithm}\addtocounter{algocf}{-1}}
+%% Set up the clever ref counter.
+%\crefname{algocf}{Preconditioner}{preconditioners}
+%\Crefname{algocf}{Preconditioner}{preconditioners}
+%\renewcommand*{\algorithmcfname}{}% Algorithm name
+%\usepackage{dcounter}% http://ctan.org/pkg/dcounter
+%\counterstyle{<section>}%
+%\DeclareDynamicCounter{algocf}% <- algocf will be 'dynamic' within <section>
+
+
+
+
+\immediate\write18{./testshell.sh > testshell.tex}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\begin{document}
+
+%% Title stuff
+\title{A note on tetgen with \oomphlib{} \\Using a unit cube example.}
+\author{Raymon White}
+\maketitle
+%% End of title stuff
+
+\begin{abstract}
+This article attempts summarise the use of tetgen with \oomphlib{}.
+We base out example on a unit cube....
+\end{abstract}
+
+
+We follow examples in the tetgen documentation~\cite{Si2013}.
+
+\section{Unit cube}
+So yeshr
+\input{testshell.tex}
+
+Oh hi, this is listing\cref{lst:testcode} shake my  hand
+\lstinputlisting[style=raycodecpp,
+                 linerange=fract0-fract0,
+                 caption=Some code,
+                 label=lst:testcode]{testcode.cc}
+
+
+\lstinputlisting[style=raycodetetgenpoly,
+%                 linerange=fract0-fract0,
+                 caption=cube poly file,
+                 label=lst:cubepoly]{../cube_hole.poly}
+
+
+% Annular wedge diagram %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}[H] % !htbp
+  \centering
+\begin{tikzpicture}
+%  \draw[help lines] (0,0) grid (10,10);
+
+\begin{scope}
+
+%% Draw the cube first, axes later
+\pgfmathsetmacro\FRONTBOTTOMLEFTX{0.0}
+\pgfmathsetmacro\FRONTBOTTOMLEFTY{0.0}
+\pgfmathsetmacro\CUBESIZE{3}
+
+\pgfmathsetmacro\fbotleftX{\FRONTBOTTOMLEFTX}
+\pgfmathsetmacro\fbotleftY{\FRONTBOTTOMLEFTY}
+\pgfmathsetmacro\fbotrightX{\FRONTBOTTOMLEFTX+\CUBESIZE}
+\pgfmathsetmacro\fbotrightY{\FRONTBOTTOMLEFTY}
+\pgfmathsetmacro\ftopleftX{\FRONTBOTTOMLEFTX}
+\pgfmathsetmacro\ftopleftY{\FRONTBOTTOMLEFTY+\CUBESIZE}
+\pgfmathsetmacro\ftoprightX{\FRONTBOTTOMLEFTX+\CUBESIZE}
+\pgfmathsetmacro\ftoprightY{\FRONTBOTTOMLEFTY+\CUBESIZE}
+
+\coordinate (fbotleft) at (\fbotleftX,\fbotleftY);
+\coordinate (fbotright) at (\fbotrightX,\fbotrightY);
+\coordinate (ftopleft) at (\ftopleftX,\ftopleftY);
+\coordinate (ftopright) at (\ftoprightX,\ftoprightY);
+
+\draw[ultra thick] 
+(fbotleft)--(fbotright)--(ftopright)--(ftopleft)--(fbotleft);
+
+% How much is the back shifted from the front by?
+\pgfmathsetmacro\FBSHIFTX{1}
+\pgfmathsetmacro\FBSHIFTY{2}
+\pgfmathsetmacro\BACKBOTTOMLEFTX{\FRONTBOTTOMLEFTX+\FBSHIFTX}
+\pgfmathsetmacro\BACKBOTTOMLEFTY{\FRONTBOTTOMLEFTY+\FBSHIFTY}
+
+\pgfmathsetmacro\bbotleftX{\BACKBOTTOMLEFTX}
+\pgfmathsetmacro\bbotleftY{\BACKBOTTOMLEFTY}
+\pgfmathsetmacro\bbotrightX{\BACKBOTTOMLEFTX+\CUBESIZE}
+\pgfmathsetmacro\bbotrightY{\BACKBOTTOMLEFTY}
+\pgfmathsetmacro\btopleftX{\BACKBOTTOMLEFTX}
+\pgfmathsetmacro\btopleftY{\BACKBOTTOMLEFTY+\CUBESIZE}
+\pgfmathsetmacro\btoprightX{\BACKBOTTOMLEFTX+\CUBESIZE}
+\pgfmathsetmacro\btoprightY{\BACKBOTTOMLEFTY+\CUBESIZE}
+
+% Declare the back coordinates
+\coordinate (bbotleft) at (\bbotleftX,\bbotleftY);
+\coordinate (bbotright) at (\bbotrightX,\bbotrightY);
+\coordinate (btopleft) at (\btopleftX,\btopleftY);
+\coordinate (btopright) at (\btoprightX,\btoprightY);
+
+% Back top and right lines
+\draw[ultra thick] (btopleft)--(btopright)--(bbotright);
+
+% Three solid diagonal lines
+\draw[ultra thick] (ftopleft)--(btopleft);
+\draw[ultra thick] (ftopright)--(btopright);
+\draw[ultra thick] (fbotright)--(bbotright);
+
+% Three dotted lines
+\draw[ultra thick,dotted] (fbotleft)--(bbotleft);
+\draw[ultra thick,dotted] (bbotleft)--(btopleft);
+\draw[ultra thick,dotted] (bbotleft)--(bbotright);
+
+
+% The axis are based on bbotleft node but shifted to the left
+\pgfmathsetmacro\axlength{1}
+\pgfmathsetmacro\axoriginX{\BACKBOTTOMLEFTX-2.5}
+\pgfmathsetmacro\axoriginY{\BACKBOTTOMLEFTY}
+\pgfmathsetmacro\axXX{\axoriginX+\axlength}
+\pgfmathsetmacro\axXY{\axoriginY}
+\pgfmathsetmacro\axYX{\axoriginX}
+\pgfmathsetmacro\axYY{\axoriginY+\axlength}
+\pgfmathsetmacro\axZX{\axoriginX-0.4472135955}
+\pgfmathsetmacro\axZY{\axoriginY-0.894427191}
+
+\coordinate (axorigin) at (\axoriginX,\axoriginY);
+\coordinate (axX) at (\axXX,\axXY);
+\coordinate (axY) at (\axYX,\axYY);
+\coordinate (axZ) at (\axZX,\axZY);
+\draw[ultra thick,->] (axorigin)--(axX);
+\draw[ultra thick,->] (axorigin)--(axY);
+\draw[ultra thick,->] (axorigin)--(axZ);
+
+\node[draw=none,xshift=0.15cm,align=left] at (axX) {\large$x$};
+\node[draw=none,yshift=0.175cm] at (axY) {\large$y$};
+\node[draw=none,xshift=-0.15cm,yshift=-0.15cm] at (axZ) {\large$z$};
+
+
+%%%%%%%%%%%%%%
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at 
+(bbotleft) {\large$1$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(bbotright) {\large$2$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(fbotright) {\large$3$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(fbotleft) {\large$4$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(ftopleft) {\large$5$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(btopleft) {\large$6$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(btopright) {\large$7$};
+\node[draw,shape=circle,inner sep=2pt,xshift=-0.4cm,yshift=0.4cm] at
+(ftopright) {\large$8$};
+%\newcommand \ashiftX{2}
+%\coordinate (axorigin) at (\frontbotleft+\fbshiftX-\ashiftX,
+%                           \frontbotleft+\fbshiftY);
+%\coordinate (axZ) at (\frontbotleft+\fbshiftX-\ashiftX,
+%                           \frontbotleft+\fbshiftY);
+
+
+
+
+%% I am using this little trick:
+%%
+%%x(t)=a+r*cos(t)
+%%y(t)=b+r*sin(t)
+%%
+%\newcommand \rmax{5}
+%\newcommand \rmin{1.5}
+%% outer boundary arc
+%\draw [ultra thick,domain=0:90] plot ({\rmax*cos(\x)}, {\rmax*sin(\x)});
+%% inner boundary arc
+%\draw [ultra thick,domain=0:90] plot ({\rmin*cos(\x)}, {\rmin*sin(\x)});
+%% Left boundary
+%\draw [ultra thick](0,\rmin) -- (0,\rmax);
+%% Bottom boundary
+%\draw [ultra thick](\rmin,0) -- (\rmax,0);
+%
+%% velocity stream lines
+%\draw [rotate=22,ultra thick,->](\rmax - 1,0) -- (\rmax+1,0);
+%\draw [rotate=45,ultra thick,->](\rmax - 1,0) -- (\rmax+1,0);
+%\draw [rotate=68,ultra thick,->](\rmax - 1,0) -- (\rmax+1,0);
+%\node[draw=none,align=left] at (0.5,0.5) {\large$\Omega_D$}; % Inflow
+%\node[draw=none,align=left] at (-0.5,\rmax - \rmin) {\large$\Omega_D$}; % Inflow
+%\node[draw=none,align=left] at (\rmax - \rmin,-0.5) {\large$\Omega_D$}; % Inflow
+%\node[draw=none,align=left] at (\rmax-1.5,\rmax) {\large$\pobound$}; % Inflow
+%\node[draw=none,align=left] at (\rmax,\rmax) {\large$u_1 = ?$}; % RIGHT
+%\node[draw=none,align=left] at (\rmax,\rmax-1) {\large$u_2 = ?$}; % RIGHT
+\end{scope}
+\end{tikzpicture}
+\caption{Unit cube with \oomphlib{} axes.
+       \label{fig:cube}}
+\end{figure}
+
+
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\newpage
+\defbibnote{myprenote}{Numbers in brackets following a reference give page numbers where the reference is cited.}
+% Does what it says (using biblatex package)
+\printbibliography[prenote=myprenote]
+ \end{document}
