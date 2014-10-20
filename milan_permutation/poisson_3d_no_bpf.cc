@@ -229,9 +229,11 @@ namespace ConstSourceForPoisson
 
 namespace Global_Parameters
 {
-  unsigned Noel = 0;
+//  unsigned Noel = 0;
 
-  string Mesh_folder_str = "";
+
+  static string Tetgen_dir_str = "tetgen_files_unit_cube";
+  string Tetgen_file_str = "";
 
   const unsigned Length = 1;
 
@@ -379,18 +381,21 @@ CubeProblem<ELEMENT>::CubeProblem()
 //  Bulk_mesh_pt = 
 //      new SimpleCubicMesh<ELEMENT>(noel,noel,noel,length,length,length);
 
+  namespace GP = Global_Parameters;
+
+  string tetgen_file = GP::Tetgen_dir_str + "/" 
+                     + GP::Tetgen_file_str;
   
-  string mesh_folder = "tetgen_files/" 
-    + Global_Parameters::Mesh_folder_str + "/";
-  
-  string node_file_name=mesh_folder+"cube.1.node";
-  string element_file_name=mesh_folder+"cube.1.ele";
-  string face_file_name=mesh_folder+"cube.1.face";
+  string node_file_name=tetgen_file+".node";
+  string element_file_name=tetgen_file+".ele";
+  string face_file_name=tetgen_file+".face";
+
 //  bool split_corner_elements=true;
 
   Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
           element_file_name,
           face_file_name);
+
 
   add_sub_mesh(Bulk_mesh_pt);
 
@@ -403,6 +408,8 @@ CubeProblem<ELEMENT>::CubeProblem()
  // here. Since the boundary values are never changed, we set
  // them here rather than in actions_before_solve(). 
  unsigned n_bound = Bulk_mesh_pt->nboundary();
+
+ oomph_info << "n_bound: " << n_bound << std::endl; 
  
  for(unsigned i=0;i<n_bound;i++)
   {
@@ -495,10 +502,13 @@ int main(int argc, char **argv)
   // Store commandline arguments
   CommandLineArgs::setup(argc,argv);
 
-  CommandLineArgs::specify_command_line_flag("--noel", 
-    &Global_Parameters::Noel);
-  CommandLineArgs::specify_command_line_flag("--mesh_area", 
-    &Global_Parameters::Mesh_folder_str);
+//  CommandLineArgs::specify_command_line_flag("--noel", 
+//    &Global_Parameters::Noel);
+//  CommandLineArgs::specify_command_line_flag("--mesh_area", 
+//    &Global_Parameters::Mesh_folder_str);
+
+  CommandLineArgs::specify_command_line_flag("--tetgenfile", 
+    &Global_Parameters::Tetgen_file_str);
 
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
     &RayPreconditionerCreationFunctions::AMG_iterations);
