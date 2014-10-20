@@ -392,9 +392,13 @@ CubeProblem<ELEMENT>::CubeProblem()
 
 //  bool split_corner_elements=true;
 
+  oomph_info << "About to create the mesh" << std::endl; 
+  
   Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
           element_file_name,
           face_file_name);
+  oomph_info << "Done mesh creation" << std::endl; 
+  
 
 
   add_sub_mesh(Bulk_mesh_pt);
@@ -409,7 +413,7 @@ CubeProblem<ELEMENT>::CubeProblem()
  // them here rather than in actions_before_solve(). 
  unsigned n_bound = Bulk_mesh_pt->nboundary();
 
- oomph_info << "n_bound: " << n_bound << std::endl; 
+// oomph_info << "n_bound: " << n_bound << std::endl; 
  
  for(unsigned i=0;i<n_bound;i++)
   {
@@ -560,7 +564,11 @@ int main(int argc, char **argv)
   }
   else
   {
+    oomph_info << "Hello, about to create the problem." << std::endl; 
+    
     CubeProblem<TPoissonElement<3,2> >problem;
+    oomph_info << "Done creating the problem" << std::endl; 
+    
 
 
       // Get the global oomph-lib communicator 

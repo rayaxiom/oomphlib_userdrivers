@@ -1,4 +1,6 @@
-# This file represents a cube with a cube hole in the middle.
+### Start of cube poly 
+
+#This file represents a cube with a cube hole in the middle.
 
 # Part 1 - node list
 8  3  0  1
@@ -39,3 +41,5 @@
 
 # Part 4 - region list
 0
+
+### End of cube poly
