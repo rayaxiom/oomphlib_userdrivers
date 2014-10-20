@@ -1,45 +1,60 @@
-### Start of cube poly 
-
-#This file represents a cube with a cube hole in the middle.
-
+### Start of Node list
+#---------------
 # Part 1 - node list
-8  3  0  1
-   1    0 0 0 1
-   2    1 0 0 1 
-   3    1 1 0 1
-   4    0 1 0 1
-   5    0 0 1 1
-   6    1 0 1 1
-   7    1 1 1 1
-   8    0 1 1 1
+# <num. nodes> <dim (3)> <num. of attributes> <boundary markers (0|1)>
+# 8 nodes, 3 dim, no attribute, yes boundary marker
+8 3 0 1
 
-  
-# Part 2 - facet list
-6 1
-# bottom 1
-1 0 1
-4 1 2 3 4
-# top 1
-1 0 1
-4 5 6 7 8
-# left 1
-1 0 1
-4 1 4 8 5
-# right 1
-1 0 1
-4 2 3 7 6
-# front 1
-1 0 1
-4 3 4 8 7
-# back 1
-1 0 1
-4 1 2 6 5
+# Node index, node coordinates, boundary marker
+1 0 0 0 1
+2 1 0 0 1
+3 1 0 1 1
+4 0 0 1 1
+5 0 1 1 1
+6 0 1 0 1
+7 1 1 0 1
+8 1 1 1 1
+### End of Node list
 
 
-# Part 3 - hole list
+### Start of Facet list
+#---------------
+
+6 1 # number of faces; yes, we do have boundary markers
+
+# Bottom boundary
+1 0 2   # one polygon, zero holes, boundary 2
+4 1 2 3 4  # four vertices and their indices in node list
+
+# Top boundary
+1 0 4  # one polygon, zero holes, boundary 4
+4 5 6 7 8  # four vertices and their indices in node list
+
+# Left boundary (inflow)
+1 0 5  # one polygon, zero holes, boundary 5
+4 1 4 5 6  # four vertices and their indices in node list
+
+# Right boundary (outflow)
+1 0 3  # one polygon, zero holes, boundary 3
+4 2 3 8 7  # four vertices and their indices in node list
+
+# Front boundary 
+1 0 6  # one polygon, zero holes, boundary 6
+4 3 4 5 8  # four vertices and their indices in node list
+
+# Back boundary 
+1 0 1  # one polygon, zero holes, boundary 1
+4 1 2 7 6  # four vertices and their indices in node list
+### End of Facet list
+
+
+### Start of Hole list
+#---------------
 0
+### End of Hole list
 
-# Part 4 - region list
+
+### Start of Region list
+#---------------
 0
-
-### End of cube poly
+### End of Region list
