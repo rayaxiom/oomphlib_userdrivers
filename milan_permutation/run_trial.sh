@@ -55,12 +55,13 @@ NPROC="$1"
 MPIRUNCOMMAND="mpirun -np $NPROC"
 
 AMG_ITER="--amg_iter 1"
-AMG_SMITER="--amg_smiter 2"
-AMG_SIM_SMOO="--amg_sim_smoo 1"
-AMG_STRN="--amg_strn 0.7"
-AMG_COARSE="--amg_coarse 1"
+AMG_SMITER="--amg_smiter 1"
+AMG_SIM_SMOO="--amg_sim_smoo 0" # 0 - jacobi, 1 - GS
+AMG_DAMP="--amg_damp 0.8"
+AMG_STRN="--amg_strn 0.25"
+AMG_COARSE="--amg_coarse 6" # 1 - RS. 6 - Falgout
 
-AMG_PARAM="$AMG_ITER $AMG_SMITER $AMG_SIM_SMOO $AMG_STRN $AMG_COARSE"
+AMG_PARAM="$AMG_ITER $AMG_SMITER $AMG_SIM_SMOO $AMG_STRN $AMG_COARSE $AMG_DAMP"
 
 
 CURRENT_TETGEN_FILE="$2"
@@ -77,7 +78,8 @@ ${MPIRUNCOMMAND} ./${PROGRAM} ${FULLPARAM}
 #mprog && extractmesh 1 && rprog 1 && delmesh
 
 TTTFILE="cube.$FILENUMBER"
-rprog 1 $TTTFILE
+
+mprog && rprog 2 $TTTFILE
 
 
 

@@ -392,14 +392,9 @@ CubeProblem<ELEMENT>::CubeProblem()
 
 //  bool split_corner_elements=true;
 
-  oomph_info << "About to create the mesh" << std::endl; 
-  
   Bulk_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
           element_file_name,
           face_file_name);
-  oomph_info << "Done mesh creation" << std::endl; 
-  
-
 
   add_sub_mesh(Bulk_mesh_pt);
 
@@ -417,19 +412,34 @@ CubeProblem<ELEMENT>::CubeProblem()
  
  for(unsigned i=0;i<n_bound;i++)
   {
+    
    unsigned n_node = mesh_pt()->nboundary_node(i);
    
+//   oomph_info << "i: " << i << ", n_node: " << n_node << std::endl;
+
    for (unsigned n=0;n<n_node;n++)
     {
      // Pin the single scalar value at this node
      Bulk_mesh_pt->boundary_node_pt(i,n)->pin(0); 
 
+//     Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(i,n);
+//     double xx = nod_pt->x(0);
+//     double yy = nod_pt->x(1);
+//     double zz = nod_pt->x(2);
+
+//     oomph_info << std::setw(10) << xx 
+//                << std::setw(10) << yy 
+//                << std::setw(10) << zz << std::endl; 
      // Assign the homogenous boundary condition for the one and only
      // nodal value
      Bulk_mesh_pt->boundary_node_pt(i,n)->set_value(0,0.0);
     }
+//   oomph_info << "\n\n" << std::endl; 
   }
- 
+
+//pause("yes yes"); 
+
+
 
  // Loop over elements and set pointers to source function
  unsigned n_element = Bulk_mesh_pt->nelement();
@@ -469,16 +479,16 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     // Now set up the solver.
   TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
-  trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+  trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::CG;
   Solver_pt = trilinos_solver_pt;
 
-  Solver_pt->tolerance() = 1e-8;
+  Solver_pt->tolerance() = 1e-6;
   Solver_pt->max_iter() = 100;
   Solver_pt->preconditioner_pt() = Prec_pt;
 
   this->linear_solver_pt() = Solver_pt;
 
-  this->newton_solver_tolerance() = 1e-8;
+  this->newton_solver_tolerance() = 1e-6;
 
 } // end_of_constructor
 
@@ -564,14 +574,9 @@ int main(int argc, char **argv)
   }
   else
   {
-    oomph_info << "Hello, about to create the problem." << std::endl; 
-    
     CubeProblem<TPoissonElement<3,2> >problem;
-    oomph_info << "Done creating the problem" << std::endl; 
-    
 
-
-      // Get the global oomph-lib communicator 
+    // Get the global oomph-lib communicator 
     const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
     // my rank and number of processors. 
     // This is used later for putting the data.
