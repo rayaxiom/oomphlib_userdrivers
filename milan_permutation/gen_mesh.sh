@@ -1,5 +1,16 @@
 #!/bin/bash
 
+CURRENT_DIR=`pwd`
+
+TETGEN_DIR="tetgen_files_unit_cube"
+POLY_FILE="cube.poly"
+
+mkdir -p $TETGEN_DIR
+
+cp $POLY_FILE ./$TETGEN_DIR/
+
+cd $TETGEN_DIR
+
 # Delete previous files
 rm -rf cube.*.edge cube.*.ele cube.*.face cube.*.node
 
@@ -27,4 +38,6 @@ tetgen -rqa0.0000006103515625 cube.13
 tetgen -rqa0.00000030517578125 cube.14
 tetgen -rqa0.000000152587890625 cube.15
 tetgen -rqa0.0000000762939453125 cube.16
+
+cd $CURRENT_DIR
 
