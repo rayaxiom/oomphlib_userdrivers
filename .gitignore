@@ -32,3 +32,4 @@ Makefile.in
 
 validation.log
 validate.output
+milan_permutation/tetgen_files/
