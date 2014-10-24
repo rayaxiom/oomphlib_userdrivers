@@ -1,0 +1,3 @@
+mpirun -np 2 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 0 --amg_damp 0.8 --tetgenfile cube.12
+mpirun -np 2 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 0 --amg_damp 0.8 --tetgenfile cube.13
+mpirun -np 2 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 0 --amg_damp 0.8 --tetgenfile cube.14
