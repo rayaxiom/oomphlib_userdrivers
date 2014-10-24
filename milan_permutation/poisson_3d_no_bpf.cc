@@ -234,6 +234,7 @@ namespace Global_Parameters
 
   static string Tetgen_dir_str = "tetgen_files_unit_cube";
   string Tetgen_file_str = "";
+  unsigned Tet_num = 0;
 
   const unsigned Length = 1;
 
@@ -479,6 +480,7 @@ CubeProblem<ELEMENT>::CubeProblem()
 
     // Now set up the solver.
   TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
+  trilinos_solver_pt->Tetgen_number = Global_Parameters::Tet_num;
   trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::CG;
   Solver_pt = trilinos_solver_pt;
 
@@ -522,7 +524,7 @@ int main(int argc, char **argv)
 //    &Global_Parameters::Mesh_folder_str);
 
   CommandLineArgs::specify_command_line_flag("--tetgenfile", 
-    &Global_Parameters::Tetgen_file_str);
+    &Global_Parameters::Tet_num);
 
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
     &RayPreconditionerCreationFunctions::AMG_iterations);
@@ -552,6 +554,20 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////
 
 
+  if(CommandLineArgs::command_line_flag_has_been_set("--tetgenfile"))
+  {
+    std::ostringstream tet_ss;
+    tet_ss << "cube." << Global_Parameters::Tet_num;
+    Global_Parameters::Tetgen_file_str = tet_ss.str();
+  }
+  else
+  {
+    std::ostringstream err_msg;
+    err_msg << "You have not get --tetgenfile NUMBER\n";
+    throw OomphLibError(err_msg.str(),
+        OOMPH_CURRENT_FUNCTION,
+        OOMPH_EXCEPTION_LOCATION);
+  }
   
   if(CommandLineArgs::command_line_flag_has_been_set("--use_bpf"))
   {

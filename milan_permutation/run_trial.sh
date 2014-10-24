@@ -2,7 +2,8 @@
 
 set -e
 
-FILENUMBER=$1
+RAYNPROC="$1"
+FILENUMBER="$2"
 
 
 TETGEN_DIR="tetgen_files_unit_cube"
@@ -77,9 +78,9 @@ ${MPIRUNCOMMAND} ./${PROGRAM} ${FULLPARAM}
 
 #mprog && extractmesh 1 && rprog 1 && delmesh
 
-TTTFILE="cube.$FILENUMBER"
+TTTFILE="$FILENUMBER"
 
-mprog && rprog 2 $TTTFILE
+mprog && rprog $RAYNPROC $TTTFILE
 
 
 
