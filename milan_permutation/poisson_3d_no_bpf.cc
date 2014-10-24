@@ -598,10 +598,10 @@ int main(int argc, char **argv)
     // This is used later for putting the data.
     const unsigned nproc = comm_pt->nproc();
 
-    if(nproc > 1)
-    {
-      problem.distribute();
-    }
+//    if(nproc > 1)
+//    {
+//      problem.distribute();
+//    }
 
     problem.newton_solve();
 //    string tmp_soln_dir_str = "tmp_soln";

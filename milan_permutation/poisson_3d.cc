@@ -506,10 +506,10 @@ int main(int argc, char **argv)
     const unsigned my_rank = comm_pt->my_rank();
     const unsigned nproc = comm_pt->nproc();
 
-  if(nproc > 1)
-  {
-    problem.distribute();
-  }
+//  if(nproc > 1)
+//  {
+//    problem.distribute();
+//  }
 
   problem.newton_solve();
 
