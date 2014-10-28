@@ -6,6 +6,7 @@ set -e
 CURRENT_DIR=`pwd`
 
 TETGEN_DIR="tetgen_files_unit_cube"
+RAWMAT_DIR="raw_lin_system"
 
 # Set by if statement
 PROG_DEBUG=""
@@ -24,9 +25,15 @@ fi
 TETGEN_DEBUG="$PROG_DEBUG/$TETGEN_DIR"
 TETGEN_OPT="$PROG_OPT/$TETGEN_DIR"
 
+RAWMAT_DEBUG="$PROG_DEBUG/$RAWMAT_DIR"
+RAWMAT_OPT="$PROG_OPT/$RAWMAT_DIR"
+
 cd $PROG_OPT
 
+rm -rf $RAWMAT_DIR $TETGEN_DIR
+
 ln -s $TETGEN_DEBUG $TETGEN_DIR
+ln -s $RAWMAT_DEBUG $RAWMAT_DIR
 
 
 
