@@ -239,6 +239,9 @@ namespace Global_Parameters
   const unsigned Length = 1;
 
   DocLinearSolverInfo* Doc_linear_solver_info_pt = 0;
+
+  bool Dump_matrices = false;
+  bool Use_replacement_mat_res = false;
 }
 
 
@@ -481,6 +484,19 @@ CubeProblem<ELEMENT>::CubeProblem()
     // Now set up the solver.
   TrilinosAztecOOSolver* trilinos_solver_pt = new TrilinosAztecOOSolver;
   trilinos_solver_pt->Tetgen_number = Global_Parameters::Tet_num;
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--dump_mat"))
+  {
+    trilinos_solver_pt->Dump_matrices = true;
+  }
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--use_replacement"))
+  {
+    trilinos_solver_pt->Use_replacement_mat_res = true;
+  }
+
+
+
   trilinos_solver_pt->solver_type() = TrilinosAztecOOSolver::CG;
   Solver_pt = trilinos_solver_pt;
 
@@ -525,6 +541,10 @@ int main(int argc, char **argv)
 
   CommandLineArgs::specify_command_line_flag("--tetgenfile", 
     &Global_Parameters::Tet_num);
+  CommandLineArgs::specify_command_line_flag("--dump_mat");
+  CommandLineArgs::specify_command_line_flag("--use_replacement");
+
+
 
   CommandLineArgs::specify_command_line_flag("--amg_iter", 
     &RayPreconditionerCreationFunctions::AMG_iterations);
@@ -541,6 +561,10 @@ int main(int argc, char **argv)
   CommandLineArgs::specify_command_line_flag("--amg_coarse", 
       &RayPreconditionerCreationFunctions::AMG_coarsening);
   CommandLineArgs::specify_command_line_flag("--use_bpf");
+
+
+
+
 
 
 
