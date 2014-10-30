@@ -71,6 +71,8 @@ CURRENT_TETGEN_FILE="$2"
 TETGEN_FILE="--tetgenfile ${CURRENT_TETGEN_FILE}"
 
 FULLPARAM="${AMG_PARAM} ${TETGEN_FILE} --use_replacement"
+#FULLPARAM="${AMG_PARAM} ${TETGEN_FILE} --use_replacement --dump_replacement"
+#FULLPARAM="${AMG_PARAM} ${TETGEN_FILE} --dump_mat"
 
 echo $FULLPARAM
 

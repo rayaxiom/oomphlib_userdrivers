@@ -490,6 +490,11 @@ CubeProblem<ELEMENT>::CubeProblem()
     trilinos_solver_pt->Dump_matrices = true;
   }
 
+  if(CommandLineArgs::command_line_flag_has_been_set("--dump_replacement"))
+  {
+    trilinos_solver_pt->Dump_replacement = true;
+  }
+
   if(CommandLineArgs::command_line_flag_has_been_set("--use_replacement"))
   {
     trilinos_solver_pt->Use_replacement_mat_res = true;
@@ -542,6 +547,7 @@ int main(int argc, char **argv)
   CommandLineArgs::specify_command_line_flag("--tetgenfile", 
     &Global_Parameters::Tet_num);
   CommandLineArgs::specify_command_line_flag("--dump_mat");
+  CommandLineArgs::specify_command_line_flag("--dump_replacement");
   CommandLineArgs::specify_command_line_flag("--use_replacement");
 
 
@@ -626,6 +632,8 @@ int main(int argc, char **argv)
 //    {
 //      problem.distribute();
 //    }
+
+    problem.problem_is_nonlinear(false);
 
     problem.newton_solve();
 //    string tmp_soln_dir_str = "tmp_soln";
