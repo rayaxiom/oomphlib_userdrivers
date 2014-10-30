@@ -490,6 +490,11 @@ CubeProblem<ELEMENT>::CubeProblem()
     trilinos_solver_pt->Dump_matrices = true;
   }
 
+  if(CommandLineArgs::command_line_flag_has_been_set("--dump_mat_only"))
+  {
+    trilinos_solver_pt->Dump_matrices_only = true;
+  }
+
   if(CommandLineArgs::command_line_flag_has_been_set("--dump_replacement"))
   {
     trilinos_solver_pt->Dump_replacement = true;
@@ -547,6 +552,7 @@ int main(int argc, char **argv)
   CommandLineArgs::specify_command_line_flag("--tetgenfile", 
     &Global_Parameters::Tet_num);
   CommandLineArgs::specify_command_line_flag("--dump_mat");
+  CommandLineArgs::specify_command_line_flag("--dump_mat_only");
   CommandLineArgs::specify_command_line_flag("--dump_replacement");
   CommandLineArgs::specify_command_line_flag("--use_replacement");
 
