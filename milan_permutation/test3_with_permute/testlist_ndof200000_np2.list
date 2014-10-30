@@ -1,0 +1,5 @@
+mpirun -np 2 taskset -c 0,1 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 0 --amg_damp 0.8 --tetgenfile 13 --use_replacement
+mpirun -np 2 taskset -c 0,1 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 3 --amg_damp 0.8 --tetgenfile 13 --use_replacement
+mpirun -np 2 taskset -c 0,1 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 6 --amg_damp 0.8 --tetgenfile 13 --use_replacement
+mpirun -np 2 taskset -c 0,1 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 8 --amg_damp 0.8 --tetgenfile 13 --use_replacement
+mpirun -np 2 taskset -c 0,1 ./poisson_3d_no_bpf --amg_iter 1 --amg_smiter 1 --amg_sim_smoo 0 --amg_strn 0.25 --amg_coarse 10 --amg_damp 0.8 --tetgenfile 13 --use_replacement
