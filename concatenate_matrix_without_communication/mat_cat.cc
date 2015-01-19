@@ -280,8 +280,8 @@ int main(int argc, char* argv[])
  /////////////////////////////////////////////////////////////////////////////
   
  // stuff for the output
- unsigned my_rank = comm_pt->my_rank();
- unsigned nproc = comm_pt->nproc();
+ // const unsigned my_rank = comm_pt->my_rank();
+ // const unsigned nproc = comm_pt->nproc();
   
  // Test #0, we concaenate
  // (7,7) (7,5) (7,3)
