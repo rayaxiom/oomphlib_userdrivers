@@ -2,3 +2,16 @@
 
 # The executable
 lgr_cube
+
+# Stuff moved over from old, need to sort out.
+test3_ang67/from_wulfling/test3_ang67/
+test4_full_runs/format_results.sh
+test4_full_runs/from_csf/
+test4_full_runs/res_iter_times.tar.gz
+test4_full_runs/res_iter_times/
+test4_full_runs/testlist.list
+test4_full_runs/testlist.sh
+test5_parallel_runs/
+
+
+
