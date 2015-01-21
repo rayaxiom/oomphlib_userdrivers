@@ -37,15 +37,17 @@ fi
 #get_validate_nlines 12 1 0
 
 
-get_validate_nlines 1 2 0
-get_validate_nlines 1 2 1
+#get_validate_nlines 1 2 0
+#get_validate_nlines 1 2 1
 
-#get_validate_nlines 13 2 0
-#get_validate_nlines 13 2 1
+get_validate_nlines 12 1 0
 
-#get_validate_nlines 14 4 0
-#get_validate_nlines 14 4 1
-#get_validate_nlines 14 4 2
-#get_validate_nlines 14 4 3
+get_validate_nlines 13 2 0
+get_validate_nlines 13 2 1
+
+get_validate_nlines 14 4 0
+get_validate_nlines 14 4 1
+get_validate_nlines 14 4 2
+get_validate_nlines 14 4 3
 
 

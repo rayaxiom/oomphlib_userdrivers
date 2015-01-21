@@ -10,7 +10,6 @@ fname=('jac13_np2r0');
 rawmat=load(fname);
 rawmat(:,1)=rawmat(:,1)+1; rawmat(:,2)=rawmat(:,2)+1;
 Amat0=spconvert(rawmat); % put it in Amatr0
-
 clear rawmat;
 
 % Then  load r1
@@ -18,7 +17,6 @@ fname=('jac13_np2r1');
 rawmat=load(fname);
 rawmat(:,1)=rawmat(:,1)+1; rawmat(:,2)=rawmat(:,2)+1;
 Amat1=spconvert(rawmat); % put it in Amatr1
-
 clear rawmat;
 
 % Concatente these matrices into Amat, but remember the nrow_local to
@@ -49,7 +47,7 @@ fprintf('Average stencil size: %6.2f\n',sts);
 %tst=tic; % RAY START NEW TIME
 Prcm=symrcm(Amat);% RAY permutation vector for Approximate reverse Cuthill-McKee 
 Arcm=Amat(Prcm,Prcm); % RAY perform the permutation
-
+clear Amat;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Now that we have the permutation vector, we: 
@@ -107,6 +105,9 @@ fclose(fid);
 clear res1
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Now we output the jacobian
 
@@ -126,28 +127,40 @@ clear Arcm
 %%% Now output the val, col and row_pt for r0
 Arcm = Arcm0; % Set this
 nrow_local = nrow_local0; % Set this
+fname='jac13_np2r0';
 
+% First get the column with the transpose matrix
+% Note that this is actually the row of the transpose
+% but MATLAB traverses matrices
+%[rowAA,colAA,valAA]=find(AA');
+[colArcm,~,valArcm]=find(Arcm');
 
-[colArcm,~,valArcm]=find(Arcm);
-nnzA = nnz(Arcm);
+colArcm = colArcm - 1;
+
+nnzArcm = nnz(Arcm);
 
 disp('Outputting val');
-fid=fopen('jac13_np2r0_val','w+'); % CCC
-for i=1:nnzA
+fnameval=strcat(fname,'_val');
+fid=fopen(fnameval,'w+');
+for i=1:nnzArcm
    fprintf(fid,'%12.15f\n',valArcm(i));
 end
 fclose(fid);
 
 disp('Outputting col');
-fid=fopen('jac13_np2r0_col','w+'); % CCC
-for i=1:nnzA
-   fprintf(fid,'%7i\n',colArcm(i)-1);
+fnamecol=strcat(fname,'_col');
+fid=fopen(fnamecol,'w+');
+for i=1:nnzArcm
+   fprintf(fid,'%7i\n',colArcm(i));
 end
 fclose(fid);
 
 disp('Outputting rowpt');
-fid=fopen('jac13_np2r0_row','w+'); % CCC
+fnamerow=strcat(fname,'_row');
+fid=fopen(fnamerow,'w+');
 fprintf(fid,'%7i\n',0);
+
+% Get the row_pt with the normal matrix.
 nnz_per_row = sum(Arcm~=0,2);
 nnz_running = 0;
 for i=1:nrow_local
@@ -156,32 +169,47 @@ for i=1:nrow_local
 end
 fclose(fid);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%% Now output the val, col and row_pt for r1
+%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Now output the val, col and row_pt for r0
 Arcm = Arcm1; % Set this
 nrow_local = nrow_local1; % Set this
+fname='jac13_np2r1';
 
-[colArcm,~,valArcm]=find(Arcm);
-nnzA = nnz(Arcm);
+% First get the column with the transpose matrix
+% Note that this is actually the row of the transpose
+% but MATLAB traverses matrices
+%[rowAA,colAA,valAA]=find(AA');
+[colArcm,~,valArcm]=find(Arcm');
 
+colArcm = colArcm - 1;
+
+nnzArcm = nnz(Arcm);
 
 disp('Outputting val');
-fid=fopen('jac13_np2r1_val','w+'); % CCC
-for i=1:nnzA
+fnameval=strcat(fname,'_val');
+fid=fopen(fnameval,'w+');
+for i=1:nnzArcm
    fprintf(fid,'%12.15f\n',valArcm(i));
 end
 fclose(fid);
 
 disp('Outputting col');
-fid=fopen('jac13_np2r1_col','w+'); % CCC
-for i=1:nnzA
-   fprintf(fid,'%7i\n',colArcm(i)-1);
+fnamecol=strcat(fname,'_col');
+fid=fopen(fnamecol,'w+');
+for i=1:nnzArcm
+   fprintf(fid,'%7i\n',colArcm(i));
 end
 fclose(fid);
 
 disp('Outputting rowpt');
-fid=fopen('jac13_np2r1_row','w+'); % CCC
+fnamerow=strcat(fname,'_row');
+fid=fopen(fnamerow,'w+');
 fprintf(fid,'%7i\n',0);
+
+% Get the row_pt with the normal matrix.
 nnz_per_row = sum(Arcm~=0,2);
 nnz_running = 0;
 for i=1:nrow_local
@@ -192,101 +220,19 @@ fclose(fid);
 
 
 
-%texe=toc(tst); % RAY END TIME
-%fprintf('Approximate reverse Cuthill-McKee reordering time %6.2f seconds\n',texe);
-
-
-%ff=figure(1);
-%set(ff,'Position',[0 420 1270 505]);
-%subplot(1,3,1); spy(A); title('Default ordering');
-%subplot(1,3,2); spy(Aamd); title ('Approximate minimum degree ordering');
-%subplot(1,3,3); spy(Arcm); title ('Reverese Cuthill-McKee ordering');
-
-%%
-%[colAmat,rowAmat,valAmat]=find(Amat);
-%[colAamd,rowAamd,valAamd]=find(Aamd); 
-%%%%[colArcm,rowArcm,valArcm]=find(Arcm);
-
-%
-%fprintf('DEFAULT ORDERING:\n');
-%bwA=0;
-%for i=1:nnzA
-%   bwA=max(bwA,abs(rowA(i)-colA(i))); 
-%end
-%fprintf('   max(i-j)=%7i\n',bwA);
-%fid=fopen('J0.txt','w');
-%fprintf(fid,'%7i\n',n);
-%fprintf(fid,'%9i\n',nnzA);
-%for i=1:nnzA
-%fprintf(fid,'%7i %7i %12.6f\n',rowA(i)-1,colA(i)-1,valA(i));
-%end
-%fclose(fid);
-
-%
-%fprintf('APPROXIMATE MINIMUM DEGREE ORDERING:\n');
-%bwAamd=0;
-%for i=1:nnzA
-%   bwAamd=max(bwAamd,abs(rowAamd(i)-colAamd(i))); 
-%end
-%fprintf('   max(i-j)=%7i\n',bwAamd);
-%fid=fopen('J1.txt','w');
-%fprintf(fid,'%7i\n',n);
-%fprintf(fid,'%9i\n',nnzA);
-%for i=1:nnzA
-%   fprintf(fid,'%7i %7i %12.6f\n',rowAamd(i)-1,colAamd(i)-1,valAamd(i));
-%end
-%fclose(fid);
-
-%
-%fprintf('REVERSE CUTHILL-MCKEE ORDERING:\n');
-%bwArcm=0;
-%for i=1:nnzA
-%   bwArcm=max(bwArcm,abs(rowArcm(i)-colArcm(i))); 
-%end
-%fprintf('   max(i-j)=%7i\n',bwArcm);
-
-%%%%disp('Outputting val');
-%%%%fid=fopen('jac12_np1r0_val','w+');
-%%%%for i=1:nnzA
-%%%%   fprintf(fid,'%12.15f\n',valArcm(i));
-%%%%end
-%%%%fclose(fid);
-
-%%%%disp('Outputting col');
-%%%%fid=fopen('jac12_np1r0_col','w+');
-%%%%for i=1:nnzA
-%%%%   fprintf(fid,'%7i\n',colArcm(i)-1);
-%%%%end
-%%%%fclose(fid);
-
-%%%%disp('Outputting rowpt');
-%%%%fid=fopen('jac12_np1r0_row','w+');
-%%%%fprintf(fid,'%7i\n',0);
-%%%%nnz_per_row = sum(Amat~=0,2);
-%%%%nnz_running = 0;
-%%%%for i=1:nrow
-%%%%   nnz_running = nnz_running + nnz_per_row(i);
-%%%%   fprintf(fid,'%7i\n',nnz_running);
-%%%%end
-%%%%fclose(fid);
 
 
 
-%rowptrArcm(1:n+1)=0; rowptrArcm(1)=1; k=2; %% RAY rowptrArcm - row pointer array
-%for i=1:nnzA-1
-%   if(rowArcm(i+1)~=rowArcm(i))
-%      rowptrArcm(k)=i+1;
-%      k=k+1;
-%   end
-%end 
-%rowptrArcm(k)=nnzA+1;
-%if(k~=n+1)
-%    fprintf('Error in converting Arcm to CRS format\n');
-%end
 
-%% n - the size of the matrix
-%% nnzA - the number of non-zeros
-%% rowptrArcm - row pointer array
-%% colArcm - column array
-%% valArcm - the elements
-%}
+
+
+
+
+
+
+
+
+
+
+
+
