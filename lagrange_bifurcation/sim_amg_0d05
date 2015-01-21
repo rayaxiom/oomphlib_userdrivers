@@ -1,0 +1,72 @@
+Oomph-lib communicator is a duplicate of MPI_COMM_WORLD
+
+Processor 0:   Specified (and recognised) command line flags:
+Processor 0:   ----------------------------------------------
+Processor 0:   --dist_prob
+Processor 0:   --print_hypre
+Processor 0:   --dt 0.1
+Processor 0:   --f_amg_damp -1
+Processor 0:   --f_amg_str 0.668
+Processor 0:   --mesh_area 0.05
+Processor 0:   --rey 100
+Processor 0:   --time_end 1
+Processor 0:   --time_start 0
+Processor 0:   --f_amg_coarse 1
+Processor 0:   --f_amg_iter 2
+Processor 0:   --f_amg_sim_smoo 1
+Processor 0:   --f_amg_smiter 2
+Processor 0:   --f_solver 96
+Processor 0:   --max_solver_iter 1000
+Processor 0:   --mesh_type 1
+Processor 0:   --ns_solver 1
+Processor 0:   --p_solver 1
+Processor 0:   --prob_id 0
+Processor 0:   --solver_type 1
+Processor 0:   --visc 0
+Processor 0:   --w_solver 0
+Processor 0:   --doc_soln tmp_soln
+Processor 0:   --itstimedir tmp_res_its
+
+Processor 0:   Created Time with 2 timesteps
+Processor 0:   Calling setup_boundary_element_info()
+Processor 0:   Done setup_boundary_element_info()
+Processor 0:   Number of equations: 107130
+RAYHYPRE: It2Sit2_GSs_RSc_Strn0.668
+HyprePreconditioner settings are: 
+Max_iter: 2
+smoother iter: 2
+Hypre_method: 3
+internal_preconditioner: 6
+AMG_using_simple_smoothing: 1
+AMG_simple_smoother: 1
+AMG_complex_smoother: 6
+AMG_coarsening: 1
+AMG_max_levels: 100
+AMG_damping: -1
+AMG_strength: 0.668
+AMG_max_row_sum: 1
+AMG_truncation: 0
+
+
+HyprePreconditioner settings are: 
+Max_iter: 1
+smoother iter: 2
+Hypre_method: 3
+internal_preconditioner: 6
+AMG_using_simple_smoothing: 1
+AMG_simple_smoother: 1
+AMG_complex_smoother: 6
+AMG_coarsening: 0
+AMG_max_levels: 100
+AMG_damping: 1
+AMG_strength: 0.25
+AMG_max_row_sum: 1
+AMG_truncation: 0
+
+
+RAYDOING: BiPrescHexSimR100WedNlFrayPa0d05 on Thu Aug  7 17:31:43 2014
+
+Processor 0:   IC = impulsive start
+Processor 0:   NTIMESTEP IS: 100
+Processor 0:   TIMESTEP: 0
+Processor 0:   Initial Maximum residuals 6.26578e-05

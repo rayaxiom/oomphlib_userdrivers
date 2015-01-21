@@ -1,0 +1,26 @@
+#Executables
+annular_wedge_threed
+
+
+# Results stuff to sort out:
+test1_f_calibration/test1_2v2Strn0-75cRSGs_oomph.tar.gz
+test1_f_calibration/test1_2v2Strn0-75cRSGs_oomph/
+test1_f_calibration/test3_2v2Strn0-25cRSGs_oomph.tar.gz
+test1_f_calibration/test3_2v2Strn0-25cRSGs_oomph/
+test1_f_calibration/test4_2v2Strn0-50cRSGs_oomph.tar.gz
+test1_f_calibration/test4_2v2Strn0-50cRSGs_oomph/
+test1_f_calibration/test5_2v2Strn0-80cRSGs_oomph.tar.gz
+test1_f_calibration/test5_2v2Strn0-80cRSGs_oomph/
+test1_f_calibration/test6_2v2Strn0-90cRSGs_oomph.tar.gz
+test1_f_calibration/test6_2v2Strn0-90cRSGs_oomph/
+test2_full_runs/from_csf/
+test3_parallel_runs/from_csf/
+test4_parallel_smoother_calibration/from_csf/
+test4_parallel_smoother_calibration/git_rev_oomphlib
+test4_parallel_smoother_calibration/git_rev_user_drivers
+test4_parallel_smoother_calibration/testlist.list
+test5_amg_only_1v22/
+test7_parallel_runs_testing_where_time_is_going/from_csf/
+
+
+
