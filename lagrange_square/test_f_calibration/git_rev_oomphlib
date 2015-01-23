@@ -1,0 +1,10 @@
+commit 239b2b065b61a9ac548ba73e304a9aec878062dd
+Author: Raymon White <raymonwhite42@gmail.com>
+Date:   Mon Aug 18 23:33:51 2014 +0100
+
+    modified:   demo_drivers/biharmonic/two_d_biharmonic/two_d_biharmonic.cc
+    Added code to print out the connectivity matrix for Milan.
+    This will not affect the self tests
+    
+    modified:   src/navier_stokes/lagrange_enforced_flow_preconditioner.h
+    Fixed one timing output, I forgot to use oomph_info (I used cout)
