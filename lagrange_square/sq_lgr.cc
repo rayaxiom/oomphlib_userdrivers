@@ -1256,7 +1256,8 @@ int main(int argc, char* argv[])
   // Problem dimension.
   const unsigned dim = 2;
 
-  // Set up doc info - used to store information on solver and iteration time.
+  // Set up doc info - used to store information on solver and 
+  // iteration time.
   DocLinearSolverInfo doc_linear_solver_info;
   // Again, pass this to the NSPP and LPH
   NSPP::Doc_linear_solver_info_pt = &doc_linear_solver_info;
@@ -1267,7 +1268,7 @@ int main(int argc, char* argv[])
   LPH::Vis_pt = &NSPP::Vis;
   SL::Prob_id_pt = &NSPP::Prob_id;
 
-  // Store commandline arguments
+  // Store command line arguments
   CommandLineArgs::setup(argc,argv);
 
   NSPP::setup_commandline_flags();

@@ -70,6 +70,7 @@ namespace GeneralProblemHelpers
   bool Doc_time_flag = false;
   std::string Itstime_dir_str = "";
 
+
   inline void specify_command_line_flags()
   {
     // This is used within the driver code and within here.
@@ -218,8 +219,10 @@ namespace GeneralProblemHelpers
     Doc_soln_flag = false;
     if(CommandLineArgs::command_line_flag_has_been_set("--doc_soln"))
     {
-      // The argument immediately after --doc_soln is put into NSPP::Soln_dir_str.
-      // If this begins with "--", then no solution directory has been provided.
+      // The argument immediately after --doc_soln is put into 
+      // NSPP::Soln_dir_str.
+      // If this begins with "--", then no solution directory has been 
+      // provided.
       std::size_t found = Soln_dir_str.find("--");
 
       // Check if they have set the solution directory.
@@ -322,7 +325,8 @@ namespace GeneralProblemHelpers
     if(Solver_type == Solver_type_TRILINOS_GMRES)
     {
       TrilinosAztecOOSolver* trilinos_solver_pt 
-        = dynamic_cast<TrilinosAztecOOSolver*>(problem_pt->linear_solver_pt());
+        = dynamic_cast<TrilinosAztecOOSolver*>(problem_pt
+                                                 ->linear_solver_pt());
       solver_time = trilinos_solver_pt->linear_solver_solution_time();
     }
     else
@@ -466,7 +470,8 @@ namespace GeneralProblemHelpers
       if(!CommandLineArgs::command_line_flag_has_been_set("--dt"))
       {
         dt = 1e-1;
-        oomph_info << "Doing adaptive but no dt supplied, using DELTA_T = " << dt << std::endl;
+        oomph_info << "Doing adaptive but no dt supplied, using DELTA_T = "
+                   << dt << std::endl;
       }
       else
       {
@@ -545,9 +550,7 @@ namespace GeneralProblemHelpers
     }
   } // EoF unsteady_run
 
-
-
-}
+} // End of namespace GeneralProblemHelpers 
 
 
 //=============================================================================
@@ -569,8 +572,10 @@ namespace ResultsFormat2
     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
         innewtonstep++)
     {
-      sum_of_newtonstep_iters += (*iters_times_pt)[intimestep][innewtonstep][0];
-      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][0] << " ";
+      sum_of_newtonstep_iters 
+        += (*iters_times_pt)[intimestep][innewtonstep][0];
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][0]
+                           << " ";
     }
     double average_its = ((double)sum_of_newtonstep_iters)
       / ((double)nnewtonstep);
@@ -690,15 +695,19 @@ namespace ResultsFormat2
     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
         innewtonstep++)
     {
-      sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][1];
-      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][1] << " ";
+      sum_of_newtonstep_times 
+        += (*iters_times_pt)[intimestep][innewtonstep][1];
+      
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][1]
+                           << " ";
     }
     double average_time = ((double)sum_of_newtonstep_times)
       / ((double)nnewtonstep);
 
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-    (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+    (*results_stream_pt) << "\t"<< average_time 
+                         << "(" << nnewtonstep << ")" << "\n";
   }
 
 
@@ -776,7 +785,8 @@ namespace ResultsFormat2
 
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-    (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
+    (*results_stream_pt) << "\t"<< average_time 
+                         << "(" << n_total_time << ")" << "\n";
   }
 
 
@@ -793,15 +803,18 @@ namespace ResultsFormat2
     for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
         innewtonstep++)
     {
-      sum_of_newtonstep_times += (*iters_times_pt)[intimestep][innewtonstep][2];
-      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][2] << " ";
+      sum_of_newtonstep_times 
+        += (*iters_times_pt)[intimestep][innewtonstep][2];
+      (*results_stream_pt) << (*iters_times_pt)[intimestep][innewtonstep][2] 
+                           << " ";
     }
     double average_time = ((double)sum_of_newtonstep_times)
       / ((double)nnewtonstep);
 
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-    (*results_stream_pt) << "\t"<< average_time << "(" << nnewtonstep << ")" << "\n";
+    (*results_stream_pt) << "\t"<< average_time 
+                         << "(" << nnewtonstep << ")" << "\n";
   }
 
 
@@ -878,9 +891,10 @@ namespace ResultsFormat2
 
     // Print to one decimal place if the average is not an exact
     // integer. Otherwise we print normally.
-    (*results_stream_pt) << "\t"<< average_time << "(" << n_total_time << ")" << "\n";
+    (*results_stream_pt) << "\t"<< average_time 
+                         << "(" << n_total_time << ")" << "\n";
   }
-} // namespace ResultsFormat
+} // namespace ResultsFormat2
 
 
 

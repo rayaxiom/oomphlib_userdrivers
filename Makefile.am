@@ -1,8 +1,6 @@
-# These are the driver directories we're actually going to build:
-# They are defined by configure.ac which scans 
-# config/configure.ac_scripts/user_drivers.dir_list
-# to set the USER_DRIVER_SUBDIRECTORIES variable
-SUBDIRS =  $(USER_DRIVER_SUBDIRECTORIES)
+# The driver directories that will be included by make dist. Add
+# directories here to include them in the resulting tar file.
+DIST_SUBDIRS = joe_cool jack_cool
 
 # Extra actions for clean and distclean
 distclean-local:
@@ -11,4 +9,4 @@ clean-local:
 	rm -f *~
 
 doc_dirs:
-	echo $(USER_DRIVER_SUBDIRECTORIES)
+	echo $(SUBDIRS)
