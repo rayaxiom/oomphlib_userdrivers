@@ -15,7 +15,7 @@ TIMETYPE="--time_type 1"
 # 0 exact, 1, oomph gmres, 2, trilinos gmres
 # NOTE: This is important, we ARE using oomph gmres when doing serial, this
 # is not the case with parallel, where we use trilinos gmres
-SOLVERTYPE="--solver_type 1"
+SOLVERTYPE="--solver_type 2"
 
 # distribute problem
 DISTPROB="--dist_prob"
@@ -37,7 +37,7 @@ REY="--rey 500"
 
 PROBID="--prob_id 0"
 
-NOEL="--noel 8"
+NOEL="--noel 4"
 GENPARAM="$TIMETYPE $SOLVERTYPE $DISTPROB $MAXSOLVERITER $DT $TIMESTART $TIMEEND $ITSTIMEDIR $VISC $REY $PROBID $NOEL"
 ##########################################
 
@@ -77,9 +77,10 @@ PRECPARAM="$WSOLVER $NSSOLVER $FPARAM $PPARAM"
 ALLPARAM="$GENPARAM $PRECPARAM"
 
 
-mpirun -np 1 ./$PROGRAM $ALLPARAM
+mpirun -np 2 ./$PROGRAM $ALLPARAM
 }
 
+############################################################################
 ####### Make source ########################################################
 makesrc()
 {
@@ -89,13 +90,20 @@ makesrc()
   cd $TMPDIR
 }
 
-# Make program
+############################################################################
+###### Make program ########################################################
 makeprog()
 {
   make $PROGRAM
 }
 
 makesrc && makeprog && runprog 
+
+# This is with Noel = 4, on two procs, trilinos gmres.
+#RAYAVGITS:		24.7(42)
+#RAYAVGAVGITS:		24.7(3.0)(14)
+
+
 #runprog 
 
 # Results should be 
