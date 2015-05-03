@@ -8,7 +8,7 @@ SCRATCHDIR="/mnt/iusers01/mh01/mbax5ml3/scratch/mpi_optimized"
 
 ## CHANGE THIS ##############################
 # Directory where the code/test is. 
-TESTDIR="user_drivers/lagrange_annular_wedge_3d/test3_5_fixed_bpf_bottleneck"
+TESTDIR="user_drivers/lagrange_annular_wedge_3d/test3_6_fixed_lgr_replacement_blocks"
 
 
 ### FIles to copy
