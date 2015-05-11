@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NPROC="16"
-COARSE="1"
+COARSE="5"
 
 RSLTFILE="awlgr_ndof200000_np${NPROC}.qsub.o*.${COARSE}"
 ############################################################################
@@ -22,19 +22,18 @@ awkit()
 grepstring=$1
 bashcol=$2
 OUTPUT=$(grep "Processor 0" ${RSLTFILE} | grep "$grepstring")
-echo "${OUTPUT}"
-echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ print $awkcol }'
+#echo "${OUTPUT}"
+#echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ print $awkcol }'
 echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ sum += $awkcol } END { if (NR > 0) print sum / NR }'
 }
 
 awkitremoves()
 {
-echo "Got in awkitremoves"
 grepstring=$1
 bashcol=$2
 OUTPUT=$(grep "Processor 0" ${RSLTFILE} | grep "$grepstring")
-echo "${OUTPUT}"
-echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ gsub(/s/, "", $awkcol); print $awkcol }'
+#echo "${OUTPUT}"
+#echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ gsub(/s/, "", $awkcol); print $awkcol }'
 echo "${OUTPUT}" | awk -v awkcol="$bashcol" '{ gsub(/s/, "", $awkcol); sum += $awkcol } END { if (NR > 0) print sum / NR }'
 }
 
