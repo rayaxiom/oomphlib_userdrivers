@@ -22,7 +22,7 @@ SOLVERTYPE="--solver_type 1"
 DISTPROB="--dist_prob"
 
 # an integer
-MAXITER="--max_solver_iter 1000"
+MAXITER="--max_solver_iter 100"
 
 # Only set if doing fixed time stepping???
 DT="--dt 0.01 "
@@ -34,7 +34,7 @@ ITSTIMEDIR="--itstimedir res_iter_times"
 
 VISC="--visc 1"
 REY="--rey 100" # CHANGE
-NOEL="--noel 36" # CHANGE
+NOEL="--noel 34" # CHANGE
 
 ## Combine MOVED TO FUNCTION
 #PROBPARAM="$PROBID $TIMETYPE $SOLVERTYPE $DISTPROB $MAXITER"
