@@ -768,11 +768,11 @@ CubeProblem<ELEMENT>::CubeProblem()
     = dynamic_cast<LagrangeEnforcedflowPreconditioner*>(Prec_pt);
   if(ProbHelpers::Replace_all_f_blocks)
   {
-    lgr_prec_pt->replace_all_f_blocks();
+    lgr_prec_pt->set_replace_all_f_blocks();
   }
   else
   {
-    lgr_prec_pt->replace_modified_blocks_only();
+    lgr_prec_pt->set_replace_modified_blocks_only();
   }
 
   const double solver_tol = 1.0e-6;
