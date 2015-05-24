@@ -68,16 +68,16 @@ namespace ProblemHelpers
 
   const double Length = 1.0;
 
-  bool Replace_all_f_blocks = false;
+//  bool Replace_all_f_blocks = false;
 
 
   inline void specify_command_line_flags()
   {
     CommandLineArgs::specify_command_line_flag("--prob_id", &Prob_id);
     CommandLineArgs::specify_command_line_flag("--noel",&Noel);
-    CommandLineArgs::specify_command_line_flag("--replace_all_f_blocks");
-    CommandLineArgs::specify_command_line_flag(
-        "--replace_modified_blocks_only");
+//    CommandLineArgs::specify_command_line_flag("--replace_all_f_blocks");
+//    CommandLineArgs::specify_command_line_flag(
+//        "--replace_modified_blocks_only");
   }
 
   inline void setup_command_line_flags()
@@ -93,29 +93,29 @@ namespace ProblemHelpers
           OOMPH_EXCEPTION_LOCATION); 
     }
 
-    if(CommandLineArgs::command_line_flag_has_been_set(
-          "--replace_all_f_blocks"))
-    {
-      Replace_all_f_blocks = true;
-    }
-    else if(CommandLineArgs::command_line_flag_has_been_set(
-          "--replace_modified_blocks_only"))
-    {
-      Replace_all_f_blocks = false;
-    }
-    else
-    {
-
-      std::ostringstream err_msg;
-      err_msg << "Please set either\n"
-              << "--replace_all_f_blocks\n"
-              << "or\n"
-              << "--replace_modified_blocks_only.\n"<< std::endl;
-
-      throw OomphLibError(err_msg.str(),
-          OOMPH_CURRENT_FUNCTION,
-          OOMPH_EXCEPTION_LOCATION); 
-    }
+//    if(CommandLineArgs::command_line_flag_has_been_set(
+//          "--replace_all_f_blocks"))
+//    {
+//      Replace_all_f_blocks = true;
+//    }
+//    else if(CommandLineArgs::command_line_flag_has_been_set(
+//          "--replace_modified_blocks_only"))
+//    {
+//      Replace_all_f_blocks = false;
+//    }
+//    else
+//    {
+//
+//      std::ostringstream err_msg;
+//      err_msg << "Please set either\n"
+//              << "--replace_all_f_blocks\n"
+//              << "or\n"
+//              << "--replace_modified_blocks_only.\n"<< std::endl;
+//
+//      throw OomphLibError(err_msg.str(),
+//          OOMPH_CURRENT_FUNCTION,
+//          OOMPH_EXCEPTION_LOCATION); 
+//    }
   }
 
   inline std::string prob_str()
@@ -763,17 +763,6 @@ CubeProblem<ELEMENT>::CubeProblem()
       mesh_pt,
       PrecHelpers::W_solver,
       NS_matrix_preconditioner_pt);
-
-  LagrangeEnforcedflowPreconditioner* lgr_prec_pt
-    = dynamic_cast<LagrangeEnforcedflowPreconditioner*>(Prec_pt);
-  if(ProbHelpers::Replace_all_f_blocks)
-  {
-    lgr_prec_pt->set_replace_all_f_blocks();
-  }
-  else
-  {
-    lgr_prec_pt->set_replace_modified_blocks_only();
-  }
 
   const double solver_tol = 1.0e-6;
   const double newton_tol = 1.0e-6;
