@@ -421,61 +421,106 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
- // Store command line arguments
- CommandLineArgs::setup(argc,argv);
+  // Store command line arguments
+  CommandLineArgs::setup(argc,argv);
 
- // Default assignemts for flags
- bool use_iterative_solver=true;
- bool use_hypre_for_pressure=true;
- bool use_block_diagonal_for_momentum=false;
- bool use_hypre_for_momentum=false;
+  // Default assignemts for flags
+  bool use_iterative_solver=true;
+  bool use_hypre_for_pressure=true;
+  bool use_block_diagonal_for_momentum=false;
+  bool use_hypre_for_momentum=true;
 
- // Set up doc info
- // ---------------
+  // Set up doc info
+  // ---------------
 
- // Label for output
- DocInfo doc_info;
- 
- // Set output directory
- doc_info.set_directory("RESLT");
- 
- // Step number
- doc_info.number()=0;
+  // Label for output
+  DocInfo doc_info;
 
- // ---------------
- // end of Set up doc info
+  // Set output directory
+  doc_info.set_directory("RESLT");
 
- // Doing QTaylorHoodElements
-   
- // Build the problem with QTaylorHoodElements
- RectangularDrivenCavityProblem<QTaylorHoodElement<2> > 
- problem(10,10,1.0,1.0,use_iterative_solver,
-         use_hypre_for_pressure,use_hypre_for_momentum,
-         use_block_diagonal_for_momentum);
- 
+  // Step number
+  doc_info.number()=0;
 
- TrilinosAztecOOSolver* my_solver_pt = new TrilinosAztecOOSolver;
- my_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+  // ---------------
+  // end of Set up doc info
 
- problem.linear_solver_pt() = my_solver_pt;
+  // Doing QTaylorHoodElements
 
-   // Set preconditioner
-   NavierStokesSchurComplementPreconditioner* prec_pt
-     =new NavierStokesSchurComplementPreconditioner(&problem);
-   prec_pt->set_navier_stokes_mesh(problem.mesh_pt());
-
-   my_solver_pt->preconditioner_pt()=prec_pt;
+  // Build the problem with QTaylorHoodElements
+  RectangularDrivenCavityProblem<QTaylorHoodElement<2> > 
+    problem(10,10,1.0,1.0,use_iterative_solver,
+        use_hypre_for_pressure,use_hypre_for_momentum,
+        use_block_diagonal_for_momentum);
 
 
+  TrilinosAztecOOSolver* my_solver_pt = new TrilinosAztecOOSolver;
+  my_solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
 
- // Solve the problem
- problem.newton_solve();
- 
- // Outpt the solution
- problem.doc_solution(doc_info);
- 
- // Step number
- doc_info.number()++;
+  problem.linear_solver_pt() = my_solver_pt;
+
+  // Set preconditioner
+  NavierStokesSchurComplementPreconditioner* prec_pt
+    =new NavierStokesSchurComplementPreconditioner(&problem);
+  prec_pt->set_navier_stokes_mesh(problem.mesh_pt());
+
+  my_solver_pt->preconditioner_pt()=prec_pt;
+
+#ifdef OOMPH_HAS_HYPRE
+  if (use_hypre_for_pressure)
+  {
+    Preconditioner* p_matrix_preconditioner_pt = new HyprePreconditioner;
+
+    // Set parameters for use as preconditioner on Poisson-type problem
+    Hypre_default_settings::set_defaults_for_2D_poisson_problem(
+        static_cast<HyprePreconditioner*>(p_matrix_preconditioner_pt));
+
+    // Use Hypre for the Schur complement block
+    prec_pt->set_p_preconditioner(p_matrix_preconditioner_pt);
+  }
+#endif
+
+  if (use_block_diagonal_for_momentum)
+  {
+    Preconditioner* f_matrix_preconditioner_pt = 
+      new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+#ifdef OOMPH_HAS_HYPRE
+    if (use_hypre_for_momentum)
+    {
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+        (f_matrix_preconditioner_pt)->set_subsidiary_preconditioner_function
+        (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+    }
+#endif
+    // Use Hypre for momentum block 
+    prec_pt->set_f_preconditioner(f_matrix_preconditioner_pt);
+  }
+  else
+  {
+#ifdef OOMPH_HAS_HYPRE
+    if (use_hypre_for_momentum)
+    {
+      Preconditioner* f_matrix_preconditioner_pt = new HyprePreconditioner;
+
+      // Set parameters for use as preconditioner in for momentum 
+      // block in Navier-Stokes problem
+      Hypre_default_settings::set_defaults_for_navier_stokes_momentum_block(
+          static_cast<HyprePreconditioner*>(f_matrix_preconditioner_pt));
+
+      // Use Hypre for momentum block 
+      prec_pt->set_f_preconditioner(f_matrix_preconditioner_pt);
+    }
+#endif
+  }
+
+  // Solve the problem
+  problem.newton_solve();
+
+  // Outpt the solution
+  problem.doc_solution(doc_info);
+
+  // Step number
+  doc_info.number()++;
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
 #endif
