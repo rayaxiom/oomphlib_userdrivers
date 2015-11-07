@@ -1,10 +1,16 @@
 noinst_PROGRAMS= \
-two_d_ns
+two_d_ns \
+driven_cavity
 
 #------------------------------------------------------------------------
 two_d_ns_SOURCES = two_d_ns.cc
 
 two_d_ns_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+driven_cavity_SOURCES = driven_cavity.cc
+
+driven_cavity_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
 # Include path for library headers: All library headers live in 

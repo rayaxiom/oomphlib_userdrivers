@@ -614,58 +614,60 @@ int main(int argc, char **argv)
  bool use_hypre_for_momentum_diagonals=false;
 
  // Outermost loop over stress divergence or simple form
- for (unsigned do_stress_div=0;do_stress_div<2;do_stress_div++) 
+// for (unsigned do_stress_div=0;do_stress_div<2;do_stress_div++) 
+  unsigned do_stress_div = 0;
   {
-   if (do_stress_div)
-    {     
-     oomph_info << "Doing stress divergence form\n";
-     NavierStokesEquations<2>::Gamma[0]=1.0;
-     NavierStokesEquations<2>::Gamma[1]=1.0;
-    }
-   else
-    {     
+//   if (do_stress_div)
+//    {     
+//     oomph_info << "Doing stress divergence form\n";
+//     NavierStokesEquations<2>::Gamma[0]=1.0;
+//     NavierStokesEquations<2>::Gamma[1]=1.0;
+//    }
+//   else
+//    {     
      oomph_info << "Doing simple form of viscous terms\n";
      NavierStokesEquations<2>::Gamma[0]=0.0;
      NavierStokesEquations<2>::Gamma[1]=0.0;
-    }
+//    }
    
    //Loop over problems: Driven cavity and step
    //unsigned problem_id=Global_Variables::Step;
-   for (unsigned problem_id=0;problem_id<2;problem_id++) 
+//   for (unsigned problem_id=0;problem_id<2;problem_id++) 
+   unsigned problem_id = 0;
    {
     
-    if (problem_id==Global_Variables::Driven_cavity)
-     {
-      if (do_stress_div==1)
-       {
-        out_file.open("two_d_iter_driven_cavity_stress_div.dat");
-       }
-      else
-       {
+//    if (problem_id==Global_Variables::Driven_cavity)
+//     {
+//      if (do_stress_div==1)
+//       {
+//        out_file.open("two_d_iter_driven_cavity_stress_div.dat");
+//       }
+//      else
+//       {
         out_file.open("two_d_iter_driven_cavity_simple.dat");
-       }      
-     }
-    else if (problem_id==Global_Variables::Step)
-     {      
-      if (do_stress_div==1)
-       {
-        out_file.open("two_d_iter_step_stress_div.dat");
-       }
-      else
-       {
-        out_file.open("two_d_iter_step_simple.dat");
-       }
-     }
+//       }      
+//     }
+//    else if (problem_id==Global_Variables::Step)
+//     {      
+//      if (do_stress_div==1)
+//       {
+//        out_file.open("two_d_iter_step_stress_div.dat");
+//       }
+//      else
+//       {
+//        out_file.open("two_d_iter_step_simple.dat");
+//       }
+//     }
     
-    out_file
-     << "VARIABLES=\"nel_1d\","
-     << "\"ndof\"," 
-     << "\"Re\"," 
-     << "\" Newton iteration\","
-     << "\"GMRES iterations\","
-     << "\"Linear solver time\","
-     << "\"doc number\""
-     << std::endl;
+//    out_file
+//     << "VARIABLES=\"nel_1d\","
+//     << "\"ndof\"," 
+//     << "\"Re\"," 
+//     << "\" Newton iteration\","
+//     << "\"GMRES iterations\","
+////     << "\"Linear solver time\","
+//     << "\"doc number\""
+//     << std::endl;
     
     std::string header1;
     std::string header2;
@@ -676,8 +678,9 @@ int main(int argc, char **argv)
     //                            iprec=2: Fp without Robin
     bool use_lsc=true;
     bool use_robin=true;
-    for (unsigned iprec=0;iprec<2;iprec++)
+//    for (unsigned iprec=0;iprec<2;iprec++)
      {
+      unsigned iprec = 0;
       
       // Loop over three cases (triangles, non-refineable/refineable quads)
       unsigned icase_lo=0;
@@ -780,37 +783,6 @@ int main(int argc, char **argv)
             problem.refine_selected_elements(elements_to_be_refined); 
  
            }
-
-//            DocInfo my_doc_info;           
-//            switch(icase)
-//             {
-             
-//             case 0:
-             
-//              problem.validate_fp<TTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             case 1:
-             
-//              problem.validate_fp<QTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             case 2:
-             
-
-//              problem.validate_fp<RefineableQTaylorHoodElement<2> >();
-//              pause("done validation");
-
-//              break;
-             
-//             default:
-//              break;
-//             }
-           
 
           // Loop over Reynolds numbers (limited during validation)
           double start_re = 50.0; 
