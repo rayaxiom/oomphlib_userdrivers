@@ -346,6 +346,17 @@ TiltedCavityProblem<ELEMENT>::TiltedCavityProblem()
 
  //Assign equation numbers
  oomph_info << "\n equation numbers : "<< assign_eqn_numbers() << std::endl;
+
+ DoubleVector testvec;
+ this->get_dofs(testvec);
+ unsigned ndof = this->ndof();
+ for (unsigned i = 0; i < ndof; i++) 
+ {
+   std::cout << "dof: " << i << ", val: " << testvec[i] << std::endl; 
+ }
+
+ pause("Outputted dofs"); 
+ 
  
 
  // Only do this bit if we do NOT have a direct solver.
@@ -961,7 +972,7 @@ std::string create_label()
 }
 
 //===start_of_main======================================================
-/// Driver code
+/// Through flow problem with 30 degrees tilt.
 //======================================================================
 int main(int argc, char* argv[])
 {
@@ -1010,15 +1021,83 @@ int main(int argc, char* argv[])
   LPH::generic_setup();
   SL::generic_setup();
 
-  // Solve with Taylor-Hood element, set up problem
-  TiltedCavityProblem< QTaylorHoodElement<dim> > problem;
+  // Build the problem with Taylor-Hood element
+  TiltedCavityProblem< QTaylorHoodElement<2> > problem;
 
- Preconditioner* Prec_pt = LPH::get_preconditioner();
- const double solver_tol = 1.0e-6;
- const double newton_tol = 1.0e-6;
- GenericProblemSetup::setup_solver(NSPP::Max_solver_iteration,
-                                   solver_tol,newton_tol,
-                                   NSPP::Solver_type,&problem,Prec_pt);
+  // Create the solver
+#ifdef OOMPH_HAS_TRILINOS
+  TrilinosAztecOOSolver* solver_pt = new TrilinosAztecOOSolver;
+  solver_pt->solver_type() = TrilinosAztecOOSolver::GMRES;
+#else
+  GMRES<CRDoubleMatrix>* solver_pt = new GMRES<CRDoubleMatrix>;
+#endif
+
+  // Pass the solver to the problem
+  problem.linear_solver_pt() = solver_pt;
+  
+  const double solver_tol = 1.0e-6;
+  const double newton_tol = 1.0e-6;
+  solver_pt->tolerance() = solver_tol;
+  solver_pt->max_iter() = NSPP::Max_solver_iteration;
+
+  problem.newton_solver_tolerance() = newton_tol;
+
+  // Create the preconditioner
+  SimpleAugmentationPreconditioner* preconditioner_pt
+    = new SimpleAugmentationPreconditioner;
+
+  // Pass the meshes to the preconditioner
+  Vector<Mesh*> mesh_pt;
+  mesh_pt.resize(2,0);
+  mesh_pt[0] = problem.Bulk_mesh_pt;
+  mesh_pt[1] = problem.Surface_mesh_P_pt;
+  preconditioner_pt->set_meshes(mesh_pt);
+
+  // Set up the Navier-Stokes preconditioner
+  NavierStokesSchurComplementPreconditioner* ns_preconditioner_pt = 
+    new NavierStokesSchurComplementPreconditioner(&problem);
+  ns_preconditioner_pt->set_navier_stokes_mesh(mesh_pt[0]);
+
+  // Set up preconditioner for the F block.
+  // Use upper triangular and Hypre AMG for the diagonal blocks.
+//#ifdef OOMPH_HAS_HYPRE
+  Preconditioner* f_preconditioner_pt =
+    new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+  // Use upper triangular.
+  dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+    (f_preconditioner_pt)->upper_triangular();
+
+//  dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+//    (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+//    (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+//
+//
+//  // Set it as f preconditioner for LSC
+  ns_preconditioner_pt->set_f_preconditioner(f_preconditioner_pt);
+//#endif
+
+  // Set up preconditioner for P block
+//#ifdef OOMPH_HAS_HYPRE
+//  Preconditioner* p_preconditioner_pt = new HyprePreconditioner;
+//
+//  // Cast it to a Hypre preconditioner so we can set AMG settings
+//  HyprePreconditioner* hypre_preconditioner_pt =
+//    static_cast<HyprePreconditioner*>(p_preconditioner_pt);
+//
+//  Hypre_default_settings::
+//    set_defaults_for_2D_poisson_problem(hypre_preconditioner_pt);
+//
+//  // Set it as the p preconditioner for LSC
+//  ns_preconditioner_pt->set_p_preconditioner(p_preconditioner_pt);
+//#endif
+
+  // Pass the LSC preconditioner for the Navier-Stokes block
+  preconditioner_pt
+    ->set_navier_stokes_lsc_preconditioner(ns_preconditioner_pt);
+
+  // Pass the preconditioner to the solver
+  solver_pt->preconditioner_pt()=preconditioner_pt;
 
 
   if(NavierStokesProblemParameters::Distribute_problem)
@@ -1065,85 +1144,85 @@ int main(int argc, char* argv[])
 
     if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
     {
-    // Get the global oomph-lib communicator 
-    const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+      // Get the global oomph-lib communicator 
+      const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
-    // my rank and number of processors. 
-    // This is used later for putting the data.
-    const unsigned my_rank = comm_pt->my_rank();
-    const unsigned nproc = comm_pt->nproc();
+      // my rank and number of processors. 
+      // This is used later for putting the data.
+      const unsigned my_rank = comm_pt->my_rank();
+      const unsigned nproc = comm_pt->nproc();
 
-    // Variable to indicate if we want to output to a file or not.
-    bool output_to_file = false;
+      // Variable to indicate if we want to output to a file or not.
+      bool output_to_file = false;
 
-    // The output file.
-    std::ofstream outfile;
+      // The output file.
+      std::ofstream outfile;
 
-    // If we want to output to a file, we create the outfile.
-    if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
-    {
-      output_to_file = true;
-      std::ostringstream filename_stream;
-      filename_stream << NSPP::Itstime_dir_str<<"/"
-        << NSPP::Label_str
-        <<"NP"<<nproc<<"R"<<my_rank;
-      outfile.open(filename_stream.str().c_str());
-    }
-
-    // Stringstream to hold the results. We do not output the results
-    // (timing/iteration counts) as we get it since it will interlace with the
-    // other processors and becomes hard to read.
-    std::ostringstream results_stream;
-
-    // Get the 3D vector which holds the iteration counts and timing results.
-    Vector<Vector<Vector<double> > > iters_times
-      = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
-
-    // Since this is a steady state problem, there is only
-    // one "time step", thus it is essentially a 2D vector 
-    // (the outer-most vector is of size 1).
-
-    // Loop over the time steps and output the iterations, prec setup time and
-    // linear solver time.
-    unsigned ntimestep = iters_times.size();
-    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-    {
-      ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
-    }
-
-    // Now doing the preconditioner setup time.
-    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-    {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
-    }
-
-    // Now doing the linear solver time.
-    for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
-    {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
-    }
-
-    // Print the result to oomph_info one processor at a time...
-    // This still doesn't seem to always work, since there are other calls
-    // to oomph_info before this one...
-    for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
-    {
-      if(proc_i == my_rank)
+      // If we want to output to a file, we create the outfile.
+      if(CommandLineArgs::command_line_flag_has_been_set("--itstimedir"))
       {
-        oomph_info << "\n" 
-          << "========================================================\n"
-          << results_stream.str()
-          << "========================================================\n"
-          << "\n" << std::endl;
+        output_to_file = true;
+        std::ostringstream filename_stream;
+        filename_stream << NSPP::Itstime_dir_str<<"/"
+          << NSPP::Label_str
+          <<"NP"<<nproc<<"R"<<my_rank;
+        outfile.open(filename_stream.str().c_str());
       }
-      MPI_Barrier(MPI_COMM_WORLD);
-    }
 
-    if(output_to_file)
-    {
-      outfile << "\n" << results_stream.str();
-      outfile.close();
-    }
+      // Stringstream to hold the results. We do not output the results
+      // (timing/iteration counts) as we get it since it will interlace with the
+      // other processors and becomes hard to read.
+      std::ostringstream results_stream;
+
+      // Get the 3D vector which holds the iteration counts and timing results.
+      Vector<Vector<Vector<double> > > iters_times
+        = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
+
+      // Since this is a steady state problem, there is only
+      // one "time step", thus it is essentially a 2D vector 
+      // (the outer-most vector is of size 1).
+
+      // Loop over the time steps and output the iterations, prec setup time and
+      // linear solver time.
+      unsigned ntimestep = iters_times.size();
+      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+      {
+        ResultsFormat::format_rayits(intimestep,&iters_times,&results_stream);
+      }
+
+      // Now doing the preconditioner setup time.
+      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+      {
+        ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      }
+
+      // Now doing the linear solver time.
+      for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+      {
+        ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      }
+
+      // Print the result to oomph_info one processor at a time...
+      // This still doesn't seem to always work, since there are other calls
+      // to oomph_info before this one...
+      for (unsigned proc_i = 0; proc_i < nproc; proc_i++) 
+      {
+        if(proc_i == my_rank)
+        {
+          oomph_info << "\n" 
+            << "========================================================\n"
+            << results_stream.str()
+            << "========================================================\n"
+            << "\n" << std::endl;
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
+
+      if(output_to_file)
+      {
+        outfile << "\n" << results_stream.str();
+        outfile.close();
+      }
     }
   } // else do not loop reynolds
 
