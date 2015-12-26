@@ -14,7 +14,9 @@ lagrange_cube/cube
 
 poisson_three_d/poisson_3d
 poisson_three_d/test_5_weak_scaling_using_BPF/poisson_3d
-
+	
+code_for_thesis/two_d_ns
+code_for_thesis/driven_cavity
 
 
 tags
