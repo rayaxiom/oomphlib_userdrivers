@@ -55,7 +55,7 @@ TEST_LIST=""
 
 
 # Declare generic params here.
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 240 --itstimedir $RESITS_DIR --solver_type 2 --rey 100 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --f_amg_damp 0.1 --ang 30"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --f_amg_damp 0.1 --ang 30"
 
 
 function gen_tests()
@@ -69,21 +69,27 @@ function gen_tests()
 # 9093 full AMG
 # --f_solver 9090, 9091, 9092, 9093,
 
-# --noel 4, 8, 16, 32, 64, 128, 256
+# --noel 4, 8, 16, 32, 64, 128
 
 # This is set according to the list above.
 PRECPARAM=""
 VISLIST="0 1"
+
+# As per FIS p364
+REYLIST="10 100 200"
 FSOLVERLIST="9090 9091 9092 9093"
-NOELLIST="4 8 16 32 64 128 256"
+NOELLIST="4 8 16 32 64 128"
 
 for VIS in $VISLIST
 do
-  for FSOLVER in $FSOLVERLIST
+  for REY in $REYLIST
   do
-    for NOEL in $NOELLIST
+    for FSOLVER in $FSOLVERLIST
     do
-echo "mpirun -np 1 ./$PROGRAM $PARAM --visc $VIS --f_solver $FSOLVER --noel $NOEL" >> $TEST_LIST
+      for NOEL in $NOELLIST
+      do
+echo "mpirun -np 1 ./$PROGRAM $PARAM --rey $REY --visc $VIS --f_solver $FSOLVER --noel $NOEL" >> $TEST_LIST
+      done
     done
   done
 done
