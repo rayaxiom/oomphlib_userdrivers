@@ -55,13 +55,13 @@ TEST_LIST=""
 
 
 # Declare generic params here.
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 1000 --itstimedir $RESITS_DIR --solver_type 2 --rey 100 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --f_amg_damp 0.1 --ang 30"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 240 --itstimedir $RESITS_DIR --solver_type 2 --rey 100 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --f_amg_damp 0.1 --ang 30"
 
 
 function gen_tests()
 {
 # Loop for:
-# --visc 0 or 1
+# --visc 0 1
 
 # 9090 block diagonal
 # 9091 upper triangular
@@ -69,13 +69,13 @@ function gen_tests()
 # 9093 full AMG
 # --f_solver 9090, 9091, 9092, 9093,
 
-# --noel 4, 8, 16, 32, 64, 128, 256, 512
+# --noel 4, 8, 16, 32, 64, 128, 256
 
 # This is set according to the list above.
 PRECPARAM=""
 VISLIST="0 1"
 FSOLVERLIST="9090 9091 9092 9093"
-NOELLIST="4 8 16 32 64 128 256 512"
+NOELLIST="4 8 16 32 64 128 256"
 
 for VIS in $VISLIST
 do

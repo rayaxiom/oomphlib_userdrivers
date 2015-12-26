@@ -46,10 +46,55 @@ using namespace oomph;
 //=============================================================================
 namespace Hypre_Subsidiary_Preconditioner_Helper
 {
- Preconditioner* set_hypre_preconditioner()
+ Preconditioner* set_hypre_JhalfStrnSimOneVTwoTwoRS()
  {
+  // Create a new HyprePreconditioner
   HyprePreconditioner* hypre_preconditioner_pt = new HyprePreconditioner;
+
+  // Set the smoothers
+  //   0 = Jacobi 
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR
+  //
+  //   As per Richard p91, we use Jacobi with a damping param if 0.5
+  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  // Set smoother damping
+  hypre_preconditioner_pt->amg_damping() = 0.5;
+
+
+  // Set the strength to 0.25
+  hypre_preconditioner_pt->amg_strength() = 0.25;
+
+  // Now set the coarsening
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
   hypre_preconditioner_pt->amg_coarsening() = 1;
+
+  // Now create 1v22 cycles
+  
+  // Set the number of amg smoother iterations. This is usually set to 2
+  hypre_preconditioner_pt->amg_smoother_iterations()=2;
+
+  // Set the amg_iterations, this is usually set to 1, for V(2,2)
+  // there is only one of them... I think that's what I means, 
+  // the two is the smoother... pre and post smoothing.
+  hypre_preconditioner_pt
+      ->set_amg_iterations(1);
+
   return hypre_preconditioner_pt;
  }
 }
@@ -3850,7 +3895,7 @@ namespace LagrangianPreconditionerHelpers
         new BlockDiagonalPreconditioner<CRDoubleMatrix>;
       dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
       // Check what is the default hypre values.
 //     f_preconditioner_pt = new HyprePreconditioner;
@@ -3870,7 +3915,7 @@ namespace LagrangianPreconditionerHelpers
         new BlockTriangularPreconditioner<CRDoubleMatrix>;
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->upper_triangular();
@@ -3893,7 +3938,7 @@ namespace LagrangianPreconditionerHelpers
         new BlockTriangularPreconditioner<CRDoubleMatrix>;
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->lower_triangular();
@@ -3919,7 +3964,7 @@ namespace LagrangianPreconditionerHelpers
 
     // Create a new hypre preconditioner
     Preconditioner* another_preconditioner_pt =
-      Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner();
+      Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS();
     HyprePreconditioner* hypre_preconditioner_pt = 
       checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
 
