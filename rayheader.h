@@ -37,6 +37,25 @@
 
 using namespace oomph;
 
+
+#ifdef OOMPH_HAS_HYPRE
+
+//=============================================================================
+/// helper method for the block diagonal F block preconditioner to allow 
+/// hypre to be used for as a subsidiary block preconditioner
+//=============================================================================
+namespace Hypre_Subsidiary_Preconditioner_Helper
+{
+ Preconditioner* set_hypre_preconditioner()
+ {
+  HyprePreconditioner* hypre_preconditioner_pt = new HyprePreconditioner;
+  hypre_preconditioner_pt->amg_coarsening() = 1;
+  return hypre_preconditioner_pt;
+ }
+}
+
+#endif
+
 namespace RayGen
 {
   //=============================================================================
@@ -3824,6 +3843,103 @@ namespace LagrangianPreconditionerHelpers
       }
 #endif
     }
+    else if(F_solver == 9090)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      f_preconditioner_pt =
+        new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+
+      // Check what is the default hypre values.
+//     f_preconditioner_pt = new HyprePreconditioner;
+//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
+//       (f_preconditioner_pt);
+//     pause("Donzo"); 
+     
+
+//      pause("I have set Hypre for diag!");
+#endif
+
+    }
+    else if(F_solver == 9091)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->upper_triangular();
+
+      // Check what is the default hypre values.
+//     f_preconditioner_pt = new HyprePreconditioner;
+//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
+//       (f_preconditioner_pt);
+//     pause("Donzo"); 
+     
+
+//      pause("I have set Hypre for diag!");
+#endif
+
+    }
+    else if(F_solver == 9092)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner);
+
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->lower_triangular();
+
+      // Check what is the default hypre values.
+//     f_preconditioner_pt = new HyprePreconditioner;
+//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
+//       (f_preconditioner_pt);
+//     pause("Donzo"); 
+     
+
+//      pause("I have set Hypre for diag!");
+#endif
+    }
+    else if(F_solver == 9093)
+    {
+#ifdef OOMPH_HAS_HYPRE
+//      f_preconditioner_pt =
+
+      // Check what is the default hypre values.
+//     f_preconditioner_pt = new HyprePreconditioner;
+
+
+    // Create a new hypre preconditioner
+    Preconditioner* another_preconditioner_pt =
+      Hypre_Subsidiary_Preconditioner_Helper::set_hypre_preconditioner();
+    HyprePreconditioner* hypre_preconditioner_pt = 
+      checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+
+
+//    // Create a new hypre preconditioner
+//    Preconditioner* another_preconditioner_pt =  
+//      new HyprePreconditioner;
+//    HyprePreconditioner* hypre_preconditioner_pt = 
+//      checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
+
+    f_preconditioner_pt = hypre_preconditioner_pt;
+     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
+       (f_preconditioner_pt);
+//     pause("Donzo"); 
+     
+
+//      pause("I have set Hypre for diag!");
+#endif
+    }
+
 
     F_preconditioner_pt = f_preconditioner_pt;
 
@@ -3950,6 +4066,8 @@ namespace LagrangianPreconditionerHelpers
     LagrangeEnforcedflowPreconditioner* prec_pt
       = new LagrangeEnforcedflowPreconditioner;
 
+//    SimpleAugmentationPreconditioner* prec_pt
+//      = new SimpleAugmentationPreconditioner;
    // Set the mesh
     if(Mesh_pt.size() < 2)
     {
