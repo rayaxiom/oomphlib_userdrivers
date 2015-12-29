@@ -3888,104 +3888,173 @@ namespace LagrangianPreconditionerHelpers
       }
 #endif
     }
+    ////////////////////////////////////////////////////////////////////////
+    // For the below, we have 8090, 8091, 8092 and 8093 with the following 
+    // configuration:
+    // For the LSC F block:
+    // 8090 - block diagonal with SuperLU
+    // 8091 - upper block triangular with Super LU
+    // 8092 - lower block triangular with Super LU
+    // 8093 - Full SuperLU f block.
+    else if(F_solver == 8090)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a block diagonal preconditioner.
+      f_preconditioner_pt =
+        new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+#endif
+    }
+    else if(F_solver == 8091)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a block triangular preconditioner.
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use upper triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->upper_triangular();
+#endif
+    }
+    else if(F_solver == 8092)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a triangular preconditioner.
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use lower triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->lower_triangular();
+#endif
+    }
+    else if(F_solver == 8093)
+    {
+#ifdef OOMPH_HAS_HYPRE
+    // This is using super LU for the full F block.
+    // Since SuperLU is the default behaviour, we simply set the pointer 
+    // to 0.
+    f_preconditioner_pt = 0;
+#endif
+    }
+    ////////////////////////////////////////////////////////////////////////
+    // For the below, we have 9090, 9091, 9092 and 9093 with the following 
+    // configuration:
+    // For the LSC F block:
+    // 9090 - block diagonal with Hypre
+    // 9091 - upper block triangular with Hypre
+    // 9092 - lower block triangular with Hypre
+    // 9093 - full AMG.
     else if(F_solver == 9090)
     {
 #ifdef OOMPH_HAS_HYPRE
+      // Create a block diagonal preconditioner.
       f_preconditioner_pt =
         new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+
+      // Now, since f_precondtioner_pt is a Preconditioner*, it needs to be
+      // caste to a block diagonal one if we want to call functions from
+      // that class.
       dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
-      // Check what is the default hypre values.
-//     f_preconditioner_pt = new HyprePreconditioner;
-//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
-//       (f_preconditioner_pt);
-//     pause("Donzo"); 
-     
+      // All done. The below is prints the Hypre settings.
 
-//      pause("I have set Hypre for diag!");
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
+
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
 #endif
-
     }
     else if(F_solver == 9091)
     {
 #ifdef OOMPH_HAS_HYPRE
+      // Create a block triangular preconditioner.
       f_preconditioner_pt =
         new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use upper triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->upper_triangular();
+
+      // Set the Hypre preconditioner.
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
-      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
-      (f_preconditioner_pt)->upper_triangular();
+      // All done. The below is prints the Hypre settings.
 
-      // Check what is the default hypre values.
-//     f_preconditioner_pt = new HyprePreconditioner;
-//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
-//       (f_preconditioner_pt);
-//     pause("Donzo"); 
-     
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
 
-//      pause("I have set Hypre for diag!");
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
+
 #endif
-
     }
     else if(F_solver == 9092)
     {
 #ifdef OOMPH_HAS_HYPRE
+      // Create a triangular preconditioner.
       f_preconditioner_pt =
         new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use lower triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->lower_triangular();
+
+      // Set the hypre preconditioner.
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
       (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
 
-      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
-      (f_preconditioner_pt)->lower_triangular();
+      // All done. The below is prints the Hypre settings.
 
-      // Check what is the default hypre values.
-//     f_preconditioner_pt = new HyprePreconditioner;
-//     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
-//       (f_preconditioner_pt);
-//     pause("Donzo"); 
-     
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
 
-//      pause("I have set Hypre for diag!");
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
 #endif
     }
     else if(F_solver == 9093)
     {
 #ifdef OOMPH_HAS_HYPRE
-//      f_preconditioner_pt =
-
-      // Check what is the default hypre values.
-//     f_preconditioner_pt = new HyprePreconditioner;
-
-
     // Create a new hypre preconditioner
-    Preconditioner* another_preconditioner_pt =
-      Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS();
-    HyprePreconditioner* hypre_preconditioner_pt = 
-      checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-
-//    // Create a new hypre preconditioner
-//    Preconditioner* another_preconditioner_pt =  
-//      new HyprePreconditioner;
-//    HyprePreconditioner* hypre_preconditioner_pt = 
-//      checked_static_cast<HyprePreconditioner*>(another_preconditioner_pt);
-
-    f_preconditioner_pt = hypre_preconditioner_pt;
-     Hypre_Subsidiary_Preconditioner_Helper::print_hypre_settings
-       (f_preconditioner_pt);
-//     pause("Donzo"); 
-     
-
-//      pause("I have set Hypre for diag!");
+    f_preconditioner_pt =
+      Hypre_Subsidiary_Preconditioner_Helper::
+      set_hypre_JhalfStrnSimOneVTwoTwoRS();
+    
+    // Print it to check the settings.
+    Hypre_Subsidiary_Preconditioner_Helper::
+      print_hypre_settings(f_preconditioner_pt);
 #endif
     }
 
-
+    // Now set the F preconditioner.
     F_preconditioner_pt = f_preconditioner_pt;
 
     // Set the preconditioner in the LSC preconditioner.
@@ -4914,6 +4983,7 @@ for(int_string_map_it_type iterator = valid_solver_type_map.begin();
 
   } // NSPP::generic_problem_setup()
 
+  // NavierStokesProblemParameters::create_label();
   inline std::string create_label()
   {
     std::string mesh_type_str="";
@@ -4938,11 +5008,8 @@ for(int_string_map_it_type iterator = valid_solver_type_map.begin();
       }
     }
 
-
-
-    std::string vis_str = "";
+    // Set the string for the Reynolds number.
     std::string rey_str = "";
-
     if(Rey >= 0)
     {
       std::ostringstream strs;
@@ -4961,8 +5028,8 @@ for(int_string_map_it_type iterator = valid_solver_type_map.begin();
           OOMPH_EXCEPTION_LOCATION);
     }
 
-
-    // Set the string for viscuous term.
+    // Set the string for viscous term.
+    std::string vis_str = "";
     if (Vis == 0)
     {
       vis_str = "Sim";

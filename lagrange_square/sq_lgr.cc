@@ -961,283 +961,314 @@ create_impenetrable_lagrange_elements(const unsigned &b,
 
 std::string create_label()
 {
-//  // We want the unique problem label, then the generic problem label, then
-//  // preconditioner used.
-//  //
-//  // Because the unique problem label contains a label for the problem
-//  // and parameters such as angle/noel, we want the unique problem 
-//  // identifier to be first, then the parameters last, with the generic
-//  // problem stuff in between.
-//  //
-//  // i.e.
-//  // SqPo + NSPP::label + LPH::label Ang Noel.
-//  
-//  namespace NSPP = NavierStokesProblemParameters;
-//  namespace LPH = LagrangianPreconditionerHelpers;
-//  namespace SL = SquareLagrange;
-//
-//  // Create a custom label for the F solve.
-//  std::string prec_string = "";
-//  
-//  std::string w_string = "";
-//  if(LPH::W_solver == 0)
-//  {
-//    w_string = "We";
-//  }
-//  else if(LPH::W_solver == 1)
-//  {
-//    w_string = "Wcg";
-//  }
-//  else
-//  {
-//   std::ostringstream err_msg;
-//   err_msg << "Something went wrong setting up the W string."
-//           << "LPH::W_solver is " << LPH::W_solver << ".\n"
-//           << std::endl;
-//
-//   throw OomphLibError(err_msg.str(),
-//       OOMPH_CURRENT_FUNCTION,
-//       OOMPH_EXCEPTION_LOCATION);
-//  }
-//
-//  prec_string += w_string;
-//
-//
-//  std::string ns_string = "";
-//  if(LPH::NS_solver == 0)
-//  {
-//    ns_string = "Ne";
-//  }
-//  else if(LPH::NS_solver == 1)
-//  {
-//    ns_string = "Nl";
-//  }
-//  else
-//  {
-//   std::ostringstream err_msg;
-//   err_msg << "Something went wrong setting up the NS string."
-//           << "LPH::NS_solver is " << LPH::NS_solver << ".\n"
-//           << std::endl;
-//
-//   throw OomphLibError(err_msg.str(),
-//       OOMPH_CURRENT_FUNCTION,
-//       OOMPH_EXCEPTION_LOCATION);
-//  }
-//
-//  prec_string += ns_string;
-//
-//  std::string f_string = "";
-//  std::string p_string = "";
-//  if(LPH::NS_solver == 1)
-//  {
-//    f_string += "F_";
-//    p_string += "P_";
-//
-//    // First do F string. We either have Exact or AMG.
-//    if(LPH::F_solver == 0)
-//    {
-//      f_string += "e";
-//    }
-//    else if(LPH::F_solver == 96)
-//    {
-//      // Determine the cycle
-//      std::stringstream f_cycle_stream;
-//      f_cycle_stream << LPH::f_amg_iterations << "v" 
-//        << LPH::f_amg_smoother_iterations;
-//
-//      f_string += f_cycle_stream.str();
-//
-//      // Determine strength of dependence
-//      std::stringstream f_strn_stream;
-//      f_strn_stream << "Strn" << LPH::f_amg_strength;
-//
-//      f_string += f_strn_stream.str();
-//
-//      // Determine the coarsening strategy
-//      const int f_amg_coarsening = LPH::f_amg_coarsening;
-//      std::string f_amg_coarsening_str = "";
-//      switch (f_amg_coarsening)
-//      {
-//        case 0:
-//          f_amg_coarsening_str = "CLPJ";
-//          break;
-//        case 1:
-//          f_amg_coarsening_str = "cRS";
-//          break;
-//        case 3:
-//          f_amg_coarsening_str = "mRS";
-//          break;
-//        case 6:
-//          f_amg_coarsening_str = "Falgout";
-//          break;
-//        case 8:
-//          f_amg_coarsening_str = "PMIS";
-//          break;
-//        case 10:
-//          f_amg_coarsening_str = "HMIS";
-//          break;
-//        case 11:
-//          f_amg_coarsening_str = "oRS";
-//          break;
-//        default:            
-//          {
-//            std::ostringstream err_msg;
-//            err_msg << "Something wrong setting f coarsening string."
-//              << "LPH::f_amg_coarsening is " << LPH::f_amg_coarsening << ".\n"
-//              << std::endl;
-//
-//            throw OomphLibError(err_msg.str(),
-//                OOMPH_CURRENT_FUNCTION,
-//                OOMPH_EXCEPTION_LOCATION);
-//          }
-//          break;
-//      }
-//
-//      f_string += f_amg_coarsening_str;
-//
-//      // Now do the smoother string.
-//      const int f_amg_simple_smoother = LPH::f_amg_simple_smoother;
-//      const int f_amg_complex_smoother = LPH::f_amg_complex_smoother;
-//      std::string f_amg_smoother_str = "";
-//
-//      if(f_amg_simple_smoother >= 0)
-//      {
-//        if(f_amg_simple_smoother == 0)
-//        {
-//          f_amg_smoother_str = "Jac";
-//
-//          // If it is Jacobi, we have the damping!
-//          std::ostringstream dampstream;
-//          dampstream << LPH::f_amg_damping;
-//          f_amg_smoother_str += dampstream.str();
-//        }
-//        else if(f_amg_simple_smoother == 1)
-//        {
-//          f_amg_smoother_str = "Gs";
-//        }
-//        else if(f_amg_simple_smoother == 2)
-//        {
-//          f_amg_smoother_str = "Gspinter";
-//        }
-//        else if(f_amg_simple_smoother == 3)
-//        {
-//          f_amg_smoother_str = "SORfs";
-//        }
-//        else if(f_amg_simple_smoother == 4)
-//        {
-//          f_amg_smoother_str = "SORbs";
-//        }
-//        else if(f_amg_simple_smoother == 6)
-//        {
-//          f_amg_smoother_str = "SSOR";
-//        }
-//        else
-//        {
-//          std::ostringstream err_msg;
-//          err_msg << "Something wrong setting f smoother string."
-//            << "LPH::f_amg_simple_smoother is " << LPH::f_amg_simple_smoother << ".\n"
-//            << std::endl;
-//
-//          throw OomphLibError(err_msg.str(),
-//              OOMPH_CURRENT_FUNCTION,
-//              OOMPH_EXCEPTION_LOCATION);
-//        }
-//      }
-//      else if(f_amg_complex_smoother >= 0)
-//      {
-//        if(f_amg_complex_smoother == 6)
-//        {
-//          f_amg_smoother_str = "Schwarz";
-//        }
-//        else if(f_amg_complex_smoother == 7)
-//        {
-//          f_amg_smoother_str = "Pilut";
-//        }
-//        else if(f_amg_complex_smoother == 8)
-//        {
-//          f_amg_smoother_str = "ParaSails";
-//        }
-//        else if(f_amg_complex_smoother == 9)
-//        {
-//          f_amg_smoother_str = "Euclid";
-//        }
-//        else
-//        {
-//          std::ostringstream err_msg;
-//          err_msg << "Something wrong setting f COMPLEX smoother string.\n"
-//            << std::endl;
-//
-//          throw OomphLibError(err_msg.str(),
-//              OOMPH_CURRENT_FUNCTION,
-//              OOMPH_EXCEPTION_LOCATION);
-//        }
-//      }
-//      else
-//      {
-//        std::ostringstream err_msg;
-//        err_msg << "Something wrong setting f smoother string.\n"
-//          << std::endl;
-//
-//        throw OomphLibError(err_msg.str(),
-//            OOMPH_CURRENT_FUNCTION,
-//            OOMPH_EXCEPTION_LOCATION);
-//      }
-//
-//      f_string += f_amg_smoother_str;
-//    }
-//    else
-//    {
-//      std::ostringstream err_msg;
-//      err_msg << "Something went wrong setting up the F string."
-//        << "LPH::F_solver is " << LPH::F_solver << ".\n"
-//        << std::endl;
-//
-//      throw OomphLibError(err_msg.str(),
-//          OOMPH_CURRENT_FUNCTION,
-//          OOMPH_EXCEPTION_LOCATION);
-//    }
-//
-//    // Now do the pressure.
-//    if(LPH::P_solver == 0)
-//    {
-//      p_string += "e";
-//    }
-//    else if(LPH::P_solver == 1)
-//    {
-//      p_string += "1v22Strn0.25CLJPGs";
-//    }
-//    else if(LPH::P_solver == 13)
-//    {
-//      p_string += "1v22Strn0.7CLJPGs";
-//    }
-//    else
-//    {
-//      std::ostringstream err_msg;
-//      err_msg << "Something went wrong setting up the P string."
-//        << "LPH::P_solver is " << LPH::P_solver << ".\n"
-//        << std::endl;
-//
-//      throw OomphLibError(err_msg.str(),
-//          OOMPH_CURRENT_FUNCTION,
-//          OOMPH_EXCEPTION_LOCATION);
-//    } //  P_solver
-//
-//  } // if NS_solver == 1
-//
-//  prec_string += f_string;
-//  prec_string += p_string;
-//
-//
-//  std::string label = SL::prob_str()
-//                      + NSPP::create_label() 
-//                      + prec_string
-//                      + SL::ang_deg_str() + SL::noel_str();
-//  
-//  std::replace(label.begin(), label.end(),
-//                '.','-');
-//  return label;
-  std::string templabel="templabel";
-  return templabel;
+  // We want the unique problem label, then the generic problem label, then
+  // preconditioner used.
+  //
+  // Because the unique problem label contains a label for the problem
+  // and parameters such as angle/noel, we want the unique problem 
+  // identifier to be first, then the parameters last, with the generic
+  // problem stuff in between.
+  //
+  // i.e.
+  // SqPo + NSPP::label + LPH::label Ang Noel.
+  
+  namespace NSPP = NavierStokesProblemParameters;
+  namespace LPH = LagrangianPreconditionerHelpers;
+  namespace SL = SquareLagrange;
+
+  // Create a custom label for the F solve.
+  std::string prec_string = "";
+  
+  std::string w_string = "";
+  if(LPH::W_solver == 0)
+  {
+    w_string = "We";
+  }
+  else if(LPH::W_solver == 1)
+  {
+    w_string = "Wcg";
+  }
+  else
+  {
+   std::ostringstream err_msg;
+   err_msg << "Something went wrong setting up the W string."
+           << "LPH::W_solver is " << LPH::W_solver << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+  }
+
+  prec_string += w_string;
+
+
+  std::string ns_string = "";
+  if(LPH::NS_solver == 0)
+  {
+    ns_string = "Ne";
+  }
+  else if(LPH::NS_solver == 1)
+  {
+    ns_string = "Nl";
+  }
+  else
+  {
+   std::ostringstream err_msg;
+   err_msg << "Something went wrong setting up the NS string."
+           << "LPH::NS_solver is " << LPH::NS_solver << ".\n"
+           << std::endl;
+
+   throw OomphLibError(err_msg.str(),
+       OOMPH_CURRENT_FUNCTION,
+       OOMPH_EXCEPTION_LOCATION);
+  }
+
+  prec_string += ns_string;
+
+  std::string f_string = "";
+  std::string p_string = "";
+  if(LPH::NS_solver == 1)
+  {
+    f_string += "F_";
+    p_string += "P_";
+
+    // First do F string. We either have Exact or AMG.
+    if(LPH::F_solver == 0)
+    {
+      f_string += "e";
+    }
+    else if(LPH::F_solver == 96)
+    {
+      // Determine the cycle
+      std::stringstream f_cycle_stream;
+      f_cycle_stream << LPH::f_amg_iterations << "v" 
+        << LPH::f_amg_smoother_iterations;
+
+      f_string += f_cycle_stream.str();
+
+      // Determine strength of dependence
+      std::stringstream f_strn_stream;
+      f_strn_stream << "Strn" << LPH::f_amg_strength;
+
+      f_string += f_strn_stream.str();
+
+      // Determine the coarsening strategy
+      const int f_amg_coarsening = LPH::f_amg_coarsening;
+      std::string f_amg_coarsening_str = "";
+      switch (f_amg_coarsening)
+      {
+        case 0:
+          f_amg_coarsening_str = "CLPJ";
+          break;
+        case 1:
+          f_amg_coarsening_str = "cRS";
+          break;
+        case 3:
+          f_amg_coarsening_str = "mRS";
+          break;
+        case 6:
+          f_amg_coarsening_str = "Falgout";
+          break;
+        case 8:
+          f_amg_coarsening_str = "PMIS";
+          break;
+        case 10:
+          f_amg_coarsening_str = "HMIS";
+          break;
+        case 11:
+          f_amg_coarsening_str = "oRS";
+          break;
+        default:            
+          {
+            std::ostringstream err_msg;
+            err_msg << "Something wrong setting f coarsening string."
+              << "LPH::f_amg_coarsening is " << LPH::f_amg_coarsening << ".\n"
+              << std::endl;
+
+            throw OomphLibError(err_msg.str(),
+                OOMPH_CURRENT_FUNCTION,
+                OOMPH_EXCEPTION_LOCATION);
+          }
+          break;
+      } // Switch f_amg_coarsening.
+
+      f_string += f_amg_coarsening_str;
+
+      // Now do the smoother string.
+      const int f_amg_simple_smoother = LPH::f_amg_simple_smoother;
+      const int f_amg_complex_smoother = LPH::f_amg_complex_smoother;
+      std::string f_amg_smoother_str = "";
+
+      if(f_amg_simple_smoother >= 0)
+      {
+        if(f_amg_simple_smoother == 0)
+        {
+          f_amg_smoother_str = "Jac";
+
+          // If it is Jacobi, we have the damping!
+          std::ostringstream dampstream;
+          dampstream << LPH::f_amg_damping;
+          f_amg_smoother_str += dampstream.str();
+        }
+        else if(f_amg_simple_smoother == 1)
+        {
+          f_amg_smoother_str = "Gs";
+        }
+        else if(f_amg_simple_smoother == 2)
+        {
+          f_amg_smoother_str = "Gspinter";
+        }
+        else if(f_amg_simple_smoother == 3)
+        {
+          f_amg_smoother_str = "SORfs";
+        }
+        else if(f_amg_simple_smoother == 4)
+        {
+          f_amg_smoother_str = "SORbs";
+        }
+        else if(f_amg_simple_smoother == 6)
+        {
+          f_amg_smoother_str = "SSOR";
+        }
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg << "Something wrong setting f smoother string."
+            << "LPH::f_amg_simple_smoother is " 
+            << LPH::f_amg_simple_smoother << ".\n"
+            << std::endl;
+
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+      else if(f_amg_complex_smoother >= 0)
+      {
+        if(f_amg_complex_smoother == 6)
+        {
+          f_amg_smoother_str = "Schwarz";
+        }
+        else if(f_amg_complex_smoother == 7)
+        {
+          f_amg_smoother_str = "Pilut";
+        }
+        else if(f_amg_complex_smoother == 8)
+        {
+          f_amg_smoother_str = "ParaSails";
+        }
+        else if(f_amg_complex_smoother == 9)
+        {
+          f_amg_smoother_str = "Euclid";
+        }
+        else
+        {
+          std::ostringstream err_msg;
+          err_msg << "Something wrong setting f COMPLEX smoother string.\n"
+            << std::endl;
+
+          throw OomphLibError(err_msg.str(),
+              OOMPH_CURRENT_FUNCTION,
+              OOMPH_EXCEPTION_LOCATION);
+        }
+      }
+      else
+      {
+        std::ostringstream err_msg;
+        err_msg << "Something wrong setting f smoother string.\n"
+          << std::endl;
+
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
+
+      f_string += f_amg_smoother_str;
+    }
+    else if (LPH::F_solver == 8090)
+    {
+      f_string += "BlkDiagLU";
+    }
+    else if (LPH::F_solver == 8091)
+    {
+      f_string += "BlkUpperLU";
+    }
+    else if (LPH::F_solver == 8092)
+    {
+      f_string += "BlkLowerLU";
+    }
+    else if (LPH::F_solver == 8093)
+    {
+      f_string += "LU";
+    }
+    else if (LPH::F_solver == 9090)
+    {
+      f_string += "BlkDiagAMG";
+    }
+    else if (LPH::F_solver == 9091)
+    {
+      f_string += "BlkUpperAMG";
+    }
+    else if (LPH::F_solver == 9092)
+    {
+      f_string += "BlkLowerAMG";
+    }
+    else if (LPH::F_solver == 9093)
+    {
+      f_string += "AMG";
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Something went wrong setting up the F string."
+        << "LPH::F_solver is " << LPH::F_solver << ".\n"
+        << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+    // Now do the pressure.
+    if(LPH::P_solver == 0)
+    {
+      p_string += "e";
+    }
+    else if(LPH::P_solver == 1)
+    {
+      p_string += "1v22Strn0.25CLJPGs";
+    }
+    else if(LPH::P_solver == 13)
+    {
+      p_string += "1v22Strn0.7CLJPGs";
+    }
+    else
+    {
+      std::ostringstream err_msg;
+      err_msg << "Something went wrong setting up the P string."
+        << "LPH::P_solver is " << LPH::P_solver << ".\n"
+        << std::endl;
+
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    } //  P_solver
+
+  } // if NS_solver == 1
+
+  prec_string += f_string;
+  prec_string += p_string;
+
+
+  std::string label = SL::prob_str()
+                      + NSPP::create_label()
+                      + prec_string
+                      + SL::ang_deg_str() + SL::noel_str();
+  
+  std::replace(label.begin(), label.end(),
+                '.','-');
+  return label;
 }
 
 //===start_of_main======================================================

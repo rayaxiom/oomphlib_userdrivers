@@ -80,7 +80,7 @@ mpirun -np 4 ../$PROGRAM $RUNARGUMENTS
 PROBLIST="SqPo"
 VISLIST="x"
 RELIST="R100"
-PRECLIST="WedNe WedNlFePe"
+PRECLIST="WeNe WeNlF_eP_e"
 ANGLIST="A42"
 NOELLIST="N16 N32"
 PROCLIST="NP1R0 NP2R0 NP2R1 NP3R0 NP3R1 NP3R2 NP4R0 NP4R1 NP4R2 NP4R3"
@@ -94,9 +94,9 @@ do
     do
       for PREC in $PRECLIST
       do
-if [ "$PREC" == "WedNe" ]; then
+if [ "$PREC" == "WeNe" ]; then
   VIS="Sim"
-elif [ "$PREC" == "WedNlFePe" ]; then
+elif [ "$PREC" == "WeNlF_eP_e" ]; then
   VIS="Str"
 else
   echo "Problem with generating list of files."
