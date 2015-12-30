@@ -97,6 +97,60 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
   return hypre_preconditioner_pt;
  }
+
+ Preconditioner* set_hypre_JhalfStrnStrOneVTwoTwoRS()
+ {
+  // Create a new HyprePreconditioner
+  HyprePreconditioner* hypre_preconditioner_pt = new HyprePreconditioner;
+
+  // Set the smoothers
+  //   0 = Jacobi 
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR
+  //
+  //   As per Richard p91, we use Jacobi with a damping param if 0.5
+  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  // Set smoother damping
+  hypre_preconditioner_pt->amg_damping() = 0.5;
+
+
+  // Set the strength to 0.25
+  hypre_preconditioner_pt->amg_strength() = 0.668;
+
+  // Now set the coarsening
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
+  hypre_preconditioner_pt->amg_coarsening() = 1;
+
+  // Now create 1v22 cycles
+  
+  // Set the number of amg smoother iterations. This is usually set to 2
+  hypre_preconditioner_pt->amg_smoother_iterations()=2;
+
+  // Set the amg_iterations, this is usually set to 1, for V(2,2)
+  // there is only one of them... I think that's what I means, 
+  // the two is the smoother... pre and post smoothing.
+  hypre_preconditioner_pt
+      ->set_amg_iterations(1);
+
+  return hypre_preconditioner_pt;
+ }
+
+
 }
 
 #endif
@@ -4047,6 +4101,122 @@ namespace LagrangianPreconditionerHelpers
     f_preconditioner_pt =
       Hypre_Subsidiary_Preconditioner_Helper::
       set_hypre_JhalfStrnSimOneVTwoTwoRS();
+    
+    // Print it to check the settings.
+    Hypre_Subsidiary_Preconditioner_Helper::
+      print_hypre_settings(f_preconditioner_pt);
+#endif
+    }
+    ////////////////////////////////////////////////////////////////////////
+    // For the below, we have 9090, 9091, 9092 and 9093 with the following 
+    // configuration:
+    // For the LSC F block:
+    // 9090 - block diagonal with Hypre
+    // 9091 - upper block triangular with Hypre
+    // 9092 - lower block triangular with Hypre
+    // 9093 - full AMG.
+    else if(F_solver == 9190)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a block diagonal preconditioner.
+      f_preconditioner_pt =
+        new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+
+      // Now, since f_precondtioner_pt is a Preconditioner*, it needs to be
+      // caste to a block diagonal one if we want to call functions from
+      // that class.
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnStrOneVTwoTwoRS);
+
+      // All done. The below is prints the Hypre settings.
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
+#endif
+    }
+    else if(F_solver == 9191)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a block triangular preconditioner.
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use upper triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->upper_triangular();
+
+      // Set the Hypre preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnStrOneVTwoTwoRS);
+
+      // All done. The below is prints the Hypre settings.
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
+
+#endif
+    }
+    else if(F_solver == 9192)
+    {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a triangular preconditioner.
+      f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use lower triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->lower_triangular();
+
+      // Set the hypre preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnStrOneVTwoTwoRS);
+
+      // All done. The below is prints the Hypre settings.
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+      {
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+
+        // Now print it out to see the settings!
+        Hypre_Subsidiary_Preconditioner_Helper::
+          print_hypre_settings(check_prec_pt);
+      }
+#endif
+    }
+    else if(F_solver == 9193)
+    {
+#ifdef OOMPH_HAS_HYPRE
+    // Create a new hypre preconditioner
+    f_preconditioner_pt =
+      Hypre_Subsidiary_Preconditioner_Helper::
+      set_hypre_JhalfStrnStrOneVTwoTwoRS();
     
     // Print it to check the settings.
     Hypre_Subsidiary_Preconditioner_Helper::

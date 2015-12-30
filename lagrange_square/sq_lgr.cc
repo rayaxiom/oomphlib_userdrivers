@@ -1204,19 +1204,35 @@ std::string create_label()
     }
     else if (LPH::F_solver == 9090)
     {
-      f_string += "BlkDiagAMG";
+      f_string += "BlkDiagAMGSim";
     }
     else if (LPH::F_solver == 9091)
     {
-      f_string += "BlkUpperAMG";
+      f_string += "BlkUpperAMGSim";
     }
     else if (LPH::F_solver == 9092)
     {
-      f_string += "BlkLowerAMG";
+      f_string += "BlkLowerAMGSim";
     }
     else if (LPH::F_solver == 9093)
     {
-      f_string += "AMG";
+      f_string += "AMGSim";
+    }
+    else if (LPH::F_solver == 9190)
+    {
+      f_string += "BlkDiagAMGStr";
+    }
+    else if (LPH::F_solver == 9191)
+    {
+      f_string += "BlkUpperAMGStr";
+    }
+    else if (LPH::F_solver == 9192)
+    {
+      f_string += "BlkLowerAMGStr";
+    }
+    else if (LPH::F_solver == 9193)
+    {
+      f_string += "AMGStr";
     }
     else
     {
