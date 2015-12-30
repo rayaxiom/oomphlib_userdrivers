@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROGRAM="sq_lgr_mod_AMG_diag"
+PROGRAM="sq_lgr"
 
 
 # Create the FILEBASE, this is the folder where the testing will be done.
