@@ -72,7 +72,7 @@ EuclidOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_s
 
 
 
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 1 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --ang 30"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir $RESITS_DIR --solver_type 1 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --ang 30"
 
 
 function gen_tests()
