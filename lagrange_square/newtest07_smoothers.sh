@@ -55,6 +55,20 @@ TEST_LIST=""
 
 
 # Declare generic params here.
+
+# All the p params are here, I just need to set them
+#PPARAM="--p_solver 96 --p_amg_str 0.668 --p_amg_damp double --p_amg_coarse int --p_amg_sim_smoo int --p_amg_com_smoo int --p_amg_iter int --p_amg_smiter int"
+
+# Setting p param to 2D poisson per Richard p91
+# --p_amg_coarse 1: RS (0 is CLJP)
+# --p_amg_str 0.25
+# --p_amg_sim_smoo 0: Jacobi (1 is GS)
+# --p_amg_damp 0.668 (2/3)
+# --p_amg_iter 2
+# --p_amg_smiter 1 2XV(1,1)
+PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
+
+
 JacOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.25"
 JacOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.668"
 
@@ -72,7 +86,7 @@ EuclidOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_s
 
 
 
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --ang 30"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96 --ang 30"
 
 
 function gen_tests()
@@ -93,7 +107,7 @@ PRECPARAM=""
 VISLIST="0 1"
 
 # As per FIS p364
-REYLIST="100 200"
+REYLIST="0 100 200"
 # J1v22 J2v22 GS1v22 GS2v22 Euclid
 PRECLIST="1 2 3 4 5"
 NOELLIST="4 8 16 32 64 128 256 512"
@@ -143,7 +157,7 @@ else
 fi
       for NOEL in $NOELLIST
       do
-echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM $PPARAM --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
       done
     done
   done
@@ -172,7 +186,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
