@@ -1259,6 +1259,10 @@ std::string create_label()
     {
       p_string += "1v22Strn0.7CLJPGs";
     }
+    else if(LPH::P_solver == 96)
+    {
+      p_string += "Pcustom";
+    }
     else
     {
       std::ostringstream err_msg;
