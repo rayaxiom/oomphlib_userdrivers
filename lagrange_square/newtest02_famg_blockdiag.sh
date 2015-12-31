@@ -68,7 +68,7 @@ TEST_LIST=""
 # --p_amg_iter 2
 # --p_amg_smiter 1 2XV(1,1)
 PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 200 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --ang 30"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --ang 30"
 
 
 function gen_tests()
