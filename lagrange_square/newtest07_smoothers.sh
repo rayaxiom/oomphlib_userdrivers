@@ -143,7 +143,7 @@ else
 fi
       for NOEL in $NOELLIST
       do
-echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --rey $REY --visc $VIS --f_amg_damp $DAMP --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
       done
     done
   done
