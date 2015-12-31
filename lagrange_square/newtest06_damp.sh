@@ -55,10 +55,25 @@ TEST_LIST=""
 
 
 # Declare generic params here.
-PARAMSIM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --ang 30"
-PARAMSTR="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.668 --ang 30"
 
-#--f_amg_damp 0.1
+
+# All the p params are here, I just need to set them
+#PPARAM="--p_solver 96 --p_amg_str 0.668 --p_amg_damp double --p_amg_coarse int --p_amg_sim_smoo int --p_amg_com_smoo int --p_amg_iter int --p_amg_smiter int"
+
+# Setting p param to 2D poisson per Richard p91
+# --p_amg_coarse 1: RS (0 is CLJP)
+# --p_amg_str 0.25
+# --p_amg_sim_smoo 0: Jacobi (1 is GS)
+# --p_amg_damp 0.668 (2/3)
+# --p_amg_iter 2
+# --p_amg_smiter 1 2XV(1,1)
+PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
+
+
+
+PARAMSIM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.25 --ang 30"
+PARAMSTR="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_str 0.668 --ang 30"
+
 
 
 #PARAM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --ang 30"
@@ -100,7 +115,7 @@ fi
     do
       for NOEL in $NOELLIST
       do
-echo "mpirun -np 1 ./$PROGRAM $PRECPARAM --rey $REY --visc $VIS --f_amg_damp $DAMP --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PRECPARAM --rey $REY --visc $VIS --f_amg_damp $DAMP $PPARAM --noel $NOEL" >> $TEST_LIST
       done
     done
   done
@@ -129,7 +144,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
