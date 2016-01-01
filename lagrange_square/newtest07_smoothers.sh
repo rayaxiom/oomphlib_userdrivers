@@ -36,17 +36,30 @@ make $PROGRAM
 mv $PROGRAM ./$FILEBASE
 cd $FILEBASE
 
+## RRNEW we run this test 3 times then collect the lowest execution times
+# So we create three folder, test1, test2 and test3
+# Within each, we need to copy over the files:
+# .qsub, .list and the program file, then in the scratch directory, we create
+# the directories qsub_output and res_iteration in each of the three folders.
+TESTFOLDER1="test1"
+TESTFOLDER2="test2"
+TESTFOLDER3="test3"
+mkdir $TESTFOLDER1
+mkdir $TESTFOLDER2
+mkdir $TESTFOLDER3
+
+
 ############################################################################
 
-###############################################################################
+############################################################################
 # Now we are inside the test folder (FILEBASE)
 
 # Make the results directory. I have it in an if statement...
 # Because some times when it exists, we wish to reuse it... of course not this 
 # time...
-if [ ! -d "$RESITS_DIR" ]; then
-  mkdir $RESITS_DIR
-fi
+#if [ ! -d "$RESITS_DIR" ]; then
+#  mkdir $RESITS_DIR
+#fi
 
 # There may be two test lists, so we declare the strings up here.
 # Then we change this right before we call the gen_testxy functions.
@@ -164,9 +177,14 @@ echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM $PPARAM --rey $REY --visc $VIS -
 done
 } # End of gen_tests
 
+############################################################################
+############################################################################
+############################################################################
+
 TEST_FILEBASE="test_list"
 TEST_LIST="$TEST_FILEBASE.list"
 gen_tests
+
 
 # Create a shell script for some reason...
 TEST_RUN="$TEST_FILEBASE.sh"
@@ -175,10 +193,19 @@ cat $TEST_LIST >> $TEST_RUN
 
 cp ./../$0 .
 
-###############################################################################
-###############################################################################
-###############################################################################
-###############################################################################
+# RRNEW
+# copy over the .qsub, .list and program file into test1, test2 and test3
+cp $TEST_LIST ./$TESTFOLDER1/
+cp $TEST_LIST ./$TESTFOLDER2/
+cp $TEST_LIST ./$TESTFOLDER3/
+
+# The qsub is done later and the program file is only copied into the 
+# scratch directories
+
+############################################################################
+############################################################################
+############################################################################
+
 ### Now create the qsub file.
 QSUBFILE="$FILEBASE.qsub"
 NUMTESTS=$(cat $TEST_LIST | wc -l)
@@ -235,11 +262,26 @@ CLEANUPLINE="mv $QSUBFILE"
 CLEANUPLINE+='.*.$SGE_TASK_ID '
 CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
 echo $CLEANUPLINE >> $QSUBFILE
+############################################################################
+############################################################################
+############################################################################
+############################################################################
+cp $QSUBFILE ./$TESTFOLDER1
+cp $QSUBFILE ./$TESTFOLDER2
+cp $QSUBFILE ./$TESTFOLDER3
 
-###############################################################################
-###############################################################################
-###############################################################################
-###############################################################################
+mkdir ./$TESTFOLDER1/$QSUBOUTPUT_DIR
+mkdir ./$TESTFOLDER2/$QSUBOUTPUT_DIR
+mkdir ./$TESTFOLDER3/$QSUBOUTPUT_DIR
+
+mkdir ./$TESTFOLDER1/$RESITS_DIR
+mkdir ./$TESTFOLDER2/$RESITS_DIR
+mkdir ./$TESTFOLDER3/$RESITS_DIR
+
+############################################################################
+############################################################################
+############################################################################
+############################################################################
 ################### Now check if I'm on csf, if so, delete the related scratch
 # and copy the current stuff there.
 if [[ $HOME == *mbax5ml3* ]]
@@ -259,11 +301,31 @@ then
 
   # Remove the scratch stuff.
   rm -rf $SCRATCH_TEST_DIR
+  mkdir -p $SCRATCH_TEST_DIR
 
-  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR/
-  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR/
-  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR/
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER1"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+  ## Create the res_its and qsub output directories in scratch.
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
 
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER2"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+  ## Create the res_its and qsub output directories in scratch.
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
+
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER3"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
