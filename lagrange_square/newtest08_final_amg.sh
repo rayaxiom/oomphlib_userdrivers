@@ -36,6 +36,18 @@ make $PROGRAM
 mv $PROGRAM ./$FILEBASE
 cd $FILEBASE
 
+## RRNEW we run this test 3 times then collect the lowest execution times
+# So we create three folder, test1, test2 and test3
+# Within each, we need to copy over the files:
+# .qsub, .list and the program file, then in the scratch directory, we create
+# the directories qsub_output and res_iteration in each of the three folders.
+TESTFOLDER1="test1"
+TESTFOLDER2="test2"
+TESTFOLDER3="test3"
+mkdir $TESTFOLDER1
+mkdir $TESTFOLDER2
+mkdir $TESTFOLDER3
+
 ############################################################################
 
 ###############################################################################
@@ -53,6 +65,19 @@ fi
 TEST_FILEBASE=""
 TEST_LIST=""
 
+# Declare generic params here.
+
+# All the p params are here, I just need to set them
+#PPARAM="--p_solver 96 --p_amg_str 0.668 --p_amg_damp double --p_amg_coarse int --p_amg_sim_smoo int --p_amg_com_smoo int --p_amg_iter int --p_amg_smiter int"
+
+# Setting p param to 2D poisson per Richard p91
+# --p_amg_coarse 1: RS (0 is CLJP)
+# --p_amg_str 0.25
+# --p_amg_sim_smoo 0: Jacobi (1 is GS)
+# --p_amg_damp 0.668 (2/3)
+# --p_amg_iter 2
+# --p_amg_smiter 1 2XV(1,1)
+PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
 
 # Create preconditioner params for:
 # LU LU
@@ -61,31 +86,10 @@ TEST_LIST=""
 # LU ALSC STR
 Prec_WLu_NSLu="--w_solver 0 --ns_solver 0"
 Prec_WLu_NSLSCExact="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
-Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 --p_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
-Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 --p_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668"
+Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 --f_solver 96 $PPARAM --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
+Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 --f_solver 96 $PPARAM --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668"
 
-
-
-## Declare generic params here.
-#JacOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.25"
-#JacOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.668"
-#
-#JacTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.25"
-#JacTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.668"
-#
-#GSOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
-#GSOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668"
-#
-#GSTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
-#GSTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668"
-#
-#EuclidOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.25"
-#EuclidOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.668"
-
-
-
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 1 --print_hypre"
-
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 120 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre"
 
 function gen_tests()
 {
@@ -171,6 +175,13 @@ cat $TEST_LIST >> $TEST_RUN
 
 cp ./../$0 .
 
+# RRNEW
+# copy over the .qsub, .list and program file into test1, test2 and test3
+cp $TEST_LIST ./$TESTFOLDER1/
+cp $TEST_LIST ./$TESTFOLDER2/
+cp $TEST_LIST ./$TESTFOLDER3/
+
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -182,7 +193,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
@@ -232,6 +243,22 @@ CLEANUPLINE+='.*.$SGE_TASK_ID '
 CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
 echo $CLEANUPLINE >> $QSUBFILE
 
+############################################################################
+############################################################################
+############################################################################
+############################################################################
+cp $QSUBFILE ./$TESTFOLDER1
+cp $QSUBFILE ./$TESTFOLDER2
+cp $QSUBFILE ./$TESTFOLDER3
+
+mkdir ./$TESTFOLDER1/$QSUBOUTPUT_DIR
+mkdir ./$TESTFOLDER2/$QSUBOUTPUT_DIR
+mkdir ./$TESTFOLDER3/$QSUBOUTPUT_DIR
+
+mkdir ./$TESTFOLDER1/$RESITS_DIR
+mkdir ./$TESTFOLDER2/$RESITS_DIR
+mkdir ./$TESTFOLDER3/$RESITS_DIR
+
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -255,11 +282,31 @@ then
 
   # Remove the scratch stuff.
   rm -rf $SCRATCH_TEST_DIR
+  mkdir -p $SCRATCH_TEST_DIR
 
-  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR/
-  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR/
-  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR/
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER1"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+  ## Create the res_its and qsub output directories in scratch.
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
 
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER2"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+  ## Create the res_its and qsub output directories in scratch.
+  mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
+  mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
+
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER3"
+  mkdir -p $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$PROGRAM $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
