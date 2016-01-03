@@ -80,11 +80,11 @@ TEST_LIST=""
 PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
 
 
-JacOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.25"
-JacOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.79"
+JacOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.25"
+JacOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.79"
 
-JacTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.25"
-JacTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 1 --f_amg_str 0.79"
+JacTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.25"
+JacTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.79"
 
 GSOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
 GSOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.79"
