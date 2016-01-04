@@ -1534,11 +1534,11 @@ int main(int argc, char* argv[])
         outfile << "\n" << results_stream.str();
         outfile.close();
       }
-      }
+      } // if not direct solver.
 
       rey_increment++;
 
-    }
+    } // Loop over Reynolds number.
   }
   else
   {

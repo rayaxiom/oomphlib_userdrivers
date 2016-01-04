@@ -60,9 +60,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   //   6 = hybrid symmetric Gauss-Seidel or SSOR
   //
   //   As per Richard p91, we use Jacobi with a damping param if 0.5
-  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  hypre_preconditioner_pt->amg_simple_smoother() = 1;
   // Set smoother damping
-  hypre_preconditioner_pt->amg_damping() = 0.5;
+  hypre_preconditioner_pt->amg_damping() = -1;
 
 
   // Set the strength to 0.25
@@ -112,9 +112,9 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   //   6 = hybrid symmetric Gauss-Seidel or SSOR
   //
   //   As per Richard p91, we use Jacobi with a damping param if 0.5
-  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  hypre_preconditioner_pt->amg_simple_smoother() = 1;
   // Set smoother damping
-  hypre_preconditioner_pt->amg_damping() = 0.5;
+  hypre_preconditioner_pt->amg_damping() = -1.0;
 
 
   // Set the strength to 0.25
@@ -181,6 +181,9 @@ namespace PreconditionerHelpers
 
   double Scaling_sigma = 0.0;
   double Scaling_sigma_multiplier = 0.0;
+
+
+  int Viscous_form = -1;
 
 
 
@@ -422,6 +425,12 @@ namespace PreconditionerHelpers
     // No parameter after.
     //    CommandLineArgs::specify_command_line_flag(
     //        "--lsc_only");
+
+
+    // int - only set this is we're doing the 
+    // block diagonal/triangular test
+    CommandLineArgs::specify_command_line_flag(
+        "--viscous",&Viscous_form);
 
     // double
     CommandLineArgs::specify_command_line_flag(
@@ -723,28 +732,72 @@ namespace PreconditionerHelpers
       Preconditioner* f_preconditioner_pt =
         new BlockDiagonalPreconditioner<CRDoubleMatrix>;
 
-      // Now, since f_precondtioner_pt is a Preconditioner*, it needs to be
+      // Now, since f_preconditioner_pt is a Preconditioner*, it needs to be
       // caste to a block diagonal one if we want to call functions from
       // that class.
+      if(Viscous_form == 1)
+      {
       dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
-
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnStrOneVTwoTwoRS);
+      }
+      else if(Viscous_form == 0)
+      {
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnSimOneVTwoTwoRS);
+      }
+      else
+      {
+      std::ostringstream err_msg;
+      err_msg << "You have chosen to do the 9090 (block diagonal) test.\n"
+              << "Please supply --viscous_form, 0 or 1\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+      }
 
       // All done. The below is prints the Hypre settings.
       //if(amg_param.Print_parameters)
       {
         oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
-        oomph_info << "RAYINFO: Doing DIAGONAL " << std::endl; 
       
 
       // Check the Hypre values used, we encapsulate this so we can easily 
       // take it out later.
   
         // Create a new preconditioner with the above function we set.
-        Preconditioner* check_prec_pt = 
-          Hypre_Subsidiary_Preconditioner_Helper::
+
+       Preconditioner* check_prec_pt = 0;
+       if(Viscous_form == 0)
+       // Print out the preconditioner used for the simple form of the
+       // viscous term.
+       {
+        oomph_info << "RAYINFO: Doing DIAGONAL" << std::endl; 
+        oomph_info << "RAYINFO: Doing Simple form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
           set_hypre_JhalfStrnSimOneVTwoTwoRS();
+       }
+       else if (Viscous_form == 1)
+       // print out the preconditioner used for the stress divergence 
+       // form of the viscous term.
+       {
+        oomph_info << "RAYINFO: Doing DIAGONAL" << std::endl; 
+        oomph_info << "RAYINFO: Doing Stress form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+       }
+       else
+       {
+      std::ostringstream err_msg;
+      err_msg << "You have chosen to do the 9090 (block diagonal) test.\n"
+              << "Please supply --viscous_form, 0 or 1\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+       }
         // Convert the above to a hypre preconditioner.
        HyprePreconditioner* h_prec_pt 
          = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
@@ -753,11 +806,10 @@ namespace PreconditionerHelpers
         print_hypre_parameters(h_prec_pt);
         NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
       }
-
       return f_preconditioner_pt;
 #endif
  
-        }
+        } // if F_solver == F_solver_blkdiag_amg
         else if(F_solver == F_solver_upper_amg)
         {
 #ifdef OOMPH_HAS_HYPRE
@@ -771,9 +823,29 @@ namespace PreconditionerHelpers
       (f_preconditioner_pt)->upper_triangular();
 
       // Set the Hypre preconditioner.
+      if(Viscous_form == 0)
+      {
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnSimOneVTwoTwoRS);
+      }
+      else if(Viscous_form == 1)
+      {
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnStrOneVTwoTwoRS);
+      }
+      else
+      {
+        std::ostringstream err_msg;
+        err_msg << "You have chosen to do the 9091 (upper triangular) test.\n"
+          << "Please supply --viscous_form, 0 or 1\n";
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+      }
 
       // All done. The below is prints the Hypre settings.
       //if(amg_param.Print_parameters)
@@ -785,16 +857,41 @@ namespace PreconditionerHelpers
       // take it out later.
   
         // Create a new preconditioner with the above function we set.
-        Preconditioner* check_prec_pt = 
-          Hypre_Subsidiary_Preconditioner_Helper::
+
+       Preconditioner* check_prec_pt = 0;
+       if(Viscous_form == 0)
+       // Print out the preconditioner used for the simple form of the
+       // viscous term.
+       {
+        oomph_info << "RAYINFO: Doing Upper Triangular" << std::endl; 
+        oomph_info << "RAYINFO: Doing Simple form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
           set_hypre_JhalfStrnSimOneVTwoTwoRS();
+       }
+       else if (Viscous_form == 1)
+       // print out the preconditioner used for the stress divergence 
+       // form of the viscous term.
+       {
+        oomph_info << "RAYINFO: Doing Upper Triangular" << std::endl; 
+        oomph_info << "RAYINFO: Doing Stress form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+       }
+       else
+       {
+      std::ostringstream err_msg;
+      err_msg << "You have chosen to do the 9090 (block diagonal) test.\n"
+              << "Please supply --viscous_form, 0 or 1\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+       }
         // Convert the above to a hypre preconditioner.
        HyprePreconditioner* h_prec_pt 
          = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
 
         // Now print it out to see the settings!
         print_hypre_parameters(h_prec_pt);
-        oomph_info << "RAYINFO: Doing UPPER triangular AMG" << std::endl;
         NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
       }
 
@@ -816,9 +913,31 @@ namespace PreconditionerHelpers
       (f_preconditioner_pt)->lower_triangular();
 
       // Set the Hypre preconditioner.
+      if(Viscous_form == 0)
+      {
       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
       (f_preconditioner_pt)->set_subsidiary_preconditioner_function
-      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnSimOneVTwoTwoRS);
+      }
+      else if(Viscous_form == 1)
+      {
+       dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::
+       set_hypre_JhalfStrnStrOneVTwoTwoRS);
+       
+      }
+      else
+      {
+        std::ostringstream err_msg;
+        err_msg << "You have chosen to do the 9091 (upper triangular) test.\n"
+          << "Please supply --viscous_form, 0 or 1\n";
+        throw OomphLibError(err_msg.str(),
+            OOMPH_CURRENT_FUNCTION,
+            OOMPH_EXCEPTION_LOCATION);
+
+      }
 
       // All done. The below is prints the Hypre settings.
       //if(amg_param.Print_parameters)
@@ -830,18 +949,44 @@ namespace PreconditionerHelpers
       // take it out later.
   
         // Create a new preconditioner with the above function we set.
-        Preconditioner* check_prec_pt = 
-          Hypre_Subsidiary_Preconditioner_Helper::
+
+       Preconditioner* check_prec_pt = 0;
+       if(Viscous_form == 0)
+       // Print out the preconditioner used for the simple form of the
+       // viscous term.
+       {
+        oomph_info << "RAYINFO: Doing Lower Triangular" << std::endl; 
+        oomph_info << "RAYINFO: Doing Simple form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
           set_hypre_JhalfStrnSimOneVTwoTwoRS();
+       }
+       else if (Viscous_form == 1)
+       // print out the preconditioner used for the stress divergence 
+       // form of the viscous term.
+       {
+        oomph_info << "RAYINFO: Doing Lower Triangular" << std::endl; 
+        oomph_info << "RAYINFO: Doing Stress form prec." << std::endl; 
+         check_prec_pt = Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnStrOneVTwoTwoRS();
+       }
+       else
+       {
+      std::ostringstream err_msg;
+      err_msg << "You have chosen to do the 9090 (block diagonal) test.\n"
+              << "Please supply --viscous_form, 0 or 1\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+       }
         // Convert the above to a hypre preconditioner.
        HyprePreconditioner* h_prec_pt 
          = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
 
         // Now print it out to see the settings!
-        oomph_info << "RAYINFO: Doing LOWER triangular AMG" << std::endl;
         print_hypre_parameters(h_prec_pt);
         NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
       }
+
 
       return f_preconditioner_pt;
 
@@ -850,17 +995,39 @@ namespace PreconditionerHelpers
         }
         else if(F_solver == F_solver_full_amg)
         {
-      Preconditioner* f_preconditioner_pt 
-        = Hypre_Subsidiary_Preconditioner_Helper::
+      Preconditioner* f_preconditioner_pt = 0;
+     if(Viscous_form == 0) 
+     {
+        f_preconditioner_pt= Hypre_Subsidiary_Preconditioner_Helper::
           set_hypre_JhalfStrnSimOneVTwoTwoRS();
+     }
+     else if(Viscous_form == 1)
+     {
+       f_preconditioner_pt = Hypre_Subsidiary_Preconditioner_Helper::
+         set_hypre_JhalfStrnStrOneVTwoTwoRS();
+     }
+
+
+     // All done, now check the preconditioner.
+
+
         // Convert the above to a hypre preconditioner.
        HyprePreconditioner* h_prec_pt 
          = checked_dynamic_cast<HyprePreconditioner*>(
              f_preconditioner_pt);
 
-        // Now print it out to see the settings!
         oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
-        oomph_info << "RAYINFO: Doing FULL AMG" << std::endl;
+       if(Viscous_form == 0)
+       {
+        oomph_info << "RAYINFO: Doing FULL AMG" << std::endl; 
+        oomph_info << "RAYINFO: Doing Simple form prec." << std::endl;  
+       }
+       else if(Viscous_form == 1)
+       {
+        oomph_info << "RAYINFO: Doing FULL AMG" << std::endl; 
+        oomph_info << "RAYINFO: Doing Stress form prec." << std::endl; 
+       }
+        // Now print it out to see the settings!
         print_hypre_parameters(h_prec_pt);
         NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
 

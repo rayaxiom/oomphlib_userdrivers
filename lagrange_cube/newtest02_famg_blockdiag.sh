@@ -80,7 +80,7 @@ TEST_LIST=""
 # --p_amg_smiter 1 2XV(1,1)
 
 PPARAM="--p_solver 1 --p_amg_iter 1 --p_amg_smiter 2 --p_amg_sim_smoo 0 --p_amg_damp 0.668  --p_amg_str 0.7 --p_amg_coarse 1"
-PARAM="--time_type 1 --solver_type 2 --dist_prob --max_solver_iter 1000  --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_p_hypre --w_solver 0 --ns_solver 1 --ang 30"
+PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --print_p_hypre --w_solver 0 --ns_solver 1 --ang 30"
 
 
 function gen_tests()
@@ -103,7 +103,7 @@ VISLIST="0 1"
 # As per FIS p364
 REYLIST="0 10 100 200"
 FSOLVERLIST="9090 9091 9092 9093"
-NOELLIST="4 6 8 10 12 14 16"
+NOELLIST="4 6 8 10 12 14 16 18 20"
 
 for VIS in $VISLIST
 do
@@ -113,7 +113,7 @@ do
     do
       for NOEL in $NOELLIST
       do
-echo "mpirun -np 1 ./$PROGRAM $PARAM --rey $REY --visc $VIS $PPARAM --f_solver $FSOLVER --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PARAM --rey $REY --visc $VIS --viscous $VIS $PPARAM --f_solver $FSOLVER --noel $NOEL" >> $TEST_LIST
       done
     done
   done
