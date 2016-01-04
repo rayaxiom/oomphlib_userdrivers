@@ -35,6 +35,126 @@
 
 using namespace oomph;
 
+
+#ifdef OOMPH_HAS_HYPRE
+
+//=============================================================================
+/// helper method for the block diagonal F block preconditioner to allow 
+/// hypre to be used for as a subsidiary block preconditioner
+//=============================================================================
+namespace Hypre_Subsidiary_Preconditioner_Helper
+{
+ Preconditioner* set_hypre_JhalfStrnSimOneVTwoTwoRS()
+ {
+  // Create a new HyprePreconditioner
+  HyprePreconditioner* hypre_preconditioner_pt = new HyprePreconditioner;
+
+  // Set the smoothers
+  //   0 = Jacobi 
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR
+  //
+  //   As per Richard p91, we use Jacobi with a damping param if 0.5
+  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  // Set smoother damping
+  hypre_preconditioner_pt->amg_damping() = 0.5;
+
+
+  // Set the strength to 0.25
+  hypre_preconditioner_pt->amg_strength() = 0.25;
+
+  // Now set the coarsening
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
+  hypre_preconditioner_pt->amg_coarsening() = 1;
+
+  // Now create 1v22 cycles
+  
+  // Set the number of amg smoother iterations. This is usually set to 2
+  hypre_preconditioner_pt->amg_smoother_iterations()=2;
+
+  // Set the amg_iterations, this is usually set to 1, for V(2,2)
+  // there is only one of them... I think that's what I means, 
+  // the two is the smoother... pre and post smoothing.
+  hypre_preconditioner_pt
+      ->set_amg_iterations(1);
+
+  return hypre_preconditioner_pt;
+ }
+
+ Preconditioner* set_hypre_JhalfStrnStrOneVTwoTwoRS()
+ {
+  // Create a new HyprePreconditioner
+  HyprePreconditioner* hypre_preconditioner_pt = new HyprePreconditioner;
+
+  // Set the smoothers
+  //   0 = Jacobi 
+  //   1 = Gauss-Seidel, sequential
+  //       (very slow in parallel!)
+  //   2 = Gauss-Seidel, interior points in parallel, boundary sequential
+  //       (slow in parallel!)
+  //   3 = hybrid Gauss-Seidel or SOR, forward solve
+  //   4 = hybrid Gauss-Seidel or SOR, backward solve
+  //   6 = hybrid symmetric Gauss-Seidel or SSOR
+  //
+  //   As per Richard p91, we use Jacobi with a damping param if 0.5
+  hypre_preconditioner_pt->amg_simple_smoother() = 0;
+  // Set smoother damping
+  hypre_preconditioner_pt->amg_damping() = 0.5;
+
+
+  // Set the strength to 0.25
+  hypre_preconditioner_pt->amg_strength() = 0.668;
+
+  // Now set the coarsening
+  //    0 = CLJP (parallel coarsening using independent sets)
+  //    1 = classical RS with no boundary treatment (not recommended
+  //        in parallel)
+  //    3 = modified RS with 3rd pass to add C points on the boundaries
+  //    6 = Falgout (uses 1 then CLJP using interior coarse points as
+  //        first independent set) THIS IS DEFAULT ON DOCUMENTATION
+  //    8 = PMIS (parallel coarsening using independent sets - lower
+  //        complexities than 0, maybe also slower convergence)
+  //    10= HMIS (one pass RS on each processor then PMIS on interior
+  //        coarse points as first independent set)
+  //    11= One pass RS on each processor (not recommended)
+  hypre_preconditioner_pt->amg_coarsening() = 1;
+
+  // Now create 1v22 cycles
+  
+  // Set the number of amg smoother iterations. This is usually set to 2
+  hypre_preconditioner_pt->amg_smoother_iterations()=2;
+
+  // Set the amg_iterations, this is usually set to 1, for V(2,2)
+  // there is only one of them... I think that's what I means, 
+  // the two is the smoother... pre and post smoothing.
+  hypre_preconditioner_pt
+      ->set_amg_iterations(1);
+
+  return hypre_preconditioner_pt;
+ }
+
+
+}
+
+#endif
+
+
+
 namespace PreconditionerHelpers
 {
 
@@ -49,6 +169,10 @@ namespace PreconditionerHelpers
 
   const static int F_solver_exact = 0;
   const static int F_solver_amg = 1;
+  const static int F_solver_blkdiag_amg = 9090;
+  const static int F_solver_upper_amg = 9091;
+  const static int F_solver_lower_amg = 9092;
+  const static int F_solver_full_amg = 9093;
   int F_solver = -1;
 
   const static int P_solver_exact = 0;
@@ -568,7 +692,7 @@ namespace PreconditionerHelpers
       return hypre_string;
     }
 
-  inline HyprePreconditioner* 
+  inline Preconditioner* 
     create_f_p_amg_preconditioner(AMGParameters& amg_param,
         const int& f_or_p)
     {
@@ -580,7 +704,7 @@ namespace PreconditionerHelpers
           NS_f_prec_str = "";
           return 0;
         }
-        else
+        else if(F_solver == F_solver_amg)
         {
           if(amg_param.Print_parameters)
           {
@@ -592,6 +716,158 @@ namespace PreconditionerHelpers
           NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
           return h_prec_pt;
         }
+        else if(F_solver == F_solver_blkdiag_amg)
+        {
+#ifdef OOMPH_HAS_HYPRE
+      // Create a block diagonal preconditioner.
+      Preconditioner* f_preconditioner_pt =
+        new BlockDiagonalPreconditioner<CRDoubleMatrix>;
+
+      // Now, since f_precondtioner_pt is a Preconditioner*, it needs to be
+      // caste to a block diagonal one if we want to call functions from
+      // that class.
+      dynamic_cast<BlockDiagonalPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
+
+
+      // All done. The below is prints the Hypre settings.
+      //if(amg_param.Print_parameters)
+      {
+        oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
+        oomph_info << "RAYINFO: Doing DIAGONAL " << std::endl; 
+      
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+  
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
+        // Convert the above to a hypre preconditioner.
+       HyprePreconditioner* h_prec_pt 
+         = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
+
+        // Now print it out to see the settings!
+        print_hypre_parameters(h_prec_pt);
+        NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+      }
+
+      return f_preconditioner_pt;
+#endif
+ 
+        }
+        else if(F_solver == F_solver_upper_amg)
+        {
+#ifdef OOMPH_HAS_HYPRE
+
+      // Create a block triangular preconditioner.
+      Preconditioner* f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use upper triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->upper_triangular();
+
+      // Set the Hypre preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
+
+      // All done. The below is prints the Hypre settings.
+      //if(amg_param.Print_parameters)
+      {
+        oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
+      
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+  
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
+        // Convert the above to a hypre preconditioner.
+       HyprePreconditioner* h_prec_pt 
+         = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
+
+        // Now print it out to see the settings!
+        print_hypre_parameters(h_prec_pt);
+        oomph_info << "RAYINFO: Doing UPPER triangular AMG" << std::endl;
+        NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+      }
+
+      return f_preconditioner_pt;
+
+#endif
+ 
+        }
+        else if(F_solver == F_solver_lower_amg)
+        {
+#ifdef OOMPH_HAS_HYPRE
+
+      // Create a block triangular preconditioner.
+      Preconditioner* f_preconditioner_pt =
+        new BlockTriangularPreconditioner<CRDoubleMatrix>;
+
+      // Use upper triangular preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->lower_triangular();
+
+      // Set the Hypre preconditioner.
+      dynamic_cast<BlockTriangularPreconditioner<CRDoubleMatrix>* >
+      (f_preconditioner_pt)->set_subsidiary_preconditioner_function
+      (Hypre_Subsidiary_Preconditioner_Helper::set_hypre_JhalfStrnSimOneVTwoTwoRS);
+
+      // All done. The below is prints the Hypre settings.
+      //if(amg_param.Print_parameters)
+      {
+        oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
+      
+
+      // Check the Hypre values used, we encapsulate this so we can easily 
+      // take it out later.
+  
+        // Create a new preconditioner with the above function we set.
+        Preconditioner* check_prec_pt = 
+          Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
+        // Convert the above to a hypre preconditioner.
+       HyprePreconditioner* h_prec_pt 
+         = checked_dynamic_cast<HyprePreconditioner*>(check_prec_pt);
+
+        // Now print it out to see the settings!
+        oomph_info << "RAYINFO: Doing LOWER triangular AMG" << std::endl;
+        print_hypre_parameters(h_prec_pt);
+        NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+      }
+
+      return f_preconditioner_pt;
+
+#endif
+ 
+        }
+        else if(F_solver == F_solver_full_amg)
+        {
+      Preconditioner* f_preconditioner_pt 
+        = Hypre_Subsidiary_Preconditioner_Helper::
+          set_hypre_JhalfStrnSimOneVTwoTwoRS();
+        // Convert the above to a hypre preconditioner.
+       HyprePreconditioner* h_prec_pt 
+         = checked_dynamic_cast<HyprePreconditioner*>(
+             f_preconditioner_pt);
+
+        // Now print it out to see the settings!
+        oomph_info << "RAYINFO: F amg parameters are: " << std::endl; 
+        oomph_info << "RAYINFO: Doing FULL AMG" << std::endl;
+        print_hypre_parameters(h_prec_pt);
+        NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+
+
+      return f_preconditioner_pt;
+        }
+
       }
       else
       {
