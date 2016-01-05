@@ -1,5 +1,5 @@
 noinst_PROGRAMS= \
-sq_lgr_mod_AMG_diag \
+sq_lgr_standard_NSE \
 sq_lgr_simple \
 sq_lgr
 
@@ -10,9 +10,9 @@ sq_lgr_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
-sq_lgr_mod_AMG_diag_SOURCES = sq_lgr_mod_AMG_diag.cc
+sq_lgr_standard_NSE_SOURCES = sq_lgr_standard_NSE.cc
 
-sq_lgr_mod_AMG_diag_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+sq_lgr_standard_NSE_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
 #------------------------------------------------------------------------
