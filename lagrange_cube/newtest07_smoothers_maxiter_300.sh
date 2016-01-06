@@ -118,8 +118,10 @@ VISLIST="0 1"
 
 # As per FIS p364
 REYLIST="100 200"
-# J1v22 J2v22 GS1v22 GS2v22 Euclid
-PRECLIST="1 2 3 4 5"
+# J1v22 J2v22 GS1v22 GS2v22 Euclid NOTE: We do the Jacobi tests only, these
+# failed since the max iter was too small (100), I have now set it to 300.
+# Let's hope it still works... i.e. we don't run out of memory
+PRECLIST="1 2"
 NOELLIST="4 6 8 10 12 14 16 18 20"
 
 for VIS in $VISLIST
@@ -209,7 +211,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l vhighmem' >> $QSUBFILE
+echo '#$ -l highmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
