@@ -91,7 +91,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   // there is only one of them... I think that's what I means, 
   // the two is the smoother... pre and post smoothing.
   hypre_preconditioner_pt
-      ->set_amg_iterations(1);
+      ->set_amg_iterations(2);
 
   return hypre_preconditioner_pt;
  }
@@ -118,7 +118,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
 
   // Set the strength to 0.25
-  hypre_preconditioner_pt->amg_strength() = 0.668;
+  hypre_preconditioner_pt->amg_strength() = 0.75;
 
   // Now set the coarsening
   //    0 = CLJP (parallel coarsening using independent sets)
@@ -143,7 +143,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
   // there is only one of them... I think that's what I means, 
   // the two is the smoother... pre and post smoothing.
   hypre_preconditioner_pt
-      ->set_amg_iterations(1);
+      ->set_amg_iterations(2);
 
   return hypre_preconditioner_pt;
  }
