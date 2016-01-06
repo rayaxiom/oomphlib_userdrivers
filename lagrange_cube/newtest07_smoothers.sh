@@ -84,8 +84,8 @@ PPARAM="--p_solver 1 --p_amg_iter 2 --p_amg_smiter 1 --p_amg_sim_smoo 0 --p_amg_
 JacOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5 --f_amg_str 0.25 --print_f_hypre"
 JacOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5 --f_amg_str 0.75 --print_f_hypre"
 
-JacTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.25 --print_f_hypre"
-JacTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.75 --print_f_hypre"
+JacTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5 --f_amg_str 0.25 --print_f_hypre"
+JacTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5 --f_amg_str 0.75 --print_f_hypre"
 
 GSOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25 --print_f_hypre"
 GSOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75 --print_f_hypre"
@@ -96,7 +96,7 @@ GSTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_
 EuclidOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.25 --print_f_hypre"
 EuclidOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.75 --print_f_hypre"
 
-PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 100 --itstimedir $RESITS_DIR --solver_type 2 --w_solver 0 --ns_solver 1 --ang 30"
+PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 300 --itstimedir $RESITS_DIR --solver_type 2 --w_solver 0 --ns_solver 1 --ang 30"
 
 
 function gen_tests()
