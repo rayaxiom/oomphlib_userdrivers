@@ -122,8 +122,7 @@ ANGLIST="0 67"
 REYLIST="10 100 200 500"
 
 # Up to 
-NOELLIST="4 6 8 10 12 14 16"
-#NOELLIST="4 6 8 10 12 14 16"
+NOELLIST="16"
 
 for PREC in $PRECLIST
 do
@@ -204,7 +203,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 

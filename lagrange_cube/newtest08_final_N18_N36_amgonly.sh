@@ -91,7 +91,7 @@ Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_it
 Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75 --print_f_hypre"
 
 
-PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 100 --itstimedir $RESITS_DIR --solver_type 2 --w_solver 0 --ns_solver 1"
+PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 100 --itstimedir $RESITS_DIR --solver_type 2"
 
 
 
