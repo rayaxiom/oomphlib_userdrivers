@@ -111,7 +111,7 @@ function gen_tests()
 # This is set according to the list above.
 # Only LU and ELSC for this test, up to Noel = 128
 PRECPARAM=""
-PRECLIST="1 2 3"
+PRECLIST="1 2"
 
 # Sim / Str
 VISLIST="0 1"
