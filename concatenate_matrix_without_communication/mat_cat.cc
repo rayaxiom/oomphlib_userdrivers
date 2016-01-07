@@ -249,15 +249,27 @@ int main(int argc, char* argv[])
  MPI_Helpers::init(argc,argv);
 #endif
 
+  // Store command line arguments
+  CommandLineArgs::setup(argc,argv);
+
+  unsigned nn = 0;
+  CommandLineArgs::specify_command_line_flag("--nn", &nn);
+
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags();
  // Get the global oomph-lib communicator 
  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
- unsigned nblock_row = 3;
- unsigned nblock_col = 3;
+ oomph_info << "nn is: " << nn << std::endl;
+ oomph_info << "nrow will be: " << 4*nn << std::endl;
+ oomph_info << "nnz will be: " << 4*nn*4*nn << std::endl;
+ 
+
+ unsigned nblock_row = 4;
+ unsigned nblock_col = 4;
 
 
-
- unsigned nn = 100;
 
  // Supply the dimensions of the matrices to concatenate.
  // The matrices must be in the order: first row, then along the columns,
@@ -269,7 +281,22 @@ int main(int argc, char* argv[])
  // (7,7) (7,5) (7,3)
  // (5,7) (5,5) (5,3)
  // (3,7) (3,5) (3,3)
- unsigned dimarray[] = {nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn,nn};
+ unsigned dimarray[] = {nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn, // 5
+                        nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn, // 10
+                        nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn,
+                        nn,nn, // 15
+                        nn,nn}; // 16
   
  // The data structure to store the pointers to matrices.
  DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
@@ -310,7 +337,10 @@ int main(int argc, char* argv[])
   row_distribution0_pt,mat0_pt,result_matrix0);
  double time_end = TimingHelpers::timer();
  double difftime = time_end - time_start;
- oomph_info << "nn = " << nn << ", " << difftime << std::endl;
+ oomph_info << "sub block size = " << nn << std::endl; 
+ oomph_info << "full matrix size = " << result_matrix0.nrow() << std::endl;
+ oomph_info << "nnz = " << result_matrix0.nnz() << std::endl;
+ oomph_info << "Time to cat = " << difftime << std::endl;
 
  // Clear the result matrix.
  result_matrix0.clear();

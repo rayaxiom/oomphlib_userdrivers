@@ -1,0 +1,35 @@
+#!/bin/bash
+#$ -S /bin/bash
+#$ -cwd
+#$ -V
+#$ -l highmem
+
+
+#$ -t 1-5
+
+
+# This should be ran in the scratch file system.
+# Thus results directory 'res_iterations' may not exist.
+# We create it if it does not exist.
+
+if [ ! -d "res_iterations" ]; then
+  mkdir strong_res_iterations
+fi
+
+
+if [ ! -d "qsub_output" ]; then
+  mkdir strong_qsub_output
+fi
+
+
+# Task id 1 will read line 1 from test_list.list
+# Task id 2 will read line 2 from test_list.list
+# and so on...
+# Each line contains the run command with a different set of parameters
+
+
+FULL_RUNCOMMAND=`awk "NR==$SGE_TASK_ID" strong_test_list.list`
+$FULL_RUNCOMMAND
+
+
+mv strong_scaling.qsub.*.$SGE_TASK_ID ./strong_scaling_qsub_output/

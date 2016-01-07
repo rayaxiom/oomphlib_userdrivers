@@ -1,0 +1,5 @@
+mpirun -np 1 ./mat_cat --nn 1118
+mpirun -np 1 ./mat_cat --nn 1581
+mpirun -np 1 ./mat_cat --nn 2236
+mpirun -np 1 ./mat_cat --nn 3162
+mpirun -np 1 ./mat_cat --nn 4472
