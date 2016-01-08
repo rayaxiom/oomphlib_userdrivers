@@ -28,6 +28,7 @@
 
 // Oomph-lib includes
 #include "generic.h"
+#include <limits>       // std::numeric_limits
 
 using namespace oomph;
 
@@ -304,7 +305,7 @@ int main(int argc, char* argv[])
  // Create the matrice to concatenate.
  create_matrices_to_cat(dimarray,comm_pt,mat0_pt);
 
- /////////////////////////////////////////////////////////////////////////////
+ ///////////////////////////////////////////////////////////////////////////
   
  // stuff for the output
  // const unsigned my_rank = comm_pt->my_rank();
@@ -323,13 +324,16 @@ int main(int argc, char* argv[])
    row_distribution0_pt.push_back(mat0_pt(block_row_i,0)
                                   ->distribution_pt());
   }
-
+  LinearAlgebraDistribution tmp_distribution;
+  LinearAlgebraDistributionHelpers::concatenate(row_distribution0_pt,
+                                                tmp_distribution);
  // Perform the concatenation.
  // Note: Because this is a square block matrix, we only need to pass one
  // Vector of distributions. This will be used for both row_distribution_pt
  // and col_distribution_pt in the concatenate_without_communication(...)
  // function.
  CRDoubleMatrix result_matrix0;
+ result_matrix0.build(&tmp_distribution);
 
 
  double time_start = TimingHelpers::timer();
@@ -341,13 +345,19 @@ int main(int argc, char* argv[])
  oomph_info << "full matrix size = " << result_matrix0.nrow() << std::endl;
  oomph_info << "nnz = " << result_matrix0.nnz() << std::endl;
  oomph_info << "Time to cat = " << difftime << std::endl;
+// std::cout << "Minimum value for int: " << std::numeric_limits<int>::min() << '\n';
+// std::cout << "Maximum value for int: " << std::numeric_limits<int>::max() << '\n';
+// std::cout << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
+// std::cout << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
+// std::cout << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
+ 
 
  // Clear the result matrix.
  result_matrix0.clear();
 
  // There are 3 by 3 block matrices to delete.
- nblock_row = 3;
- nblock_col = 3;
+ nblock_row = 4;
+ nblock_col = 4;
  // Delete the matrices.
  for (unsigned row_i = 0; row_i < nblock_row; row_i++) 
   {
