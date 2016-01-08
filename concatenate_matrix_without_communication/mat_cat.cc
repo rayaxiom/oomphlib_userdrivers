@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
 
  double time_start = TimingHelpers::timer();
  CRDoubleMatrixHelpers::concatenate_without_communication(
-  row_distribution0_pt,mat0_pt,result_matrix0);
+  row_distribution0_pt,mat0_pt,result_matrix0, true);
  double time_end = TimingHelpers::timer();
  double difftime = time_end - time_start;
  oomph_info << "sub block size = " << nn << std::endl; 
