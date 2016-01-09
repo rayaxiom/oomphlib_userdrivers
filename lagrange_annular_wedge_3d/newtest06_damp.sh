@@ -82,8 +82,9 @@ LPARAMEXACT="--w_solver 0 --ns_solver 0"
 LPARAMLSC="--w_solver 0 --ns_solver 1"
 
 PPARAM="--p_solver 1 --p_amg_iter 2 --p_amg_smiter 1 --p_amg_sim_smoo 0 --p_amg_damp 0.668  --p_amg_str 0.7 --p_amg_coarse 1 --print_p_hypre"
-FPARAMJACSIM="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_sim_smoo 1 --f_amg_coarse 1 --f_amg_str 0.25 --print_f_hypre"
-FPARAMJACSTR="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_sim_smoo 1 --f_amg_coarse 1 --f_amg_str 0.75 --print_f_hypre"
+FPARAMJAC="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_sim_smoo 0 --f_amg_coarse 1 --f_amg_str 0.90 --print_f_hypre"
+# In this test, both sim and stress divergence form uses strn = 0.9
+# See newtest04 for the reason.
 # I took out --f_amg_damp from the above since we set it below.
 
 PROBPARAM="--time_type 1 --solver_type 2 --dist_prob --max_solver_iter 300 --dt 0.01 --time_start 0.0 --time_end 0.5 --itstimedir $RESITS_DIR --prob_id 0"
@@ -111,11 +112,8 @@ NOELLIST="4 6 8 10 12 14 16 18 20"
 
 for VIS in $VISLIST
 do
-if [ "$VIS" -eq "0" ]; then
-  FPARAM="$FPARAMJACSIM"
-else
-  FPARAM="$FPARAMJACSTR"
-fi
+  FPARAM="$FPARAMJAC"
+
   for REY in $REYLIST
   do
     for DAMP in $DAMPLIST
@@ -124,7 +122,7 @@ fi
       do
 # Note: In this test, the FPARAM is taken out. This is because we're testing
 # block diagonal, triangular, etc....
-echo "mpirun -np 1 ./$PROGRAM $PROBPARAM --visc $VIS --rey $REY $LPARAMLSC $PPARAM $FPARAM --f_amg_str $DAMP --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PROBPARAM --visc $VIS --rey $REY $LPARAMLSC $PPARAM $FPARAM --f_amg_damp $DAMP --noel $NOEL" >> $TEST_LIST
       done
     done
   done
