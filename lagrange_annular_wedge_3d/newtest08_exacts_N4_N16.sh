@@ -50,12 +50,12 @@ mkdir $TESTFOLDER3
 
 ############################################################################
 
-###############################################################################
+############################################################################
 # Now we are inside the test folder (FILEBASE)
 
 # Make the results directory. I have it in an if statement...
-# Because some times when it exists, we wish to reuse it... of course not this 
-# time...
+# Because some times when it exists, we wish to reuse it... 
+# of course not this time...
 if [ ! -d "$RESITS_DIR" ]; then
   mkdir $RESITS_DIR
 fi
@@ -116,7 +116,7 @@ function gen_tests()
 # This is set according to the list above.
 # Only LU and ELSC for this test, up to Noel = 128
 PRECPARAM=""
-PRECLIST="1 2 3"
+PRECLIST="1 2"
 
 # Sim / Str
 VISLIST="0 1"
@@ -205,7 +205,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
