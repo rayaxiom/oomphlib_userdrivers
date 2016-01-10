@@ -93,20 +93,20 @@ PROBPARAM="--time_type 1 --solver_type 2 --dist_prob --max_solver_iter 300 --dt 
 # --rey 0
 # --noel 6
 
-JacOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.25RRR --print_f_hypre"
-JacOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.75RRR --print_f_hypre"
+JacOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.9 --print_f_hypre"
+#JacOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.75RRR --print_f_hypre"
 
-JacTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.25RRR --print_f_hypre"
-JacTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.75RRR --print_f_hypre"
+JacTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.9 --print_f_hypre"
+#JacTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.5RRR --f_amg_str 0.75RRR --print_f_hypre"
 
-GSOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25RRR --print_f_hypre"
-GSOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
+GSOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.9 --print_f_hypre"
+#GSOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
 
-GSTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25RRR --print_f_hypre"
-GSTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
+GSTwoVTwoSim="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.9 --print_f_hypre"
+#GSTwoVTwoStr="--f_solver 1 --f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
 
-EuclidOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.25RRR --print_f_hypre"
-EuclidOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
+EuclidOneVTwoSim="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.9 --print_f_hypre"
+#EuclidOneVTwoStr="--f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.75RRR --print_f_hypre"
 
 PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 100 --itstimedir $RESITS_DIR --solver_type 2 --w_solver 0 --ns_solver 1 --ang 30"
 
@@ -131,9 +131,9 @@ VISLIST="0 1"
 # As per FIS p364
 REYLIST="100 200"
 # J1v22 J2v22 GS1v22 GS2v22 Euclid
-PRECLIST="1 2 3 4 5"
-NOELLIST="4"
-#NOELLIST="4 6 8 10 12 14 16 18 20"
+PRECLIST="1 2 3 4"
+#NOELLIST="4"
+NOELLIST="4 6 8 10 12 14 16 18 20"
 
 for VIS in $VISLIST
 do
@@ -162,19 +162,19 @@ if [ "$VIS" -eq "0" ]; then
 else
   case "$PREC" in
     1)
-      FPARAM="$JacOneVTwoStr"
+      FPARAM="$JacOneVTwoSim"
       ;;
     2)
-      FPARAM="$JacTwoVTwoStr"
+      FPARAM="$JacTwoVTwoSim"
       ;;
     3)
-      FPARAM="$GSOneVTwoStr"
+      FPARAM="$GSOneVTwoSim"
       ;;
     4)
-      FPARAM="$GSTwoVTwoStr"
+      FPARAM="$GSTwoVTwoSim"
       ;;
     5)
-      FPARAM="$EuclidOneVTwoStr"
+      FPARAM="$EuclidOneVTwoSim"
       ;;
   esac
 fi
