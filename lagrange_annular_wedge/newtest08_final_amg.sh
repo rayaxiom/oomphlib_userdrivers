@@ -79,23 +79,23 @@ TEST_LIST=""
 # --p_amg_smiter 1 2XV(1,1)
 PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
 
+# Create preconditioner params for:
+# LU LU
+# LU ELSC
+# LU ALSC SIM
+# LU ALSC STR
+Prec_WLu_NSLu="--w_solver 0 --ns_solver 0"
+Prec_WLu_NSLSCExact="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
+# WE DO NOT DO AMG IN THIS TEST.
+# I NEED TO CONFIRM WITH MILAN BEFORE I DO.
+Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.50"
+Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.80"
 
-JacOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.50"
-JacOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.80"
 
-JacTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.50"
-JacTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 0 --f_amg_damp 0.8 --f_amg_str 0.80"
+#Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 --f_solver 96 $PPARAM --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.25"
+#Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 --f_solver 96 $PPARAM --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.668"
 
-GSOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.50"
-GSOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.80"
-
-GSTwoVTwoSim="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.50"
-GSTwoVTwoStr="--f_amg_iter 2 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.80"
-
-EuclidOneVTwoSim="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.50"
-EuclidOneVTwoStr="--f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --f_amg_damp -1 --f_amg_str 0.80"
-
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 200 --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --itstimedir $RESITS_DIR --solver_type 2 --bc 0 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 200 --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --itstimedir $RESITS_DIR --solver_type 2 --bc 0 --print_hypre"
 
 
 
@@ -113,65 +113,58 @@ function gen_tests()
 # --noel 4, 8, 16, 32, 64, 128
 
 # This is set according to the list above.
+# Only LU and ELSC for this test, up to Noel = 128
 PRECPARAM=""
+PRECLIST="3"
+
+# Sim / Str
 VISLIST="0 1"
 
 # As per FIS p364
-REYLIST="0 100 200"
-# J1v22 J2v22 GS1v22 GS2v22 Euclid
-PRECLIST="1 2 3 4 5"
+REYLIST="0 10 100 200"
+
+# Up to 
 NOELLIST="4 8 16 32 64 128 256 512"
 
+for PREC in $PRECLIST
+do
 for VIS in $VISLIST
 do
-  for REY in $REYLIST
-  do
-    for PREC in $PRECLIST
-    do
+
 if [ "$VIS" -eq "0" ]; then
   case "$PREC" in
     1)
-      PRECPARAM="$JacOneVTwoSim"
+      PRECPARAM="$Prec_WLu_NSLu"
       ;;
     2)
-      PRECPARAM="$JacTwoVTwoSim"
+      PRECPARAM="$Prec_WLu_NSLSCExact"
       ;;
     3)
-      PRECPARAM="$GSOneVTwoSim"
-      ;;
-    4)
-      PRECPARAM="$GSTwoVTwoSim"
-      ;;
-    5)
-      PRECPARAM="$EuclidOneVTwoSim"
+      PRECPARAM="$Prec_WLu_NSLSCAMGSim"
       ;;
   esac
 else
   case "$PREC" in
     1)
-      PRECPARAM="$JacOneVTwoStr"
+      PRECPARAM="$Prec_WLu_NSLu"
       ;;
     2)
-      PRECPARAM="$JacTwoVTwoStr"
+      PRECPARAM="$Prec_WLu_NSLSCExact"
       ;;
     3)
-      PRECPARAM="$GSOneVTwoStr"
-      ;;
-    4)
-      PRECPARAM="$GSTwoVTwoStr"
-      ;;
-    5)
-      PRECPARAM="$EuclidOneVTwoStr"
+      PRECPARAM="$Prec_WLu_NSLSCAMGStr"
       ;;
   esac
 fi
-      for NOEL in $NOELLIST
-      do
-echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM $PPARAM --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
-      done
-    done
-  done
-done
+  for REY in $REYLIST
+  do
+    for NOEL in $NOELLIST
+    do
+echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
+    done # NOEL
+  done # REY
+done # VIS
+done # PREC
 } # End of gen_tests
 
 ############################################################################
@@ -258,6 +251,7 @@ CLEANUPLINE="mv $QSUBFILE"
 CLEANUPLINE+='.*.$SGE_TASK_ID '
 CLEANUPLINE+=" ./$QSUBOUTPUT_DIR/"
 echo $CLEANUPLINE >> $QSUBFILE
+
 ############################################################################
 ############################################################################
 ############################################################################
@@ -274,10 +268,10 @@ mkdir ./$TESTFOLDER1/$RESITS_DIR
 mkdir ./$TESTFOLDER2/$RESITS_DIR
 mkdir ./$TESTFOLDER3/$RESITS_DIR
 
-############################################################################
-############################################################################
-############################################################################
-############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+###############################################################################
 ################### Now check if I'm on csf, if so, delete the related scratch
 # and copy the current stuff there.
 if [[ $HOME == *mbax5ml3* ]]
