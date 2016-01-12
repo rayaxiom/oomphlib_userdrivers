@@ -423,8 +423,7 @@ CubeProblem<ELEMENT>::CubeProblem()
  ExactBlockPreconditioner<CRDoubleMatrix>* exact_block_prec_pt = 
    checked_static_cast<ExactBlockPreconditioner<CRDoubleMatrix>* >(Prec_pt);
 
- exact_block_prec_pt->set_nmesh(1);
- exact_block_prec_pt->set_mesh(0,Bulk_mesh_pt);
+ exact_block_prec_pt->push_back_mesh(0,Bulk_mesh_pt);
  exact_block_prec_pt
    ->set_subsidiary_preconditioner_function(
        &RayPreconditionerCreationFunctions::create_hypre_preconditioner);
