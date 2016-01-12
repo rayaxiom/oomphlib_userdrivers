@@ -185,6 +185,8 @@ namespace PreconditionerHelpers
 
   int Viscous_form = -1;
 
+  unsigned Amg_print_level = 0;
+
 
 
 
@@ -431,6 +433,9 @@ namespace PreconditionerHelpers
     // block diagonal/triangular test
     CommandLineArgs::specify_command_line_flag(
         "--viscous",&Viscous_form);
+
+    CommandLineArgs::specify_command_line_flag(
+        "--amg_level",&Amg_print_level);
 
     // double
     CommandLineArgs::specify_command_line_flag(
@@ -723,6 +728,9 @@ namespace PreconditionerHelpers
           HyprePreconditioner* h_prec_pt 
             = create_hypre_preconditioner(amg_param);
           NS_f_prec_str = get_hypre_preconditioner_string(h_prec_pt);
+          h_prec_pt->amg_print_level() = Amg_print_level;
+          oomph_info << "AMG level is: " << h_prec_pt->amg_print_level() << std::endl; 
+          
           return h_prec_pt;
         }
         else if(F_solver == F_solver_blkdiag_amg)
