@@ -66,6 +66,8 @@ namespace ProblemHelpers
 
   const double Length = 1.0;
 
+  bool Vanilla = false;
+
 
 
   inline void specify_command_line_flags()
@@ -73,6 +75,7 @@ namespace ProblemHelpers
     CommandLineArgs::specify_command_line_flag("--prob_id", &Prob_id);
     CommandLineArgs::specify_command_line_flag("--ang", &Ang_deg);
     CommandLineArgs::specify_command_line_flag("--noel",&Noel);
+    CommandLineArgs::specify_command_line_flag("--vanilla");
   }
 
   inline void setup_command_line_flags()
@@ -101,6 +104,15 @@ namespace ProblemHelpers
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION); 
+    }
+
+    if(CommandLineArgs::command_line_flag_has_been_set("--vanilla"))
+    {
+      Vanilla = true;
+    }
+    else
+    {
+      Vanilla = false;
     }
   }
 
@@ -372,6 +384,8 @@ public:
      // a new time step.
      Doc_linear_solver_info_pt->clear_current_time_step();
 
+     if(!ProbHelpers::Vanilla)
+     {
      // Inflow in upper half of inflow boundary
      const unsigned ibound=Inflow_boundary; 
      const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
@@ -426,6 +440,63 @@ public:
          }
        }
      }
+     }// if !Vanilla
+     else
+     {
+     // Inflow in upper half of inflow boundary
+     const unsigned ibound=Inflow_boundary; 
+     const unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
+     for (unsigned inod=0;inod<num_nod;inod++)
+     {
+       Node* nod_pt=Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+
+       // Only set if it is on a single boundary
+
+//       std::set<unsigned>* bnd_pt = 0;
+
+//       nod_pt->get_boundaries_pt(bnd_pt);
+
+//       if(bnd_pt != 0)
+       {
+//         if(bnd_pt->size() < 2)
+         {
+           const double x=nod_pt->x(0);
+           const double y=nod_pt->x(1);
+           const double z=nod_pt->x(2);
+
+
+           // Locally cache the angle for convenience.
+//           double ang_rad = ProbHelpers::Ang_rad;
+
+           // Rotate x y and z back
+//           Vector<double>x_new;
+//           ProbHelpers::rotate_backward(
+//               x,y,z,-ang_rad,-ang_rad,-ang_rad,x_new);
+
+           if((y > 0.5) && (z > 0.5))
+           {
+             const double time=time_pt()->time();
+             double ux = ProbHelpers::get_prescribed_inflow_for_quarter
+               (time,y,z);
+
+             // Now rotate the velocity profile
+//             Vector<double>u_new;
+//             ProbHelpers::rotate_forward(
+//                 ux,0,0,ang_rad,ang_rad,ang_rad,u_new);
+
+             nod_pt->set_value(0,ux);
+           }
+           else
+           {
+             nod_pt->set_value(0,0.0);
+           }
+      nod_pt->set_value(1,0.0);
+      nod_pt->set_value(2,0.0);
+         }
+       }
+     }
+
+     } // else Vanilla
    }
  } // end of actions_before_implicit_timestep
 
@@ -436,16 +507,22 @@ public:
 
  void actions_before_distribute()
  {
+   if(!ProbHelpers::Vanilla)
+   {
    GenProbHelpers::delete_flux_elements(Surface_mesh_pt);
    rebuild_global_mesh();
+   }
  }
 
  void actions_after_distribute()
  {
+   if(!ProbHelpers::Vanilla)
+   {
    create_parall_outflow_lagrange_elements(Outflow_boundary,
        Bulk_mesh_pt,
        Surface_mesh_pt);
    rebuild_global_mesh();
+   }
  }
 
 
@@ -649,11 +726,19 @@ CubeProblem<ELEMENT>::CubeProblem()
   else if((GenProbHelpers::Time_type == GenProbHelpers::Time_type_ADAPT)
       ||GenProbHelpers::Time_type == GenProbHelpers::Time_type_FIXED)
   {
+    if(ProbHelpers::Vanilla)
+    {
+      Bulk_mesh_pt = new SimpleCubicMesh<ELEMENT>(noel,noel,noel,
+          length,length,length,time_stepper_pt());
+    }
+    else
+    {
     Bulk_mesh_pt = 
       new SlopingCubicMesh<ELEMENT>(noel,noel,noel, 
           length, length, length,
           ang_rad,ang_rad,ang_rad,
           time_stepper_pt());
+    }
   }
   else
   {
@@ -698,6 +783,8 @@ CubeProblem<ELEMENT>::CubeProblem()
 //    new SimpleCubicMesh<ELEMENT>(n_x,n_y,n_z,l_x,l_y,l_z);
 
 
+  if(!ProbHelpers::Vanilla)
+  {
   // Create "surface mesh" that will contain only the prescribed-traction 
   // elements.
   Surface_mesh_pt = new Mesh;
@@ -709,10 +796,18 @@ CubeProblem<ELEMENT>::CubeProblem()
   create_parall_outflow_lagrange_elements(Outflow_boundary,
                                           Bulk_mesh_pt,
                                           Surface_mesh_pt);
+  }
 
+  if(ProbHelpers::Vanilla)
+  {
+  add_sub_mesh(Bulk_mesh_pt);
+  }
+  else
+  {
   // Add the two sub meshes to the problem
   add_sub_mesh(Bulk_mesh_pt);
   add_sub_mesh(Surface_mesh_pt);
+  }
 
   // Combine all submeshes into a single Mesh
   build_global_mesh();
@@ -736,6 +831,7 @@ CubeProblem<ELEMENT>::CubeProblem()
   } // end loop over boundaries!
 
 
+  if(!ProbHelpers::Vanilla)
   {
     unsigned ibound=Outflow_boundary;
     unsigned num_nod= Bulk_mesh_pt->nboundary_node(ibound);
@@ -775,6 +871,25 @@ CubeProblem<ELEMENT>::CubeProblem()
       }
     }
   }
+  else
+  {
+    unsigned ibound = Outflow_boundary;
+    unsigned num_nod = Bulk_mesh_pt->nboundary_node(ibound);
+    for(unsigned inod = 0; inod < num_nod; inod++)
+    {
+      Node* nod_pt = Bulk_mesh_pt->boundary_node_pt(ibound,inod);
+      // Only free if node is ONLY on a single boundary
+      std::set<unsigned>* bnd_pt=0;
+      nod_pt->get_boundaries_pt(bnd_pt);
+      if(bnd_pt != 0)
+      {
+        if(!(nod_pt->is_on_boundary(0)))
+        {
+          if ((nod_pt->x(1)<0.5)&&nod_pt->x(2)<0.5) nod_pt->unpin(0); 
+        }
+      }
+    }
+  }
 
   // Complete the build of all elements so they are fully functional
 
@@ -803,6 +918,8 @@ CubeProblem<ELEMENT>::CubeProblem()
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
+  if(!ProbHelpers::Vanilla)
+  {
   F_matrix_preconditioner_pt
     = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
   P_matrix_preconditioner_pt
@@ -822,6 +939,22 @@ CubeProblem<ELEMENT>::CubeProblem()
       PrecHelpers::W_solver,
       NS_matrix_preconditioner_pt);
 
+  }
+  else
+  {
+  F_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
+  P_matrix_preconditioner_pt
+    = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::P_amg_param,1);
+
+  Prec_pt = PrecHelpers::create_lsc_preconditioner(
+      this,
+      Bulk_mesh_pt,
+      F_matrix_preconditioner_pt,
+      P_matrix_preconditioner_pt);
+
+
+  }
   const double solver_tol = 1.0e-6;
   const double newton_tol = 1.0e-6;
 
@@ -1161,11 +1294,20 @@ std::string create_label()
 //                      + NSPP::create_label() 
 //                      + LPH::create_label() 
 //                      + CL::ang_deg_str() + CL::noel_str();
-  std::string label = ProbHelpers::prob_str()
+std::string label = "";
+  if(!ProbHelpers::Vanilla)
+  {
+  label = ProbHelpers::prob_str()
      + NSHelpers::create_label()
      + PrecHelpers::Lgr_prec_str
      + ProbHelpers::ang_deg_str()
      + ProbHelpers::noel_str();
+  }
+  else
+  {
+    label = "testingvan";
+  }
+
   return label;
 }
 
