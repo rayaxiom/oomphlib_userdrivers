@@ -80,7 +80,7 @@ TEST_LIST=""
 PPARAM="--p_solver 96 --p_amg_coarse 1 --p_amg_str 0.25 --p_amg_sim_smoo 0 --p_amg_damp 0.668 --p_amg_iter 2 --p_amg_smiter 1"
 
 
-PARAM="--dist_prob --prob_id 11  --max_solver_iter 110 --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --bc 0"
+PARAM="--dist_prob --prob_id 11  --max_solver_iter 200 --phi_lo 0.0 --phi_hi 90.0 --r_lo 1.0 --r_hi 3.0 --itstimedir $RESITS_DIR --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --f_solver 96 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_com_smoo 9 --bc 0"
 
 
 
