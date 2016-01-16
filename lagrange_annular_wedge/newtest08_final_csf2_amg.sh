@@ -202,7 +202,8 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l vhighmem' >> $QSUBFILE
+echo '#$ -l timing' >> $QSUBFILE
+echo '#$ -pe smp.pe 2' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
