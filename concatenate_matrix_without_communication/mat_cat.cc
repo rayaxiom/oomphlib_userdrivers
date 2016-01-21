@@ -345,11 +345,11 @@ int main(int argc, char* argv[])
  oomph_info << "full matrix size = " << result_matrix0.nrow() << std::endl;
  oomph_info << "nnz = " << result_matrix0.nnz() << std::endl;
  oomph_info << "Time to cat = " << difftime << std::endl;
-// std::cout << "Minimum value for int: " << std::numeric_limits<int>::min() << '\n';
-// std::cout << "Maximum value for int: " << std::numeric_limits<int>::max() << '\n';
-// std::cout << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
-// std::cout << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
-// std::cout << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
+ oomph_info << "Minimum value for int: " << std::numeric_limits<int>::min() << '\n';
+ oomph_info << "Maximum value for int: " << std::numeric_limits<int>::max() << '\n';
+ oomph_info << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
+ oomph_info << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
+ oomph_info << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
  
 
  // Clear the result matrix.
