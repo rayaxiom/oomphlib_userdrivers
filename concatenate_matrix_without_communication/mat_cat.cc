@@ -262,13 +262,14 @@ int main(int argc, char* argv[])
  // Get the global oomph-lib communicator 
  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
+ unsigned nblock1d = 8;
  oomph_info << "nn is: " << nn << std::endl;
- oomph_info << "nrow will be: " << 4*nn << std::endl;
- oomph_info << "nnz will be: " << 4*nn*4*nn << std::endl;
+ oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
+ oomph_info << "nnz will be: " << nblock1d*nn*nblock1d*nn << std::endl;
  
 
- unsigned nblock_row = 4;
- unsigned nblock_col = 4;
+ unsigned nblock_row = nblock1d;
+ unsigned nblock_col = nblock1d;
 
 
 
@@ -282,22 +283,15 @@ int main(int argc, char* argv[])
  // (7,7) (7,5) (7,3)
  // (5,7) (5,5) (5,3)
  // (3,7) (3,5) (3,3)
- unsigned dimarray[] = {nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn, // 5
-                        nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn, // 10
-                        nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn,
-                        nn,nn, // 15
-                        nn,nn}; // 16
+ unsigned dimarray[] 
+   = {nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn};
   
  // The data structure to store the pointers to matrices.
  DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
@@ -356,8 +350,8 @@ int main(int argc, char* argv[])
  result_matrix0.clear();
 
  // There are 3 by 3 block matrices to delete.
- nblock_row = 4;
- nblock_col = 4;
+// nblock_row = 4;
+// nblock_col = 4;
  // Delete the matrices.
  for (unsigned row_i = 0; row_i < nblock_row; row_i++) 
   {
