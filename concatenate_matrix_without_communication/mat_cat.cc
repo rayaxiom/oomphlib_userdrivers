@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
  // Get the global oomph-lib communicator 
  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
- unsigned nblock1d = 8;
+ unsigned nblock1d = 16;
  oomph_info << "nn is: " << nn << std::endl;
  oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
  oomph_info << "nnz will be: " << nblock1d*nn*nblock1d*nn << std::endl;
@@ -284,15 +284,23 @@ int main(int argc, char* argv[])
  // (5,7) (5,5) (5,3)
  // (3,7) (3,5) (3,3)
  unsigned dimarray[] 
-   = {nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn};
-  
+   = {nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
+      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn};
+
  // The data structure to store the pointers to matrices.
  DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
 
