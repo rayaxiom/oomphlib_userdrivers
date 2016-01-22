@@ -59,12 +59,12 @@ TEST_LIST=""
 
 function gen_tests()
 {
-echo "mpirun -np 1 taskset -c 0 ./mat_cat --nn 10000" >> $TEST_LIST
-echo "mpirun -np 2 taskset -c 0,12 ./mat_cat --nn 10000" >> $TEST_LIST
-echo "mpirun -np 4 taskset -c 0-1,12-13 ./mat_cat --nn 10000" >> $TEST_LIST
-echo "mpirun -np 8 taskset -c 0-3,12-15 ./mat_cat --nn 10000" >> $TEST_LIST
-echo "mpirun -np 16 taskset -c 0-7,12-19 ./mat_cat --nn 10000" >> $TEST_LIST
-echo "mpirun -np 24 taskset -c 0-23 ./mat_cat --nn 10000" >> $TEST_LIST
+echo "mpirun -np 1 taskset -c 0 ./mat_cat --nn 8660" >> $TEST_LIST
+echo "mpirun -np 2 taskset -c 0,12 ./mat_cat --nn 8660" >> $TEST_LIST
+echo "mpirun -np 4 taskset -c 0-1,12-13 ./mat_cat --nn 8660" >> $TEST_LIST
+echo "mpirun -np 8 taskset -c 0-3,12-15 ./mat_cat --nn 8660" >> $TEST_LIST
+echo "mpirun -np 16 taskset -c 0-7,12-19 ./mat_cat --nn 8660" >> $TEST_LIST
+echo "mpirun -np 24 taskset -c 0-23 ./mat_cat --nn 8660" >> $TEST_LIST
 }
 
 
