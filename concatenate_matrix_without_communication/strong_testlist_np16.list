@@ -1,5 +1,0 @@
-mpirun -np 1 taskset -c 0 ./mat_cat --nn 3162
-mpirun -np 2 taskset -c 0,8 ./mat_cat --nn 3162
-mpirun -np 4 taskset -c 0-1,8-9 ./mat_cat --nn 3162
-mpirun -np 8 taskset -c 0-3,8-11 ./mat_cat --nn 3162
-mpirun -np 16 taskset -c 0-15 ./mat_cat --nn 3162
