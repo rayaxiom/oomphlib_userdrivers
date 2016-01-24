@@ -267,6 +267,9 @@ int main(int argc, char* argv[])
   oomph_info << "nn is: " << nn << std::endl;
   oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
   oomph_info << "nnz will be: " << nblock1d*nn*nblock1d*nn << std::endl;
+  unsigned calculatednnz = nblock1d*nn*nblock1d*nn;
+  oomph_info << "nnz from unsigned: " << calculatednnz << std::endl; 
+  
  
 
   unsigned nblock_row = nblock1d;
