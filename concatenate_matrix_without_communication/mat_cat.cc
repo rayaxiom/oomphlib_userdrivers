@@ -254,22 +254,23 @@ int main(int argc, char* argv[])
   CommandLineArgs::setup(argc,argv);
 
   unsigned nn = 0;
+  unsigned nblock1d = 0;
   CommandLineArgs::specify_command_line_flag("--nn", &nn);
+  CommandLineArgs::specify_command_line_flag("--nblock1d", &nblock1d);
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
- // Get the global oomph-lib communicator 
- const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+  // Get the global oomph-lib communicator 
+  const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
 
- unsigned nblock1d = 16;
- oomph_info << "nn is: " << nn << std::endl;
- oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
- oomph_info << "nnz will be: " << nblock1d*nn*nblock1d*nn << std::endl;
+  oomph_info << "nn is: " << nn << std::endl;
+  oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
+  oomph_info << "nnz will be: " << nblock1d*nn*nblock1d*nn << std::endl;
  
 
- unsigned nblock_row = nblock1d;
- unsigned nblock_col = nblock1d;
+  unsigned nblock_row = nblock1d;
+  unsigned nblock_col = nblock1d;
 
 
 
@@ -283,29 +284,27 @@ int main(int argc, char* argv[])
  // (7,7) (7,5) (7,3)
  // (5,7) (5,5) (5,3)
  // (3,7) (3,5) (3,3)
- unsigned dimarray[] 
-   = {nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn,
-      nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn, nn,nn};
+
+ unsigned totalnblock = 2*nblock1d*nblock1d;
+ unsigned *dimarray = new unsigned[totalnblock];
+ for (unsigned blocki = 0; blocki < totalnblock; blocki++)
+ {
+   dimarray[blocki] = nn;
+ }
 
  // The data structure to store the pointers to matrices.
  DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
 
- // Create the matrice to concatenate.
+ 
+ double t_create_matrix_start = TimingHelpers::timer();
+ // Create the matrix to concatenate.
  create_matrices_to_cat(dimarray,comm_pt,mat0_pt);
+ double t_create_matrix_end = TimingHelpers::timer();
+ double t_create_matrix_time = t_create_matrix_end - t_create_matrix_start;
+ oomph_info << "Time to create the matrices: " 
+            << t_create_matrix_time << std::endl; 
+ 
+ delete [] dimarray;
 
  ///////////////////////////////////////////////////////////////////////////
   
@@ -349,9 +348,15 @@ int main(int argc, char* argv[])
  oomph_info << "Time to cat = " << difftime << std::endl;
  oomph_info << "Minimum value for int: " << std::numeric_limits<int>::min() << '\n';
  oomph_info << "Maximum value for int: " << std::numeric_limits<int>::max() << '\n';
- oomph_info << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
- oomph_info << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
- oomph_info << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
+
+ oomph_info << "\n" << std::endl; 
+ 
+ oomph_info << "Minimum value for unsigned: " << std::numeric_limits<unsigned>::min() << '\n';
+ oomph_info << "Maximum value for unsigned: " << std::numeric_limits<unsigned>::max() << '\n';
+
+// oomph_info << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
+// oomph_info << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
+// oomph_info << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
  
 
  // Clear the result matrix.
