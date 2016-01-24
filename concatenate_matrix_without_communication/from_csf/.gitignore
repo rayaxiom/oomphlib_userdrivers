@@ -11,5 +11,11 @@ weak50m_alternate_core_vec/
 weakT5_16by16/
 weakT6_nomemcpy/
 
+# These are the results I used.
+strongT8_130m/
+strongT8_130m_nomemcpy/
+weakT8_130m/
+weakT8_130m_nomemcpy/
+
 
 
