@@ -1,0 +1,15 @@
+# Note, we ignore all of the unzipped tar files (i.e. the folder)
+# So do not put anything important in there.
+strong50m/
+strong50m_alternate_core/
+strong50m_alternate_core_vec/
+strongT5_16by16/
+strongT6_nomemcpy/
+weak50m/
+weak50m_alternate_core/
+weak50m_alternate_core_vec/
+weakT5_16by16/
+weakT6_nomemcpy/
+
+
+
