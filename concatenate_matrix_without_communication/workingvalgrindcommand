@@ -1,0 +1,1 @@
+mpirun -np 2 valgrind --tool=callgrind --simulate-cache=yes --instr-atstart=no ./mat_cat --nn 2 --nblock1d 10

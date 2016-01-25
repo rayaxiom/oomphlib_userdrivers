@@ -29,6 +29,7 @@
 // Oomph-lib includes
 #include "generic.h"
 #include <limits>       // std::numeric_limits
+//#include <valgrind/callgrind.h>
 
 using namespace oomph;
 
@@ -298,7 +299,7 @@ int main(int argc, char* argv[])
  // The data structure to store the pointers to matrices.
  DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
 
- 
+// CALLGRIND_START_INSTRUMENTATION;
  double t_create_matrix_start = TimingHelpers::timer();
  // Create the matrix to concatenate.
  create_matrices_to_cat(dimarray,comm_pt,mat0_pt);
@@ -306,7 +307,8 @@ int main(int argc, char* argv[])
  double t_create_matrix_time = t_create_matrix_end - t_create_matrix_start;
  oomph_info << "Time to create the matrices: " 
             << t_create_matrix_time << std::endl; 
- 
+// CALLGRIND_STOP_INSTRUMENTATION;
+// CALLGRIND_DUMP_STATS;
  delete [] dimarray;
 
  ///////////////////////////////////////////////////////////////////////////
