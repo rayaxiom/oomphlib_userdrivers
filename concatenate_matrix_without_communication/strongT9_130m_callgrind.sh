@@ -60,7 +60,7 @@ TEST_LIST=""
 function gen_tests()
 {
 NBLOCK1D="16"
-CGINPUT="valgrind --tool=callgrind --simulate-cache=yes --instr-atstart=no"
+CGINPUT="valgrind --tool=callgrind --simulate-cache=yes --instr-atstart=no --separate-threads=yes"
 NN="2850"
 #mpirun -np 2 valgrind --tool=callgrind --simulate-cache=yes --instr-atstart=no ./mat_cat --nn 2 --nblock1d 10
 
