@@ -87,9 +87,11 @@ PPARAM="--p_solver 1 --p_amg_iter 2 --p_amg_smiter 1 --p_amg_sim_smoo 0 --p_amg_
 # LU ALSC STR
 Prec_WLu_NSLu="--w_solver 0 --ns_solver 0"
 Prec_WLu_NSLSCExact="--w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0"
-Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.5 --print_f_hypre"
-Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --f_amg_str 0.5 --print_f_hypre"
+Prec_WLu_NSLSCAMGSim="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --print_f_hypre"
+# I have removed f_amg_str - this varies now, 0.5 and 0.75
 
+Prec_WLu_NSLSCAMGStr="--w_solver 0 --ns_solver 1 $PPARAM --f_solver 1 --f_amg_iter 1 --f_amg_smiter 2 --f_amg_coarse 1 --f_amg_sim_smoo 1 --f_amg_damp -1 --print_f_hypre"
+#--f_amg_str 0.5
 
 PARAM="--time_type 1 --solver_type 2 --dist_prob --time_start 0.0 --time_end 1.0 --prob_id 0  --max_solver_iter 110 --itstimedir $RESITS_DIR --solver_type 2"
 
@@ -117,6 +119,8 @@ PRECLIST="3"
 VISLIST="0 1"
 
 ANGLIST="0 67"
+
+STRNLIST="0.5 0.75"
 
 # As per FIS p364,
 REYLIST="100 200 500"
@@ -156,13 +160,16 @@ else
 fi
   for ANG in $ANGLIST
   do
+  for STRN in $STRNLIST
+  do
   for REY in $REYLIST
   do
     for NOEL in $NOELLIST
     do
-echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --ang $ANG --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
+echo "mpirun -np 1 ./$PROGRAM $PARAM $PRECPARAM --f_amg_str $STRN --ang $ANG --rey $REY --visc $VIS --noel $NOEL" >> $TEST_LIST
     done # NOEL
   done # REY
+done # STRN
   done #ANG
 done # VIS
 done # PREC
