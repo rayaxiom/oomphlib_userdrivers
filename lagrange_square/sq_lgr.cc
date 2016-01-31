@@ -978,7 +978,8 @@ std::string create_label()
 
   // Create a custom label for the F solve.
   std::string prec_string = "";
-  
+  if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
+  {
   std::string w_string = "";
   if(LPH::W_solver == 0)
   {
@@ -1279,6 +1280,11 @@ std::string create_label()
 
   prec_string += f_string;
   prec_string += p_string;
+  }
+  else
+  {
+    prec_string = "DirectSolve";
+  }
 
 
   std::string label = SL::prob_str()
