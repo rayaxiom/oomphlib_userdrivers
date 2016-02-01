@@ -307,9 +307,13 @@ public:
 
  void actions_before_implicit_timestep()
   {
+    if(GenProbHelpers::Solver_type != GenProbHelpers::Solver_type_DIRECT_SOLVE)
+    {
     if(GenProbHelpers::Time_type != GenProbHelpers::Time_type_STEADY)
     {
       Doc_linear_solver_info_pt->clear_current_time_step();
+    }
+    }
 
       // Inflow in upper half of inflow boundary
       const unsigned ibound=Inflow_boundary; 
@@ -328,7 +332,6 @@ public:
         nod_pt->set_value(2,0.0);
 
       }
-    }
 
 //   {
 //    // Inflow in upper half of inflow boundary
@@ -745,6 +748,14 @@ CubeProblem<ELEMENT>::CubeProblem()
   // Setup equation numbering scheme
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
+  F_matrix_preconditioner_pt = 0;
+  P_matrix_preconditioner_pt = 0;
+  NS_matrix_preconditioner_pt = 0;
+  Prec_pt = 0;
+
+
+  if(GenProbHelpers::Solver_type != GenProbHelpers::Solver_type_DIRECT_SOLVE)
+  {
   F_matrix_preconditioner_pt
     = PrecHelpers::create_f_p_amg_preconditioner(PrecHelpers::F_amg_param,0);
   P_matrix_preconditioner_pt
@@ -763,6 +774,7 @@ CubeProblem<ELEMENT>::CubeProblem()
       mesh_pt,
       PrecHelpers::W_solver,
       NS_matrix_preconditioner_pt);
+  }
 
   const double solver_tol = 1.0e-6;
   const double newton_tol = 1.0e-6;

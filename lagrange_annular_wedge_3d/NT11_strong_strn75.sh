@@ -114,10 +114,10 @@ case "$NPROC" in
     MPIRUN="mpirun -np 16 taskset -c 0-7,12-19"
     NOEL="35"
     ;;
-  24)
-    MPIRUN="mpirun -np 24 taskset -c 0-23"
-    NOEL="35"
-    ;;
+#  24)
+#    MPIRUN="mpirun -np 24 taskset -c 0-23"
+#    NOEL="35"
+#    ;;
 esac
 
 for FAMGCOARSE in $FAMGCOARSELIST
@@ -199,11 +199,11 @@ cp $TEST_LIST ./$TESTFOLDER1/
 cp $TEST_LIST ./$TESTFOLDER2/
 cp $TEST_LIST ./$TESTFOLDER3/
 
-NPROC="24"
-TEST_LIST="testlist_np${NPROC}.list"
-cp $TEST_LIST ./$TESTFOLDER1/
-cp $TEST_LIST ./$TESTFOLDER2/
-cp $TEST_LIST ./$TESTFOLDER3/
+#NPROC="24"
+#TEST_LIST="testlist_np${NPROC}.list"
+#cp $TEST_LIST ./$TESTFOLDER1/
+#cp $TEST_LIST ./$TESTFOLDER2/
+#cp $TEST_LIST ./$TESTFOLDER3/
 
 ############################################################################
 ############################################################################
@@ -294,8 +294,8 @@ gen_qsub_file
 NPROC="16"
 gen_qsub_file
 
-NPROC="24"
-gen_qsub_file
+#NPROC="24"
+#gen_qsub_file
 
 ############################################################################
 ############################################################################
@@ -332,11 +332,11 @@ cp $QSUBFILE ./$TESTFOLDER1
 cp $QSUBFILE ./$TESTFOLDER2
 cp $QSUBFILE ./$TESTFOLDER3
 
-NPROC="24"
-QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
-cp $QSUBFILE ./$TESTFOLDER1
-cp $QSUBFILE ./$TESTFOLDER2
-cp $QSUBFILE ./$TESTFOLDER3
+#NPROC="24"
+#QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
+#cp $QSUBFILE ./$TESTFOLDER1
+#cp $QSUBFILE ./$TESTFOLDER2
+#cp $QSUBFILE ./$TESTFOLDER3
 
 ############################################################################
 ############################################################################
@@ -408,11 +408,11 @@ then
   TEST_LIST="testlist_np${NPROC}.list"
   rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
   rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
-  NPROC="24"
-  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
-  TEST_LIST="testlist_np${NPROC}.list"
-  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
-  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+#  NPROC="24"
+#  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
+#  TEST_LIST="testlist_np${NPROC}.list"
+#  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+#  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
@@ -446,11 +446,11 @@ then
   TEST_LIST="testlist_np${NPROC}.list"
   rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
   rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
-  NPROC="24"
-  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
-  TEST_LIST="testlist_np${NPROC}.list"
-  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
-  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+#  NPROC="24"
+#  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
+#  TEST_LIST="testlist_np${NPROC}.list"
+#  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+#  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
@@ -489,11 +489,11 @@ then
   TEST_LIST="testlist_np${NPROC}.list"
   rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
   rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
-  NPROC="24"
-  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
-  TEST_LIST="testlist_np${NPROC}.list"
-  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
-  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
+#  NPROC="24"
+#  QSUBFILE="${FILEBASE}_np${NPROC}.qsub"
+#  TEST_LIST="testlist_np${NPROC}.list"
+#  rsync -av $OOMPH_TEST_DIR/$QSUBFILE $SCRATCH_TEST_DIR
+#  rsync -av $OOMPH_TEST_DIR/$TEST_LIST $SCRATCH_TEST_DIR
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
