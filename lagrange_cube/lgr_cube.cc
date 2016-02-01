@@ -371,6 +371,8 @@ public:
 
  void actions_before_implicit_timestep()
  {
+   if(GenProbHelpers::Solver_type !=GenProbHelpers::Solver_type_DIRECT_SOLVE)
+   {
    if(GenProbHelpers::Time_type != GenProbHelpers::Time_type_STEADY)
    {
      // NOTE: before an implicit time step, we clear the previous times.
@@ -383,6 +385,8 @@ public:
      // In the unsteady solve loop, it is there at we add new storage for
      // a new time step.
      Doc_linear_solver_info_pt->clear_current_time_step();
+   }
+   }
 
      if(!ProbHelpers::Vanilla)
      {
@@ -497,7 +501,6 @@ public:
      }
 
      } // else Vanilla
-   }
  } // end of actions_before_implicit_timestep
 
 
@@ -918,6 +921,11 @@ CubeProblem<ELEMENT>::CubeProblem()
   oomph_info <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
 
+  F_matrix_preconditioner_pt = 0;
+  P_matrix_preconditioner_pt = 0;
+  NS_matrix_preconditioner_pt = 0;
+  if(GenProbHelpers::Solver_type != GenProbHelpers::Solver_type_DIRECT_SOLVE)
+  {
   if(!ProbHelpers::Vanilla)
   {
   F_matrix_preconditioner_pt
@@ -954,6 +962,7 @@ CubeProblem<ELEMENT>::CubeProblem()
       P_matrix_preconditioner_pt);
 
 
+  }
   }
   const double solver_tol = 1.0e-6;
   const double newton_tol = 1.0e-6;
