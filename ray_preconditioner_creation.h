@@ -66,7 +66,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
 
   // Set the strength to 0.25
-  hypre_preconditioner_pt->amg_strength() = 0.25;
+  hypre_preconditioner_pt->amg_strength() = 0.5;
 
   // Now set the coarsening
   //    0 = CLJP (parallel coarsening using independent sets)
@@ -118,7 +118,7 @@ namespace Hypre_Subsidiary_Preconditioner_Helper
 
 
   // Set the strength to 0.25
-  hypre_preconditioner_pt->amg_strength() = 0.75;
+  hypre_preconditioner_pt->amg_strength() = 0.5;
 
   // Now set the coarsening
   //    0 = CLJP (parallel coarsening using independent sets)
