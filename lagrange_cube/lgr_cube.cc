@@ -1490,6 +1490,10 @@ int main(int argc, char **argv)
   std::cout << "RAYDOING: "
     << label
     << " on " << ctime(&rawtime) << std::endl;
+  CRDoubleMatrix jacmat;
+  DoubleVector res;
+  problem.get_jacobian(res,jacmat);
+  exit(0);
 
   // There are two types of solves, one for steady state, another for
   // time stepping.
