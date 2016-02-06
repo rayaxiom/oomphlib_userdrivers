@@ -1,3 +1,7 @@
 
 # Executables
 mat_cat
+test_parallel
+test_parallel_nompi
+
+

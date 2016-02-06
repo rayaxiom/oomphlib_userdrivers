@@ -1,6 +1,7 @@
 noinst_PROGRAMS= \
 mat_cat \
-test_parallel
+test_parallel \
+test_parallel_nompi 
 
 #------------------------------------------------------------------------
 mat_cat_SOURCES = mat_cat.cc
@@ -12,6 +13,11 @@ mat_cat_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 test_parallel_SOURCES = test_parallel.cc
 
 test_parallel_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+#------------------------------------------------------------------------
+test_parallel_nompi_SOURCES = test_parallel_nompi.cc
+
+test_parallel_nompi_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 #------------------------------------------------------------------------
 
 
