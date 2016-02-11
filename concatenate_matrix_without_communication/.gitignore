@@ -4,4 +4,20 @@ mat_cat
 test_parallel
 test_parallel_nompi
 
+callgrind.out.11705
+callgrind.out.11717
+callgrind.out.2690
+callgrind.out.2691
+callgrind.out.2716
+callgrind.out.2717
+callgrind.out.30987
+callgrind.out.3800
+callgrind.out.3800.1
+callgrind.out.3801
+callgrind.out.3801.1
+callgrind.out.5855
+callgrind.out.5855.1
+callgrind.out.5856
+callgrind.out.5856.1
+
 
