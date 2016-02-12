@@ -29,8 +29,6 @@
 // Oomph-lib includes
 #include "generic.h"
 #include <limits>       // std::numeric_limits
-//#include <valgrind/callgrind.h>
-
 using namespace oomph;
 
 // Helper function to construct a Vector given an array
@@ -38,13 +36,13 @@ template<typename myType>
 void construct_vector(myType given_array[],unsigned given_arraysize,
                       Vector<myType> &result_vector)
 {
- // Clear and reserve the required memory.
- result_vector.clear();
- result_vector.reserve(given_arraysize);
+  // Clear and reserve the required memory.
+  result_vector.clear();
+  result_vector.reserve(given_arraysize);
 
- for (unsigned i = 0; i < given_arraysize; i++) 
+  for (unsigned i = 0; i < given_arraysize; i++) 
   {
-   result_vector.push_back(given_array[i]);
+    result_vector.push_back(given_array[i]);
   }
 }
 
@@ -52,203 +50,130 @@ void construct_vector(myType given_array[],unsigned given_arraysize,
 template<typename myType>
 void output_vector(Vector<myType> &given_vector)
 {
- typename Vector<myType>::iterator it;
+  typename Vector<myType>::iterator it;
 
- for(it = given_vector.begin(); it != given_vector.end(); ++it)
+  for(it = given_vector.begin(); it != given_vector.end(); ++it)
   {
-   oomph_info << *it << std::endl; 
+    oomph_info << *it << std::endl; 
   }
 }
 
-// Given the number of blocks (in both dimensions), and an array containing
-// the dimensions.
-// Return: mat_info_vec, which contains the dimensions of the sub blocks 
-// in a coherent manner. The number of global rows and columns of the block i,j
-// is represented as: mat_info_vec[i][j][0] and mat_info_vec[i][j][1]
-// respectively.
-void fill_in_mat_info(unsigned const nblock_row, unsigned const nblock_col, 
-                      unsigned dimarray[], 
-                      Vector<Vector<Vector<unsigned> > > &mat_info_vec)
-{
- // The total number of dimensions is two times the number of blocks
- // Since matrices are squares. This should be the same number of elements in
- // dimarray.
- unsigned ndims = 2*nblock_row*nblock_col;
-  
- // Put dimarray into dimvec_all, since Vectors are nicer to work with.
- Vector<unsigned> dimvec_all;
- construct_vector(dimarray,ndims,dimvec_all);
-  
- // index for the dimvec_all array.
- unsigned dimvec_all_i = 0;
- for (unsigned block_row_i = 0; block_row_i < nblock_row; block_row_i++) 
-  {
-   // create the Vector for the columns for the current row.
-   Vector<Vector<unsigned> > current_block_col_vec;    
-     
-   // loop through the block columns
-   for (unsigned block_col_i = 0; block_col_i < nblock_col; block_col_i++) 
-    {
-     // loop through the dimensions for this block.
-     Vector<unsigned> current_dim_vec;
-       
-     for (unsigned dim_i = 0; dim_i < 2; dim_i++) 
-      {
-       current_dim_vec.push_back(dimvec_all[dimvec_all_i]);
-       dimvec_all_i++;
-      } // for the individual block dimensions.
+///////////////////////////////////////////////////////////////////////////////
 
-     // push current_dim_vec into the current entry...
-     current_block_col_vec.push_back(current_dim_vec);
-    } // for the columns in this block row.
-
-   // push the current block column vec onto the current row vec.
-   mat_info_vec.push_back(current_block_col_vec);
-  }// for the number of block rows.
-}
-
-// Given the dimensions of a matrix, returns a matrix where the elements 
-// (starting from the number 1) are ascending per column, per row. 
-// I.e., for a 3 by 3 matrix we have:
-// [1 2 3
-//  4 5 6
-//  7 8 9]
-void create_matrix_ascend_col_row(unsigned const nrow, unsigned const ncol,
-                                  const OomphCommunicator* const comm_pt,
-                                  bool const distributed, 
-                                  CRDoubleMatrix &block)
+// Given the dimensions of a vector, returns a vector where the elements
+// are increasing along (or rather, down), the rows.
+void create_vector_ascend_row(unsigned const nrow, 
+                              const OomphCommunicator* const comm_pt,
+                              bool const distributed, 
+                              DoubleVector &my_vec)
 {  
- // Clear the block
- block.clear();
+  // Clear the block
+  my_vec.clear();
   
- // Create the distribution.
- LinearAlgebraDistribution distri(comm_pt,nrow,distributed);
+  // Create the distribution.
+  LinearAlgebraDistribution distri(comm_pt,nrow,distributed);
 
- // The number of rows this processor is responsible for.
- unsigned nrow_local = distri.nrow_local();
-  
- // The number of values this processor will have to insert.
- unsigned nval = nrow_local*ncol;
-  
- // The first_row will be used as an offset for the values to insert.
- unsigned first_row = distri.first_row();
+  // Build the vector
+  my_vec.build(distri,0.0);
 
- // Fill in values...
- Vector<double> values(nval,0);
- for (unsigned val_i = 0; val_i < nval; val_i++)
+  // The number of rows this processor is responsible for.
+  unsigned nrow_local = distri.nrow_local();
+  
+  // The first_row will be used as an offset for the values to insert.
+  unsigned first_row = distri.first_row();
+
+  // Fill in values...
+  for (unsigned row_i = 0; row_i < nrow_local; row_i++)
   {
-   values[val_i] = (val_i+1) + (first_row)*ncol;
+    my_vec[row_i] = first_row + row_i + 1; // Use natural numbers
   }
-  
- // Vectors for the column index and row_start.
- Vector<int> column_indicies(nval,0);
- Vector<int> row_start(nrow_local+1,0);
-
- unsigned column_indicies_i = 0;
- for (unsigned row_i = 0; row_i < nrow_local; row_i++)
-  {
-   for (unsigned col_i = 0; col_i < ncol; col_i++) 
-    {
-     column_indicies[column_indicies_i] = col_i;
-     column_indicies_i++;
-    }
-   row_start[row_i] = ncol*row_i;
-  }
-
- // Fill in the last row_start.
- row_start[nrow_local] = nval;
-
- block.build(&distri,ncol,values,column_indicies,row_start);
 }
 
-
-// Given mat_info_vec, which describes the sub blocks as so:
-// The number of global rows and columns of the block i,j
-// is represented as: mat_info_vec[i][j][0] and mat_info_vec[i][j][1]
-// respectively. Pointers to the uniformly distribted matrices is returned.
-void fill_in_sub_matrices(const OomphCommunicator* const comm_pt, 
-                          const bool distributed,
-                          Vector<Vector<Vector<unsigned> > > &mat_info,
-                          DenseMatrix<CRDoubleMatrix* > &mat_pt)
+// Given dimvector, which describes the sizes of each DoubleVector,
+// returns a Vector of DoubleVector (as described by dimvector).
+void fill_in_sub_vectors(const OomphCommunicator* const comm_pt, 
+                         const bool distributed,
+                         Vector<unsigned > &dimvector,
+                         Vector<DoubleVector> &my_vecs)
 {
- unsigned nblock_row = mat_pt.nrow();
- unsigned nblock_col = mat_pt.ncol();
+  unsigned nvectors = my_vecs.size();
 
- for (unsigned block_row_i = 0; block_row_i < nblock_row; block_row_i++) 
+  for (unsigned vec_i = 0; vec_i < nvectors; vec_i++) 
   {
-   for (unsigned block_col_i = 0; block_col_i < nblock_col; block_col_i++) 
-    {
-     unsigned nrow = mat_info[block_row_i][block_col_i][0];
-     unsigned ncol = mat_info[block_row_i][block_col_i][1];
-      
-     mat_pt(block_row_i,block_col_i)=new CRDoubleMatrix;
-
-     create_matrix_ascend_col_row(nrow,ncol,comm_pt,distributed,
-                                  *mat_pt(block_row_i,block_col_i));
-    }
+    unsigned vec_size = dimvector[vec_i];
+    create_vector_ascend_row(vec_size,comm_pt,distributed,
+                             my_vecs[vec_i]);
   }
 }
 
 // Helper funcion to call other helper functions
-// 1) fill_in_mat_info(...) to fill in a data structure describing the matrices
-// 2) fill_in_sub_matrices(...) uses the mat_info to fill in the sub matrices 
-void create_matrices_to_cat
-(unsigned dimarray[], const OomphCommunicator* const comm_pt, 
- DenseMatrix<CRDoubleMatrix*>&mat_pt)
+// 1) converts dimarray to dimvector for robustness and ease of management.
+// 2) fill_in_sub_vectors(...) creates a distributed vector for each dim
+//    in dimvector.
+void create_vectors_to_cat
+(const unsigned nvectors, unsigned dimarray[], 
+ const OomphCommunicator* const comm_pt, Vector<DoubleVector>&my_vecs)
 {
-
- const unsigned nblock_row = mat_pt.nrow();
- const unsigned nblock_col = mat_pt.ncol();
-
- // We store the above array in a data structure such that
- // mat_info[0][0][0] gives us the number of rows in the block (0,0)
- // mat_info[0][0][1] gives us the number of columns in the block (0,0)
- Vector<Vector<Vector<unsigned> > > mat_info_vec;
-
- // Helper function to fill in mat_info given
- // nblock_row, nblock_col and dim_array.
- fill_in_mat_info(nblock_row,nblock_col,dimarray,mat_info_vec);
+  // Convert dimarray into a Vector so it is easier to manage.
+  Vector<unsigned> dimvector;
+  construct_vector(dimarray,nvectors,dimvector);
   
- // Fill in each sub matrix using create_matrix_ascend_col_row(..)
- bool distributed = true;
- fill_in_sub_matrices(comm_pt,distributed,mat_info_vec,mat_pt);
+  // Fill in each sub DoubleVector using create_double_vector_ascend_row(...)
+  bool distributed = true;
+  fill_in_sub_vectors(comm_pt,distributed,dimvector,my_vecs);
 }
 
 //===start_of_main======================================================
-/// Driver code: Testing 
-/// CRDoubleMatrixHelpers::concatenate_without_communication(...)
-/// We concatenate uniformly distributed matrices.
-/// 
-/// Let (x,y) be a matrix with x rows and y columns, 
-/// with entries increasing along the columns, then along the rows.
-/// For example, (3,3) is
-/// [1 2 3
-///  4 5 6
-///  7 8 9].
-/// 
-/// We concatenate the following matrices:
-/// (7,7)(7,5)(7,3)
-/// (5,7)(5,5)(5,3)
-/// (3,7)(3,5)(3,3)
+/// Driver code: Testing DoubleVectorHelpers::concatenate(...)
 ///
-/// (7,7)(7,5)
-/// (5,7)(5,5)
-/// (3,7)(3,5)
+/// We concatenate uniformly distributed DoubleVectors.
+/// The vectors v1, v2, and v3 have increasing entries 
+/// with lengths 7, 5 and 3 as depicted below:
+///
+/// v1   v2   v3
+/// [1   [1   [1
+///  2    2    2
+///  3    3    3]
+///  4    4
+///  5    5]
+///  6
+///  7]
+///
+/// The script validate.sh should run this driver on 1, 2, 3 and 4 cores.
 /// 
-/// (7,7)(7,5)(7,3)
-/// (5,7)(5,5)(5,3)
+/// Communication is required and the order of the entries is preserved.
+/// We demonstrate this on two cores, p0 and p1:
+/// v1 p0   p1
+///    [1   [4
+///     2    5
+///     3]   6
+///          7]
 ///
-/// Communication between processors is NOT required, but the block structure
-/// of the sub blocks are NOT preserved in the result matrix. Please see
-/// self_test/mpi/vector_concatenation_without_communication/ for more detail.
+/// v2 p0   p1
+///    [1   [3
+///     2]   4
+///          5]
 ///
-/// The script validate.sh should run this self test on 1, 2, 3 and 4 cores. 
+/// v3 p0   p1
+///    [1]  [2
+///          3]
+/// 
+/// Result vector:
+///    p0   p1
+///    [1   [1
+///     2    2
+///     3    3
+///     4    4
+///     5    5
+///     6    1
+///     7]   2
+///          3]
 //======================================================================
 int main(int argc, char* argv[])
 {
 #ifdef OOMPH_HAS_MPI
- // Initialise MPI
- MPI_Helpers::init(argc,argv);
+  // Initialise MPI
+  MPI_Helpers::init(argc,argv);
 #endif
 
   // Store command line arguments
@@ -262,147 +187,77 @@ int main(int argc, char* argv[])
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
   CommandLineArgs::doc_specified_flags();
+
   // Get the global oomph-lib communicator 
   const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
-
-  oomph_info << "nn is: " << nn << std::endl;
-//  oomph_info << "nrow will be: " << nblock1d*nn << std::endl;
-  unsigned long calculatednnz = nblock1d*nn*nblock1d*nn;
-  oomph_info << "calculatednnz: " << calculatednnz << std::endl;
- // stuff for the output
-  const unsigned my_rank = comm_pt->my_rank();
-  const unsigned nproc = comm_pt->nproc();
-
-  unsigned nentries = calculatednnz/nproc;
-  oomph_info << "nentries: " << nentries << std::endl; 
   
+  // How many vectors to concatenate?
+  unsigned nvectors = nblock1d;
 
-  std::vector<double>vec1(nentries,1.0);
-  std::vector<double>vec2(nentries,1.0);
+  // Supply the length of the vectors
+  //unsigned dimarray[] = {7,5,3};
+  unsigned *dimarray = new unsigned[nvectors];
+  for (unsigned veci = 0; veci < nvectors; veci++) 
+  {
+    dimarray[veci] = nn;
+  }
+  
+  // The data structure to store the DoubleVectors to concatenate
+  Vector<DoubleVector> in_vector(nvectors);
+  
+  // Create the matrices to concatenate.
+  create_vectors_to_cat(nvectors,dimarray,comm_pt,in_vector);
+
+  // The result vector.
+  DoubleVector out_vector;
+  oomph_info << "nn is: " << nn << std::endl; 
+  oomph_info << "nblock1d is: " << nblock1d << std::endl; 
+  
+  unsigned long calculatednnz = nblock1d*nn;
+  oomph_info << "calculatednnz: " << calculatednnz << std::endl;
 
   double t_start = TimingHelpers::timer();
-  for (unsigned i = 0; i < nentries; i++) 
-  {
-    vec1[i] = vec2[i]+i;
-  }
- double t_end = TimingHelpers::timer();
- double t_time = t_end - t_start;
- oomph_info << "RAYRAYDONE: " 
-            << t_time << std::endl; 
+  // Call the concatenate function.
+  DoubleVectorHelpers::concatenate(in_vector,out_vector);
+  double t_end = TimingHelpers::timer();
+  double t_time = t_end - t_start;
+  oomph_info << "RAYRAYDONE: " 
+             << t_time << std::endl; 
+  // output the result matrix
+//  unsigned my_rank = comm_pt->my_rank();
+//  unsigned nproc = comm_pt->nproc();
 
-//  oomph_info << "nnz from unsigned: " << calculatednnz << std::endl; 
+  // Output data from out_vector:
+  // nrow()
+  // first_row
+  // nrow_local()
+  // distributed()
+  // values()
   
- 
+//  std::ostringstream out_stream;
+//  out_stream << "out_NP" << nproc << "R" << my_rank;
 
-//  unsigned nblock_row = nblock1d;
-//  unsigned nblock_col = nblock1d;
+//  std::ofstream out_file;
+//  out_file.open(out_stream.str().c_str());
 
-
-
- // Supply the dimensions of the matrices to concatenate.
- // The matrices must be in the order: first row, then along the columns,
- // then second row, et cetera...
- // The number of elements in this must be 2*nblock_row*nblock_col.
- // In this test, we concatenate blocks with the following dimension and 
- // arrangements:
- //
- // (7,7) (7,5) (7,3)
- // (5,7) (5,5) (5,3)
- // (3,7) (3,5) (3,3)
-
-// unsigned totalnblock = 2*nblock1d*nblock1d;
-// unsigned *dimarray = new unsigned[totalnblock];
-// for (unsigned blocki = 0; blocki < totalnblock; blocki++)
-// {
-//   dimarray[blocki] = nn;
-// }
-
- // The data structure to store the pointers to matrices.
-// DenseMatrix<CRDoubleMatrix*> mat0_pt(nblock_row,nblock_col,0);
-
-// CALLGRIND_START_INSTRUMENTATION;
-// double t_create_matrix_start = TimingHelpers::timer();
- // Create the matrix to concatenate.
-// create_matrices_to_cat(dimarray,comm_pt,mat0_pt);
-// double t_create_matrix_end = TimingHelpers::timer();
-// double t_create_matrix_time = t_create_matrix_end - t_create_matrix_start;
-// oomph_info << "Time to create the matrices: " 
-//            << t_create_matrix_time << std::endl; 
-// CALLGRIND_STOP_INSTRUMENTATION;
-// CALLGRIND_DUMP_STATS;
-// delete [] dimarray;
-
- ///////////////////////////////////////////////////////////////////////////
+//  double* out_values = out_vector.values_pt();
+//  unsigned out_nrow_local = out_vector.nrow_local();
   
- // stuff for the output
- // const unsigned my_rank = comm_pt->my_rank();
- // const unsigned nproc = comm_pt->nproc();
-  
- // Test #0, we concaenate
- // (7,7) (7,5) (7,3)
- // (5,7) (5,5) (5,3)
- // (3,7) (3,5) (3,3)
-
- // We require the LinearAlgebraDistribution of the block rows.
- // We use the first column.
-// Vector<LinearAlgebraDistribution*> row_distribution0_pt;
-// for (unsigned block_row_i = 0; block_row_i < nblock_row; block_row_i++) 
+//  out_file << out_vector.nrow() << "\n";
+//  out_file << out_vector.first_row() << "\n";
+//  out_file << out_nrow_local << "\n";
+//  out_file << out_vector.distributed() << "\n";
+//
+//  for (unsigned val_i = 0; val_i < out_nrow_local; val_i++) 
 //  {
-//   row_distribution0_pt.push_back(mat0_pt(block_row_i,0)
-//                                  ->distribution_pt());
+//    out_file << out_values[val_i] << "\n";
 //  }
-//  LinearAlgebraDistribution tmp_distribution;
-//  LinearAlgebraDistributionHelpers::concatenate(row_distribution0_pt,
-//                                                tmp_distribution);
- // Perform the concatenation.
- // Note: Because this is a square block matrix, we only need to pass one
- // Vector of distributions. This will be used for both row_distribution_pt
- // and col_distribution_pt in the concatenate_without_communication(...)
- // function.
-// CRDoubleMatrix result_matrix0;
-// result_matrix0.build(&tmp_distribution);
-
-
-// double time_start = TimingHelpers::timer();
-// CRDoubleMatrixHelpers::concatenate_without_communication(
-//  row_distribution0_pt,mat0_pt,result_matrix0, true);
-// double time_end = TimingHelpers::timer();
-// double difftime = time_end - time_start;
-// oomph_info << "sub block size = " << nn << std::endl; 
-// oomph_info << "full matrix size = " << result_matrix0.nrow() << std::endl;
-// oomph_info << "nnz = " << result_matrix0.nnz() << std::endl;
-// oomph_info << "Time to cat = " << difftime << std::endl;
-// oomph_info << "Minimum value for int: " << std::numeric_limits<int>::min() << '\n';
-// oomph_info << "Maximum value for int: " << std::numeric_limits<int>::max() << '\n';
-
-// oomph_info << "\n" << std::endl; 
-// 
-// oomph_info << "Minimum value for unsigned: " << std::numeric_limits<unsigned>::min() << '\n';
-// oomph_info << "Maximum value for unsigned: " << std::numeric_limits<unsigned>::max() << '\n';
-
-// oomph_info << "int is signed: " << std::numeric_limits<int>::is_signed << '\n';
-// oomph_info << "Non-sign bits in int: " << std::numeric_limits<int>::digits << '\n';
-// oomph_info << "int has infinity: " << std::numeric_limits<int>::has_infinity << '\n';
- 
-
- // Clear the result matrix.
-// result_matrix0.clear();
-
- // There are 3 by 3 block matrices to delete.
-// nblock_row = 4;
-// nblock_col = 4;
- // Delete the matrices.
-// for (unsigned row_i = 0; row_i < nblock_row; row_i++) 
-//  {
-//   for (unsigned col_i = 0; col_i < nblock_col; col_i++) 
-//    {
-//     delete mat0_pt(row_i,col_i);
-//    } // for col_i
-//  } // for row_i
+//
+//  out_file.close();
 
 #ifdef OOMPH_HAS_MPI
- // finalize MPI
- MPI_Helpers::finalize();
+  // finalize MPI
+  MPI_Helpers::finalize();
 #endif
- return(EXIT_SUCCESS);
+  return(EXIT_SUCCESS);
 } // end_of_main
