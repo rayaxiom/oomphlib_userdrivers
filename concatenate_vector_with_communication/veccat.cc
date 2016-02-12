@@ -196,17 +196,24 @@ int main(int argc, char* argv[])
 
   // Supply the length of the vectors
   //unsigned dimarray[] = {7,5,3};
-  unsigned *dimarray = new unsigned[nvectors];
-  for (unsigned veci = 0; veci < nvectors; veci++) 
-  {
-    dimarray[veci] = nn;
-  }
+//  unsigned *dimarray = new unsigned[nvectors];
+//  for (unsigned veci = 0; veci < nvectors; veci++) 
+//  {
+//    dimarray[veci] = nn;
+//  }
   
   // The data structure to store the DoubleVectors to concatenate
-  Vector<DoubleVector> in_vector(nvectors);
+  Vector<DoubleVector*> in_vector_pt(nvectors);
+  bool distributed = true;
+  for (unsigned veci = 0; veci < nvectors; veci++) 
+  {
+    LinearAlgebraDistribution distri(comm_pt,nn,distributed);
+    in_vector_pt[veci] = new DoubleVector;
+    in_vector_pt[veci]->build(distri,0.0);
+  }
   
   // Create the matrices to concatenate.
-  create_vectors_to_cat(nvectors,dimarray,comm_pt,in_vector);
+//  create_vectors_to_cat(nvectors,dimarray,comm_pt,in_vector);
 
   // The result vector.
   DoubleVector out_vector;
@@ -216,13 +223,13 @@ int main(int argc, char* argv[])
   unsigned long calculatednnz = nblock1d*nn;
   oomph_info << "calculatednnz: " << calculatednnz << std::endl;
 
-  double t_start = TimingHelpers::timer();
-  // Call the concatenate function.
-  DoubleVectorHelpers::concatenate(in_vector,out_vector);
-  double t_end = TimingHelpers::timer();
-  double t_time = t_end - t_start;
-  oomph_info << "RAYRAYDONE: " 
-             << t_time << std::endl; 
+//  double t_start = TimingHelpers::timer();
+//  // Call the concatenate function.
+//  DoubleVectorHelpers::concatenate(in_vector,out_vector);
+//  double t_end = TimingHelpers::timer();
+//  double t_time = t_end - t_start;
+//  oomph_info << "RAYRAYDONE: " 
+//             << t_time << std::endl; 
   // output the result matrix
 //  unsigned my_rank = comm_pt->my_rank();
 //  unsigned nproc = comm_pt->nproc();
