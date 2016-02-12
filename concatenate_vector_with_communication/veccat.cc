@@ -223,13 +223,14 @@ int main(int argc, char* argv[])
   unsigned long calculatednnz = nblock1d*nn;
   oomph_info << "calculatednnz: " << calculatednnz << std::endl;
 
-//  double t_start = TimingHelpers::timer();
-//  // Call the concatenate function.
-//  DoubleVectorHelpers::concatenate(in_vector,out_vector);
-//  double t_end = TimingHelpers::timer();
-//  double t_time = t_end - t_start;
-//  oomph_info << "RAYRAYDONE: " 
-//             << t_time << std::endl; 
+  double t_start = TimingHelpers::timer();
+  // Call the concatenate function.
+  DoubleVectorHelpers::concatenate(in_vector_pt,out_vector,true);
+  double t_end = TimingHelpers::timer();
+  double t_time = t_end - t_start;
+  oomph_info << "RAYRAYDONE: " 
+             << t_time << std::endl; 
+
   // output the result matrix
 //  unsigned my_rank = comm_pt->my_rank();
 //  unsigned nproc = comm_pt->nproc();
