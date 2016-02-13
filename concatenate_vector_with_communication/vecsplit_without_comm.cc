@@ -272,7 +272,8 @@ int main(int argc, char* argv[])
   double t_start = TimingHelpers::timer();
 
   DoubleVectorHelpers::split_without_communication(in_vector,
-                                                   out_vector_pt);
+                                                   out_vector_pt,
+                                                   true);
   double t_end = TimingHelpers::timer();
   double t_time = t_end - t_start;
   oomph_info << "RAYRAYDONE: " 
