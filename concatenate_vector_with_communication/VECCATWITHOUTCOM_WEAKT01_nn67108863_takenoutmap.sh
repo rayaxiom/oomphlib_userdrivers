@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROGRAM="veccat"
+PROGRAM="veccat_without_comm"
 
 
 # Create the FILEBASE, this is the folder where the testing will be done.
@@ -61,9 +61,7 @@ function gen_tests()
 {
 NBLOCK1D="16"
 #NN="33554431"
-#NN="67108863"
-#NN="125000000"
-NN="100000000"
+NN="67108863"
 echo "mpirun -np 1 taskset -c 0 ./$PROGRAM --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
 echo "mpirun -np 2 taskset -c 0,12 ./$PROGRAM  --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
 echo "mpirun -np 4 taskset -c 0-1,12-13 ./$PROGRAM --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
