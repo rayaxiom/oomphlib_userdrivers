@@ -61,7 +61,7 @@ function gen_tests()
 {
 NBLOCK1D="16"
 #NN="33554431"
-NN="128000000"
+NN="64000000"
 echo "mpirun -np 1 taskset -c 0 ./$PROGRAM --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
 echo "mpirun -np 2 taskset -c 0,12 ./$PROGRAM  --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
 echo "mpirun -np 4 taskset -c 0-1,12-13 ./$PROGRAM --nblock1d $NBLOCK1D --nn $NN" >> $TEST_LIST
