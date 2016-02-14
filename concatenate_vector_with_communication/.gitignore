@@ -2,3 +2,4 @@ veccat
 veccat_old.cc
 veccat_without_comm
 vecsplit_without_comm
+vecsplit_wcomm

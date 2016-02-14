@@ -1,7 +1,8 @@
 noinst_PROGRAMS= \
 veccat \
 veccat_without_comm \
-vecsplit_without_comm 
+vecsplit_without_comm \
+vecsplit_wcomm 
 
 #------------------------------------------------------------------------
 veccat_SOURCES = veccat.cc
@@ -17,6 +18,10 @@ veccat_without_comm_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 vecsplit_without_comm_SOURCES = vecsplit_without_comm.cc
 
 vecsplit_without_comm_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+vecsplit_wcomm_SOURCES = vecsplit_wcomm.cc
+
+vecsplit_wcomm_LDADD = -L@libdir@ -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 
 
 # Include path for library headers: All library headers live in 
