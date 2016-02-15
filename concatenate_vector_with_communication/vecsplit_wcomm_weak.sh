@@ -60,11 +60,11 @@ TEST_LIST=""
 function gen_tests()
 {
 NBLOCK1D="16"
-echo "mpirun -np 1 taskset -c 0 ./$PROGRAM --nblock1d $NBLOCK1D --nn 8000000" >> $TEST_LIST
-echo "mpirun -np 2 taskset -c 0,12 ./$PROGRAM  --nblock1d $NBLOCK1D --nn 16000000" >> $TEST_LIST
-echo "mpirun -np 4 taskset -c 0-1,12-13 ./$PROGRAM --nblock1d $NBLOCK1D --nn 32000000" >> $TEST_LIST
-echo "mpirun -np 8 taskset -c 0-3,12-15 ./$PROGRAM --nblock1d $NBLOCK1D --nn 64000000" >> $TEST_LIST
-echo "mpirun -np 16 taskset -c 0-7,12-19 ./$PROGRAM --nblock1d $NBLOCK1D --nn 128000000" >> $TEST_LIST
+echo "mpirun -np 1 taskset -c 0 ./$PROGRAM --nblock1d $NBLOCK1D --nn 4000000" >> $TEST_LIST
+echo "mpirun -np 2 taskset -c 0,12 ./$PROGRAM  --nblock1d $NBLOCK1D --nn 8000000" >> $TEST_LIST
+echo "mpirun -np 4 taskset -c 0-1,12-13 ./$PROGRAM --nblock1d $NBLOCK1D --nn 16000000" >> $TEST_LIST
+echo "mpirun -np 8 taskset -c 0-3,12-15 ./$PROGRAM --nblock1d $NBLOCK1D --nn 32000000" >> $TEST_LIST
+echo "mpirun -np 16 taskset -c 0-7,12-19 ./$PROGRAM --nblock1d $NBLOCK1D --nn 64000000" >> $TEST_LIST
 #echo "mpirun -np 24 taskset -c 0-23 ./$PROGRAM --nblock1d $NBLOCK1D --nn 3491" >> $TEST_LIST
 }
 
