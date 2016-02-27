@@ -146,8 +146,8 @@ makesrc()
 
 REPLACETYPE="--replace_modified_blocks_only"
 REY="--rey 100"
-NOEL="--noel 6"
-NPROC="3"
+NOEL="--noel 4"
+NPROC="2"
 
 combine_args && $FULLRUNCOMMAND 
 

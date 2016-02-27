@@ -22,7 +22,7 @@ cd $CDIR
 function runtest {
 PARAM1="--time_type 1 --solver_type 2 --dist_prob --max_solver_iter 100"
 PARAM2="--dt 0.01 --time_start 0.0 --time_end 0.5  --itstimedir res_iterations"
-PARAM3="--visc 0 --rey 200 --prob_id 0 --noel 4"
+PARAM3="--visc 0 --rey 200 --prob_id 0 --noel 18"
 
 LPREC="--w_solver 0 --ns_solver 1"
 PPREC="--p_solver 1 --p_amg_iter 2 --p_amg_smiter 1 --p_amg_sim_smoo 4 --p_amg_damp 0.668 --p_amg_coarse 6 --p_amg_str 0.7 --print_p_hypre"
@@ -32,5 +32,6 @@ PREC="$LPREC $PPREC $FPREC"
 $RUNCOMMAND ./$PROGRAM $PARAM1 $PARAM2 $PARAM3 $PREC
 }
 
-compileoomph && compileudri && runtest
+#compileoomph && compileudri && runtest
+runtest
 
