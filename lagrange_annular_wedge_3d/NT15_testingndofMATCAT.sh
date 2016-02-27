@@ -124,7 +124,7 @@ esac
 
 for NOEL in $NOELLIST
 do
-echo "${MPIRUN} ./${PROGRAM} ${PROBPARAM} --noel ${NOEL} ${LGRPREC} ${PPREC} ${FPREC} --f_amg_coarse 6 --noel $NOEL" >> $TEST_LIST
+echo "${MPIRUN} ./${PROGRAM} ${PROBPARAM} ${LGRPREC} ${PPREC} ${FPREC} --f_amg_coarse 6 --noel ${NOEL}" >> $TEST_LIST
 done
 }
 
