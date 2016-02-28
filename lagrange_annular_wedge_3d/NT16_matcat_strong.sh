@@ -99,23 +99,23 @@ do
 case "$NPROC" in
   1)
     MPIRUN="mpirun -np 1 taskset -c 0"
-    NOEL="78"
+    NOEL="87"
     ;;
   2)
     MPIRUN="mpirun -np 2 taskset -c 0,12"
-    NOEL="78"
+    NOEL="87"
     ;;
   4)
     MPIRUN="mpirun -np 4 taskset -c 0-1,12-13"
-    NOEL="78"
+    NOEL="87"
     ;;
   8)
     MPIRUN="mpirun -np 8 taskset -c 0-3,12-15"
-    NOEL="78"
+    NOEL="87"
     ;;
   16)
     MPIRUN="mpirun -np 16 taskset -c 0-7,12-19"
-    NOEL="78"
+    NOEL="87"
     ;;
 #  24)
 #    MPIRUN="mpirun -np 24 taskset -c 0-23"
