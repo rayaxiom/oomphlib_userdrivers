@@ -428,6 +428,7 @@ public:
                                               Mesh* const &bulk_mesh_pt,
                                               Mesh* const &surface_mesh_pt);
  void dump_it();
+ void dump_itvec();
 
  /// Pointer to the "bulk" mesh
  Mesh*& bulk_mesh_pt() {return Bulk_mesh_pt;}
@@ -921,9 +922,24 @@ void CubeProblem<ELEMENT>::dump_it()
   double t_getjac_time = t_getjac_end - t_getjac_start;
   oomph_info << "RRRP2: GetJacTime: " << t_getjac_time << std::endl; 
   
-
   Prec_pt->setup(cr_matrix_pt);
-//  pause("Hi again"); 
+} // end of create_parall_outflow_lagrange_elements
+
+template<class ELEMENT>
+void CubeProblem<ELEMENT>::dump_itvec()
+{
+  oomph_info << "RRRP3: Getting residuals" << std::endl;
+  CRDoubleMatrix* cr_matrix_pt = new CRDoubleMatrix;
+  DoubleVector residual;
+
+  double t_getres_start = TimingHelpers::timer();
+  this->get_residuals(residual);
+  double t_getres_end = TimingHelpers::timer();
+
+  double t_getres_time = t_getres_end - t_getres_start;
+  oomph_info << "RRRP4: GetResTime: " << t_getres_time << std::endl; 
+  
+  Prec_pt->setup(cr_matrix_pt);
 } // end of create_parall_outflow_lagrange_elements
 
 
@@ -1145,6 +1161,7 @@ int main(int argc, char **argv)
     << label
     << " on " << ctime(&rawtime) << std::endl;
   problem.dump_it();
+//  problem.dump_itvec();
   exit (EXIT_SUCCESS);
 
   // There are two types of solves, one for steady state, another for
