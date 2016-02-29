@@ -1,11 +1,17 @@
 noinst_PROGRAMS= \
 annular_wedge_threed \
+aw3d_mod \
 annular_wedge_threed_bk
 
 #------------------------------------------------------------------------
 annular_wedge_threed_SOURCES = annular_wedge_threed.cc
 
 annular_wedge_threed_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+
+aw3d_mod_SOURCES = aw3d_mod.cc
+
+aw3d_mod_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+
 
 annular_wedge_threed_bk_SOURCES = annular_wedge_threed_bk.cc
 
