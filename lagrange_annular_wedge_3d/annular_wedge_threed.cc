@@ -774,6 +774,29 @@ CubeProblem<ELEMENT>::CubeProblem()
       mesh_pt,
       PrecHelpers::W_solver,
       NS_matrix_preconditioner_pt);
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--mattest"))
+  {
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_matcat_test = true;
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_vec_test = false;
+  }
+  else if(CommandLineArgs::command_line_flag_has_been_set("--vectest"))
+  {
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_matcat_test = false;
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_vec_test = true;
+  }
+  else
+  {
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_matcat_test = false;
+    dynamic_cast<LagrangeEnforcedflowPreconditioner* >
+      (Prec_pt)->Do_vec_test = false;
+  }
+
   }
 
   const double solver_tol = 1.0e-6;
@@ -1051,6 +1074,10 @@ int main(int argc, char **argv)
   // --noel number of elements in 1D
   // --prob_id - currently, the only prob id is 0
 //  problem_specific_setup_commandline_flags();
+
+  // New stuff for parallel performance.
+  CommandLineArgs::specify_command_line_flag("--mattest");
+  CommandLineArgs::specify_command_line_flag("--vectest");
 
   // Parse the above flags.
   CommandLineArgs::parse_and_assign();
