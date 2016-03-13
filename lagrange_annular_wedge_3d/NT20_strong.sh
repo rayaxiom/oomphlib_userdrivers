@@ -223,8 +223,8 @@ echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
 echo '#$ -pe smp.pe 24' >> $QSUBFILE
-echo '#$ -l haswell' >> $QSUBFILE
-#echo '#$ -l timing' >> $QSUBFILE
+#echo '#$ -l haswell' >> $QSUBFILE
+echo '#$ -l timing' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
