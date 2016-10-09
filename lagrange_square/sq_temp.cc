@@ -157,6 +157,10 @@ public:
  /// Update before solve is empty
  void actions_before_newton_solve()
  {
+   // Alias the namespace for convenience
+   namespace GV = Global_Variables;
+   GV::Iterations.clear();
+
    namespace NSPP = NavierStokesProblemParameters;
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
    {
@@ -172,6 +176,36 @@ public:
 
  void actions_after_newton_step()
  {
+    // Alias the namespace for convenience
+    namespace GV = Global_Variables;
+
+    unsigned iters = 0;
+    // Get the iteration counts
+#ifdef PARANOID
+    IterativeLinearSolver* iterative_solver_pt
+      = dynamic_cast<IterativeLinearSolver*>
+      (this->linear_solver_pt());
+    if(iterative_solver_pt == 0)
+    {
+      std::ostringstream error_message;
+      error_message << "Cannot cast the solver pointer." << std::endl;
+
+      throw OomphLibError(error_message.str(),
+                          OOMPH_CURRENT_FUNCTION,
+                          OOMPH_EXCEPTION_LOCATION);
+    }
+    else
+    {
+      iters = iterative_solver_pt->iterations();
+      GV::Iterations.push_back(iters);
+    }
+#else
+    iters = static_cast<IterativeLinearSolver*>
+       (this->linear_solver_pt())->iterations();
+    GV::Iterations.push_back(iters);
+#endif
+
+
    namespace NSPP = NavierStokesProblemParameters;
    if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
    {
@@ -1366,6 +1400,9 @@ int main(int argc, char* argv[])
   // Initialise MPI
   MPI_Helpers::init(argc,argv);
 #endif
+  // Alias the namespace for convenience.
+  namespace GV = Global_Variables;
+
 
   // Alias the namespace for convenience.
   namespace NSPP = NavierStokesProblemParameters;
@@ -1640,6 +1677,13 @@ int main(int argc, char* argv[])
     }
   } // else do not loop reynolds
 
+  // Print out the iteration counts
+  const unsigned num_newton_steps = GV::Iterations.size();
+  oomph_info << num_newton_steps << std::endl; 
+  for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
+  {
+    oomph_info << "RITS: " << GV::Iterations[stepi] << std::endl;
+  }
 
 #ifdef OOMPH_HAS_MPI
   // finalize MPI

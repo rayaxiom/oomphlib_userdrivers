@@ -84,7 +84,7 @@ LPH="$DOC_PREC $RESULT_PREC"
 
 
 # Specific problem parameters
-NOEL="--noel 128"
+NOEL="--noel 4"
 ANG="--ang 30.0"
 
 SPECIFIC_PROB="$NOEL $ANG"
@@ -92,6 +92,7 @@ SPECIFIC_PROB="$NOEL $ANG"
 
 PARAM="$NSPP $LPH $SPECIFIC_PROB"
 
+#mpirun -np 1 ./$PROGRAM --ns_solver 1 --visc 0 --ang 0 --rey 0 --noel 64
 
 mpirun -np 1 ./sq_lgr $PARAM
 
