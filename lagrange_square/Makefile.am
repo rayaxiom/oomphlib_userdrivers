@@ -1,7 +1,15 @@
 noinst_PROGRAMS= \
 sq_lgr_standard_NSE \
 sq_lgr_simple \
+sq_temp \
 sq_lgr
+
+#------------------------------------------------------------------------
+sq_temp_SOURCES = sq_temp.cc
+
+sq_temp_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+#------------------------------------------------------------------------
+
 
 #------------------------------------------------------------------------
 sq_lgr_SOURCES = sq_lgr.cc

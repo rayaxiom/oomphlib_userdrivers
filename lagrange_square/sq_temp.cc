@@ -1,31 +1,35 @@
-//LIC//====================================================================
-//LIC// This file forms part of oomph-lib, the object-oriented,
-//LIC// multi-physics finite-element library, available
+//LIC// ====================================================================
+//LIC// This file forms part of oomph-lib, the object-oriented, 
+//LIC// multi-physics finite-element library, available 
 //LIC// at http://www.oomph-lib.org.
+//LIC// 
+//LIC//    Version 1.0; svn revision $LastChangedRevision$
 //LIC//
-//LIC//           Version 0.85. June 9, 2008.
-//LIC//
-//LIC// Copyright (C) 2006-2008 Matthias Heil and Andrew Hazel
-//LIC//
+//LIC// $LastChangedDate$
+//LIC// 
+//LIC// Copyright (C) 2006-2016 Matthias Heil and Andrew Hazel
+//LIC// 
 //LIC// This library is free software; you can redistribute it and/or
 //LIC// modify it under the terms of the GNU Lesser General Public
 //LIC// License as published by the Free Software Foundation; either
 //LIC// version 2.1 of the License, or (at your option) any later version.
-//LIC//
+//LIC// 
 //LIC// This library is distributed in the hope that it will be useful,
 //LIC// but WITHOUT ANY WARRANTY; without even the implied warranty of
 //LIC// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //LIC// Lesser General Public License for more details.
-//LIC//
+//LIC// 
 //LIC// You should have received a copy of the GNU Lesser General Public
 //LIC// License along with this library; if not, write to the Free Software
 //LIC// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 //LIC// 02110-1301  USA.
-//LIC//
+//LIC// 
 //LIC// The authors may be contacted at oomph-lib@maths.man.ac.uk.
-//LIC//
-//LIC//====================================================================
+//LIC// 
+//LIC//=====================================================================
+//Driver for 2D tilted rectangle
 
+#include <fenv.h>
 #include <sstream>
 #include <iomanip>
 #include <ios>
@@ -41,7 +45,62 @@
 // My own header
 #include "./../rayheader.h"
 
+using namespace std;
+
 using namespace oomph;
+
+//==start_of_namespace==============================
+/// Namespace for physical parameters
+//==================================================
+namespace Global_Variables
+{
+
+ // Problem dimension
+ static const unsigned Dim = 2;
+
+ // Min and max x value respectively.
+ static const double X_min = 0.0;
+ static const double X_max = 1.0;
+
+ // Min and max y value respectively.
+ static const double Y_min = 0.0;
+ static const double Y_max = 1.0;
+
+ // The domain length in the x and y direction respectively.
+ static const double Lx = X_max - X_min;
+ static const double Ly = Y_max - Y_min;
+
+ /// Reynolds number
+ double Re = 100.0;
+
+ // Tilting angle of the domain with the x-axis
+ double Ang_deg = 30.0;
+ double Ang_rad = -1.0;
+
+ // Number of elements in 1D
+ unsigned Noel = 4;
+
+ // Use LSC preconditioner for the Navier-Stokes block?
+ bool Use_lsc = false;
+
+ // Use Boomer AMG for the momentum block?
+ bool Use_amg_for_f = false;
+
+ // Use Boomer AMG for the pressure block?
+ bool Use_amg_for_p = false;
+
+ // Convert degrees to radians
+ inline double degtorad(const double& ang_deg)
+ {
+   return ang_deg * (MathematicalConstants::Pi / 180.0);
+ }
+
+ /// Storage for number of iterations during Newton steps 
+ Vector<unsigned> Iterations;
+
+} // namespace Global_Variables
+
+
 
 namespace oomph
 {

@@ -156,7 +156,8 @@ public:
    {
    if(NSPP::Prob_id == SL::PID_SQ_PO)
    {
-     create_parall_outflow_lagrange_elements(1,Bulk_mesh_pt,Surface_mesh_P_pt);
+     create_parall_outflow_lagrange_elements(1,
+         Bulk_mesh_pt,Surface_mesh_P_pt);
      rebuild_global_mesh();
    }
    else
@@ -1355,7 +1356,7 @@ int main(int argc, char* argv[])
     problem.distribute();
   }
 
-  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////
 
   // If the Reynolds number is not set, I assume that all the below are set:
   // --rey_start
@@ -1388,14 +1389,15 @@ int main(int argc, char* argv[])
       if(NSPP::Doc_soln)
       {problem.doc_solution();}
 
-      //////////////////////////////////////////////////////////////////////////
-      ////////////// Outputting results ////////////////////////////////////////
-      //////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
+      ////////// Outputting results ////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////
 
       if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
       {
       // Get the global oomph-lib communicator 
-      const OomphCommunicator* const comm_pt = MPI_Helpers::communicator_pt();
+      const OomphCommunicator* const comm_pt 
+        = MPI_Helpers::communicator_pt();
 
       // My rank and number of processors. 
       // This is used later for putting the data.
@@ -1421,17 +1423,22 @@ int main(int argc, char* argv[])
 
 
       // Stringstream to hold the results. We do not output the results
-      // (timing/iteration counts) as we get it since it will interlace with the
+      // (timing/iteration counts) as we get it since 
+      // it will interlace with the
       // other processors and becomes hard to read.
       std::ostringstream results_stream;
 
-      // Get the 3D vector which holds the iteration counts and timing results.
+      // Get the 3D vector which holds the iteration counts 
+      // and timing results.
       Vector<Vector<Vector<double> > > iters_times
         = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
 
-      ResultsFormat::format_rayits(rey_increment,&iters_times,&results_stream);
-      ResultsFormat::format_prectime(rey_increment,&iters_times,&results_stream);
-      ResultsFormat::format_solvertime(rey_increment,&iters_times,&results_stream);
+      ResultsFormat::format_rayits(rey_increment,
+                                   &iters_times,&results_stream);
+      ResultsFormat::format_prectime(rey_increment,
+                                     &iters_times,&results_stream);
+      ResultsFormat::format_solvertime(rey_increment,
+                                       &iters_times,&results_stream);
 
       // Print the result to oomph_info one processor at a time...
       // This still doesn't seem to always work, since there are other calls
@@ -1463,7 +1470,8 @@ int main(int argc, char* argv[])
   else
   {
     // Setup the label. Used for doc solution and preconditioner.
-    //    NSPP::Label_str = NSPP::create_label() + LPH::create_label()+SL::create_label();
+    // NSPP::Label_str 
+    // = NSPP::create_label() + LPH::create_label()+SL::create_label();
     NSPP::Label_str = create_label();
 
     time_t rawtime;
@@ -1481,9 +1489,9 @@ int main(int argc, char* argv[])
     {problem.doc_solution();}
 
 
-    //////////////////////////////////////////////////////////////////////////
-    ////////////// Outputting results ////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    //////////// Outputting results ////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
 
     if(NSPP::Solver_type != NSPP::Solver_type_DIRECT_SOLVE)
     {
@@ -1513,11 +1521,13 @@ int main(int argc, char* argv[])
     }
 
     // Stringstream to hold the results. We do not output the results
-    // (timing/iteration counts) as we get it since it will interlace with the
+    // (timing/iteration counts) as we get it since 
+    // it will interlace with the
     // other processors and becomes hard to read.
     std::ostringstream results_stream;
 
-    // Get the 3D vector which holds the iteration counts and timing results.
+    // Get the 3D vector which holds the iteration counts 
+    // and timing results.
     Vector<Vector<Vector<double> > > iters_times
       = NSPP::Doc_linear_solver_info_pt->iterations_and_times();
 
@@ -1525,8 +1535,8 @@ int main(int argc, char* argv[])
     // one "time step", thus it is essentially a 2D vector 
     // (the outer-most vector is of size 1).
 
-    // Loop over the time steps and output the iterations, prec setup time and
-    // linear solver time.
+    // Loop over the time steps and output the iterations, 
+    // prec setup time and linear solver time.
     unsigned ntimestep = iters_times.size();
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
@@ -1536,13 +1546,15 @@ int main(int argc, char* argv[])
     // Now doing the preconditioner setup time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_prectime(intimestep,&iters_times,&results_stream);
+      ResultsFormat::format_prectime(intimestep,
+          &iters_times,&results_stream);
     }
 
     // Now doing the linear solver time.
     for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
     {
-      ResultsFormat::format_solvertime(intimestep,&iters_times,&results_stream);
+      ResultsFormat::format_solvertime(intimestep,
+          &iters_times,&results_stream);
     }
 
     // Print the result to oomph_info one processor at a time...
