@@ -6,18 +6,23 @@ PROG="sq_temp"
 
 
 function runtest {
+
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 0 --rey 100 --visc 0 --ang 30 --noel 16
+
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 0 --rey 100 --visc 0 --ang 67 --noel 16
 
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 0 --rey 100 --visc 1 --ang 30 --noel 16
+
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 0 --rey 100 --visc 1 --ang 67 --noel 16
 
 
-
+## LSC Exact
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0 --rey 100 --visc 0 --ang 30 --noel 16
+
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0 --rey 100 --visc 0 --ang 67 --noel 16
 
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0 --rey 100 --visc 1 --ang 30 --noel 16
+
 mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 110 --itstimedir res_iterations --solver_type 2 --print_hypre --w_solver 0 --ns_solver 1 --p_solver 0 --f_solver 0 --rey 100 --visc 1 --ang 67 --noel 16
 
 
@@ -39,13 +44,14 @@ mpirun -np 1 ./sq_temp --dist_prob --prob_id 11  --max_solver_iter 120 --itstime
 
 
 
-rm -rf res_temp && \
-cd ${BASEDIR} && \
-./non_interactive_autogen.sh -j 4 && \
-cd ${CURRDIR} && \
+#rm -rf res_temp && \
+#cd ${BASEDIR} && \
+#./non_interactive_autogen.sh -j 4 && \
+#cd ${CURRDIR} && \
 make ${PROG} && \
 runtest > res_temp && \
-grep "RAYITS" res_temp
+grep "RRR" res_temp > temper && \
+diff temper sq_temp_validata.dat
 
 
 

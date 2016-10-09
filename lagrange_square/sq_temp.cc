@@ -1679,11 +1679,13 @@ int main(int argc, char* argv[])
 
   // Print out the iteration counts
   const unsigned num_newton_steps = GV::Iterations.size();
-  oomph_info << num_newton_steps << std::endl; 
+  oomph_info << "RRRNS:\t"<<num_newton_steps << std::endl; 
   for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
   {
-    oomph_info << "RITS: " << GV::Iterations[stepi] << std::endl;
+    oomph_info << "RRRITS:\t" << GV::Iterations[stepi] << std::endl;
   }
+  oomph_info << "RRR:\t" << std::endl; 
+  
 
 #ifdef OOMPH_HAS_MPI
   // finalize MPI
