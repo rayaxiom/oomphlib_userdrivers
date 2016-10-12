@@ -90,8 +90,10 @@ namespace Global_Parameters
   traction[2]=-P_out;
  } 
 
+ // Use an iterative linear solver?
+ bool Use_iterative_lin_solver = false;
 
- // Use trilinos?
+ // Use trilinos GMRES?
  bool Use_trilinos = false;
 
  // Use LSC preconditioner for the Navier-Stokes block?
@@ -115,7 +117,7 @@ namespace Global_Parameters
  // Doc directory (for doc_solution)
  std::string Doc_dir = "RESLT";
 
- std::string Doc_label = "soln";
+ std::string Doc_label = "fluid_soln";
 
  /// Storage for number of iterations during Newton steps 
  Vector<unsigned> Iterations;
@@ -130,20 +132,26 @@ inline void specify_command_line_flag_helper()
   // Alias the namespace for convenience.
   namespace GP = Global_Parameters;
 
-  // Use trilinos solver?
+  // Use iterative linear solver?
+  CommandLineArgs::specify_command_line_flag("--use_iterative_lin_solver");
+
+  // Use trilinos GMRES?
   CommandLineArgs::specify_command_line_flag("--use_trilinos");
 
 
   // Use lsc solver?
   CommandLineArgs::specify_command_line_flag("--use_lsc");
 
-  // Use amg for F block?
+  // Use AMG for F block?
   CommandLineArgs::specify_command_line_flag("--use_amg_for_f");
+
+  // Use AMG for P block?
   CommandLineArgs::specify_command_line_flag("--use_amg_for_p");
 
-  // 
+  // Use stress divergence viscous term?
   CommandLineArgs::specify_command_line_flag("--use_stress_div");
 
+  // Reynolds number.
   CommandLineArgs::specify_command_line_flag("--re",&GP::Re);
 
   // Setting for Doc_info
@@ -155,6 +163,16 @@ inline void specify_command_line_flag_helper()
 inline void setup_command_line_flags(DocInfo& doc_info)
 {
   namespace GP = Global_Parameters;
+
+  if(CommandLineArgs::command_line_flag_has_been_set(
+        "--use_iterative_lin_solver"))
+  {
+    GP::Use_iterative_lin_solver = true;
+  }
+  else
+  {
+    GP::Use_iterative_lin_solver = false;
+  }
 
   // Set the flag for trilinos solver
   if(CommandLineArgs::command_line_flag_has_been_set("--use_trilinos"))
@@ -208,7 +226,7 @@ inline void setup_command_line_flags(DocInfo& doc_info)
 
   if(CommandLineArgs::command_line_flag_has_been_set("--use_stress_div"))
   {
-    oomph_info << "Doing stress divergence form" << std::endl; 
+    oomph_info << "Using stress divergence viscous term" << std::endl; 
     for (unsigned d = 0; d < GP::Dim; d++)
     {
       NavierStokesEquations<GP::Dim>::Gamma[d] = 1.0;
@@ -216,7 +234,7 @@ inline void setup_command_line_flags(DocInfo& doc_info)
   }
   else
   {
-    oomph_info << "Doing simple form" << std::endl; 
+    oomph_info << "Using simple viscous term" << std::endl; 
     for (unsigned d = 0; d < GP::Dim; d++)
     {
       NavierStokesEquations<GP::Dim>::Gamma[d] = 0.0;
@@ -274,6 +292,27 @@ public:
  /// Destructor (empty)
  ~UnstructuredFluidProblem(){}
 
+ /// \short Update before Newton solve.
+ void actions_before_newton_solve()
+ {
+   Global_Parameters::Iterations.clear();
+ }
+
+
+ /// \short Update after Newton step - document the number of iterations 
+ /// required for the iterative solver to converge.
+ void actions_after_newton_step()
+ {
+   // Get the iteration counts if using iterative linear solver
+   if(Global_Parameters::Use_iterative_lin_solver)
+   {
+     unsigned iter = static_cast<IterativeLinearSolver*>
+      (this->linear_solver_pt())->iterations();
+
+     Global_Parameters::Iterations.push_back(iter);
+   }
+ }
+
  /// Doc the solution
  void doc_solution(DocInfo& doc_info);
  
@@ -295,6 +334,7 @@ public:
    return Inflow_boundary_id.size()+Outflow_boundary_id.size();
   }
 
+ /// Create the Parallel Outflow Elements
  void create_parall_outflow_lagrange_elements(const unsigned &b,
                                               Vector<double> &tangent_direction,
                                               Mesh* const &bulk_mesh_pt,
@@ -327,25 +367,20 @@ public:
  /// are applied
  Vector<unsigned> Outflow_boundary_id;
 
-
- // Preconditioner
+ /// Preconditioner (master Lagrange Enforced Flow Preconditioner)
  Preconditioner* Prec_pt;
 
- // Preconditioner for the Navier-Stokes block
+ /// Preconditioner for the Navier-Stokes block
  Preconditioner* Navier_stokes_prec_pt;
 
- // Preconditioner for the momentum block
+ /// Preconditioner for the momentum block
  Preconditioner* F_preconditioner_pt;
 
- // Preconditioner for the pressure block
+ /// Preconditioner for the pressure block
  Preconditioner* P_preconditioner_pt;
 
- // Iterative linear solver
+ /// Iterative linear solver
  IterativeLinearSolver* Solver_pt;
-
-
-
-
 
 };
 
@@ -394,9 +429,9 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  // Step 3.2) Leave the velocity nodes pinned and prescribe a parabolic
  //           inflow.
  // 
- // Step 4) Pin velocity nodes at the remaining boundaries to 0.
+ // Step 4) Pin velocity nodes at the remaining boundaries to 0
+ ///////////////////////////////////////////////////////////////////////////
  
-
  // Map to indicate which boundary has been done
  std::map<unsigned,bool> done; 
  
@@ -410,6 +445,7 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  }
 
  // Step 1) Unpin velocity nodes at the outflow boundaries
+ //-------------------------------------------------------------------------
  const unsigned n_outflow_boundary = Outflow_boundary_id.size();
 
  // Loop over the number of outflow boundaries
@@ -430,53 +466,44 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
      nod_pt->unpin(0);
      nod_pt->unpin(1);
      nod_pt->unpin(2);
-
-//     // Only free if node is on a single boundary
-//     std::set<unsigned>*bnd_pt=0;
-//     nod_pt->get_boundaries_pt(bnd_pt);
-//     if (bnd_pt != 0) 
-//     {
-//       if (bnd_pt->size()<2) 
-//       {
-//         nod_pt->unpin(0);
-//         nod_pt->unpin(1);
-//         nod_pt->unpin(2);
-//       } // if less than two boundaries
-//     } // if boundary pointer is not null
    } // for - loop over nodes
  } // for - loop over outflow boundaries
 
  
  // Step 2) Attach parallel outflow elements to the outflow boundaries
+ //-------------------------------------------------------------------------
 
  // Create the surface mesh for the parallel outflow elements
- // on boundary 1 and 2. To be safe, we give a general direction for the
- // tangent vector. Recall that now we have two outflow faces which
- // planes intersect. This means that the automatically calculated tangent
- // vector may switch (even within an element if the face is unfortunately
- // aligned with one of the axis).
+ // on boundary 1 and 2. To be safe, we provide a general direction for the
+ // tangent vector in the y-axis.
  Tangent_direction.resize(3,0);
  Tangent_direction[0] = 0;
  Tangent_direction[1] = 1;
  Tangent_direction[2] = 0;
 
+ // Create the parallel outflow mesh.
  Parallel_outflow_mesh_pt = new Mesh;
  for (unsigned ibound = 0; ibound < n_outflow_boundary; ibound++) 
  {
+   // Outflow boundary ID
    const unsigned current_bound = Outflow_boundary_id[ibound];
+
+   // Create the parallel outflow element
    create_parall_outflow_lagrange_elements(current_bound,
                                            Tangent_direction,
                                            Fluid_mesh_pt,
                                            Parallel_outflow_mesh_pt);
-   // Now we have done this boundary.
+   // This boundary is done.
    done[current_bound] = true;
  }
 
 
  // Step 3.1) Unpin the velocity nodes at the inflow boundary and attach 
  //           traction elements.
- // Loop over inflow
+ //-------------------------------------------------------------------------
  
+ // NB: I'm being a bit lazy by setting in_out=0, which corresponds to the 
+ // inflow boundary.
  //for (unsigned in_out=0;in_out<2;in_out++)
  unsigned in_out=0; // This is the inflow.
   {
@@ -486,7 +513,6 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
    {
      n=nfluid_outflow_traction_boundary();
    }
-   
    
    for (unsigned i=0;i<n;i++)
     {
@@ -518,37 +544,20 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
     }
   } // done in and outflow
 
-
-
-// 
-// // Number of boundaries
-// const unsigned num_bound = Fluid_mesh_pt->nboundary();
-//
-// // Loop through all boundaries and pin all velocities to 0.0
-// for (unsigned ibound = 0; ibound < num_bound; ibound++)
-// {
-//   // Number of nodes on the boundary
-//   const unsigned num_nod = Fluid_mesh_pt->nboundary_node(ibound);
-//
-//   // Loop through all nodes on this boundary
-//   for (unsigned inod = 0; inod < num_nod; inod++) 
-//   {
-//     // Locally cache the node, since we use it more than once.
-//     Node* nod_pt = Fluid_mesh_pt->boundary_node_pt(ibound,inod);
-//
-//     // Loop over velocity values
-//     const unsigned n_velocity_val = 3;
-//     for (unsigned iv = 0; iv < n_velocity_val; iv++) 
-//     {
-//       // Pin and (just to be safe!) set the value to zero.
-//       nod_pt->pin(iv);
-//       nod_pt->set_value(iv,0.0);
-//     } // for - loop over the velocity values.
-//   } // for - loop over the nodes
-// } // for - loop over all the boundaries
+ // Create meshes of fluid traction elements at inflow
+ unsigned n=nfluid_inflow_traction_boundary();
+ Fluid_traction_mesh_pt.resize(n);
+ for (unsigned i=0;i<n;i++)
+  {
+   Fluid_traction_mesh_pt[i]=new Mesh;
+  } 
+ 
+ // Populate them with elements
+ create_fluid_traction_elements();
 
  
- // Deal with the remaining boundaries
+ // Step 4: Deal with the remaining boundaries (just pin them)
+ //-------------------------------------------------------------------------
  for(unsigned b=0;b<nbound;b++)
   {
 
@@ -566,6 +575,7 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
        nod_pt->pin(1); 
        nod_pt->pin(2); 
 
+       // Set value to zero
        nod_pt->set_value(0,0.0);
        nod_pt->set_value(1,0.0);
        nod_pt->set_value(2,0.0);
@@ -577,6 +587,9 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 
   } // done no slip elsewhere 
  
+ ///////////////////////////////////////////////////////////////////////////
+ ///////////////////////////////////////////////////////////////////////////
+ ///////////////////////////////////////////////////////////////////////////
  
  // Complete the build of the fluid elements so they are fully functional
  //----------------------------------------------------------------------
@@ -591,23 +604,7 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
    el_pt->re_pt() = &Global_Parameters::Re;   
 
   } 
- 
- 
- // Create meshes of fluid traction elements at inflow/outflow
- //-----------------------------------------------------------
- 
- // Create the meshes
-// unsigned n=nfluid_traction_boundary();
- unsigned n=nfluid_inflow_traction_boundary(); // only have the inflow one.
- Fluid_traction_mesh_pt.resize(n);
- for (unsigned i=0;i<n;i++)
-  {
-   Fluid_traction_mesh_pt[i]=new Mesh;
-  } 
- 
- // Populate them with elements
- create_fluid_traction_elements();
- 
+
  
  // Combine the lot
  //----------------
@@ -618,13 +615,13 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  add_sub_mesh(Fluid_mesh_pt);
  
  // The fluid traction meshes
- //n=nfluid_traction_boundary();
  n=nfluid_inflow_traction_boundary();
  for (unsigned i=0;i<n;i++)
   { 
    add_sub_mesh(Fluid_traction_mesh_pt[i]);
   }
 
+ // Parallel outflow face elements
  add_sub_mesh(Parallel_outflow_mesh_pt);
  
  // Build global mesh
@@ -634,9 +631,14 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  std::cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
 
  ///////////////////////////////////////////////////////////////////////////
- // Now set the solver!
- //
+ ///////////////////////////////////////////////////////////////////////////
+ ///////////////////////////////////////////////////////////////////////////
 
+ // Now we create and setup the solvers.
+
+ // Are we using an iterative linear solver?
+ if(Global_Parameters::Use_iterative_lin_solver)
+ {
   // We choose either trilinos or oomph-lib's GMRES as our linear solver
   if(Global_Parameters::Use_trilinos)
   {
@@ -663,26 +665,24 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
     Solver_pt = solver_pt;
   }
 
-  // Set up other solver parameters.
+  // Set tolerance
   Solver_pt->tolerance() = 1.0e-6;
 
-
-
-
-
-
-   // Create the preconditioner
+ 
+ // Create the preconditioner
  LagrangeEnforcedFlowPreconditioner* lgr_prec_pt
    = new LagrangeEnforcedFlowPreconditioner;
 
- // Create the vector of mesh pointers!
+ // Create the vector of mesh pointers
  Vector<Mesh*> mesh_pt;
  mesh_pt.resize(2,0);
  mesh_pt[0] = Fluid_mesh_pt;
  mesh_pt[1] = Parallel_outflow_mesh_pt;
 
+ // Set the meshes
  lgr_prec_pt->set_meshes(mesh_pt);
 
+ // Setup subsidiary preconditioner for the Navier-Stokes block.
   NavierStokesSchurComplementPreconditioner* lsc_prec_pt = 0;
   if(Global_Parameters::Use_lsc)
   {
@@ -692,29 +692,16 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
     lsc_prec_pt->use_lsc();
     lgr_prec_pt->set_navier_stokes_preconditioner(lsc_prec_pt);
 
+    // Use AMG for f block?
     if(Global_Parameters::Use_amg_for_f)
     {
       F_preconditioner_pt
         = Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper::
           boomer_amg_for_3D_momentum();
         lsc_prec_pt->set_f_preconditioner(F_preconditioner_pt);
-
-//      if(Global_Parameters::Use_stress_div)
-//      {
-//        F_preconditioner_pt
-//          = Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper::
-//            boomer_amg_for_2D_momentum_simple_visc();
-//        lsc_prec_pt->set_f_preconditioner(F_preconditioner_pt);
-//      }
-//      else
-//      {
-//        F_preconditioner_pt
-//          = Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper::
-//            boomer_amg_for_2D_momentum_stressdiv_visc();
-//        lsc_prec_pt->set_f_preconditioner(F_preconditioner_pt);
-//      }
     }
  
+    // Use AMG for p block?
     if(Global_Parameters::Use_amg_for_p)
     {
       P_preconditioner_pt
@@ -727,7 +714,6 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   {
     lgr_prec_pt->set_superlu_for_navier_stokes_preconditioner();
   }
-
 
   // Store the preconditioner pointers.
   Navier_stokes_prec_pt = lsc_prec_pt;
@@ -742,6 +728,7 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   // Set the Newton solver tolerance.
   this->newton_solver_tolerance() = 1.0e-6;
 
+ }
  
 } // end constructor
 
@@ -766,7 +753,6 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
    //What is the index of the face of the element e along boundary b
    int face_index = bulk_mesh_pt->face_index_at_boundary(b,e);
 
-   {
     // Build the corresponding parallel outflow element
     ImposeParallelOutflowElement<ELEMENT>* flux_element_pt = new
      ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,
@@ -780,13 +766,12 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
     for (unsigned j=0;j<nnod;j++)
      {
       Node* nod_pt = flux_element_pt->node_pt(j);
-           
-      // Determine which outflow boundary it is, left or right?
-           
-      if (  (nod_pt->is_on_boundary(7))||(nod_pt->is_on_boundary(8))
-            ||(nod_pt->is_on_boundary(9))||(nod_pt->is_on_boundary(10))
-            ||(nod_pt->is_on_boundary(11))||(nod_pt->is_on_boundary(12))
-            ||(nod_pt->is_on_boundary(13))||(nod_pt->is_on_boundary(14)))
+      
+      std::set<unsigned>*bnd_pt=0;
+      nod_pt->get_boundaries_pt(bnd_pt);
+      if (bnd_pt != 0) 
+      {
+       if(bnd_pt->size() >= 2)
        {
         // How many nodal values were used by the "bulk" element
         // that originally created this node?
@@ -799,8 +784,8 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
           nod_pt->pin(j);
          }
        }
+      }
      }
-   }
   }
 } // end of create_parall_outflow_lagrange_elements
 
@@ -877,34 +862,27 @@ void UnstructuredFluidProblem<ELEMENT>::create_fluid_traction_elements()
  } // end of create_traction_elements
 
 
-
 //========================================================================
 /// Doc the solution
 //========================================================================
 template<class ELEMENT>
 void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 { 
-
- ofstream some_file;
- char filename[100];
+  // Create the file name string.
+  std::stringstream filename;
+  filename << doc_info.directory() 
+           << "/"
+           <<doc_info.label()<<doc_info.number()<<".dat";
 
  // Number of plot points
- unsigned npts;
- npts=5;
-  
- 
- // Output fluid solution
- sprintf(filename,"%s/fluid_soln%i.dat",doc_info.directory().c_str(),
-         doc_info.number());
- some_file.open(filename);
+ unsigned npts=5;
+
+ // Output solution
+ std::ofstream some_file;
+ some_file.open(filename.str().c_str());
  Fluid_mesh_pt->output(some_file,npts);
  some_file.close();
-  
 }
-
-
-
-
 
 
 //=============start_main=================================================
@@ -925,30 +903,43 @@ int main(int argc, char **argv)
  CommandLineArgs::parse_and_assign();
  CommandLineArgs::doc_specified_flags();
 
- 
  // Label for output
  DocInfo doc_info;
  
+ // Set up flags
  DriverCodeHelpers::setup_command_line_flags(doc_info);
 
- // Parameter study
- double Re_increment=100.0;
- unsigned nstep=4;
  
- //Taylor--Hood
  //Set up the problem
  UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
  
  //Output initial guess
  problem.doc_solution(doc_info);
  doc_info.number()++;
- 
+
+ // Parameter study
+ double Re_increment=100.0;
+ unsigned nstep=4;
+
  // Parameter study: Crank up the pressure drop along the vessel
  for (unsigned istep=0;istep<nstep;istep++)
   {
    // Solve the problem
    problem.newton_solve();
-   
+  
+   // Output iteration counts if using iterative solver.
+   if(Global_Parameters::Use_iterative_lin_solver)
+   {
+     // Print out the iteration counts
+     const unsigned num_newton_steps = Global_Parameters::Iterations.size();
+     oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
+     for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
+     {
+       oomph_info << "RAYRAY num lin. iterations: "
+                  << Global_Parameters::Iterations[stepi] << "\n";
+     }
+   }
+  
    //Output solution
    problem.doc_solution(doc_info);
    doc_info.number()++;
