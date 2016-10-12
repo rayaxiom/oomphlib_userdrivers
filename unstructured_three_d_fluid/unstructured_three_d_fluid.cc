@@ -43,6 +43,7 @@
 
 // Get the mesh
 #include "meshes/tetgen_mesh.h"
+#include "meshes/brick_from_tet_mesh.h"
 
 using namespace std;
 using namespace oomph;
@@ -90,6 +91,9 @@ namespace Global_Parameters
   traction[2]=-P_out;
  } 
 
+ // Use brick mesh?
+ bool Use_brick = false;
+
  // Use an iterative linear solver?
  bool Use_iterative_lin_solver = false;
 
@@ -119,6 +123,8 @@ namespace Global_Parameters
 
  std::string Doc_label = "fluid_soln";
 
+ unsigned Tetgen_num = 2;
+
  /// Storage for number of iterations during Newton steps 
  Vector<unsigned> Iterations;
 
@@ -131,6 +137,9 @@ inline void specify_command_line_flag_helper()
 {
   // Alias the namespace for convenience.
   namespace GP = Global_Parameters;
+
+  // Use brick mesh?
+  CommandLineArgs::specify_command_line_flag("--use_brick");
 
   // Use iterative linear solver?
   CommandLineArgs::specify_command_line_flag("--use_iterative_lin_solver");
@@ -158,11 +167,24 @@ inline void specify_command_line_flag_helper()
   CommandLineArgs::specify_command_line_flag("--doc_dir",&GP::Doc_dir);
   CommandLineArgs::specify_command_line_flag("--doc_num",&GP::Doc_num);
   CommandLineArgs::specify_command_line_flag("--doc_label",&GP::Doc_label);
+  
+  // number for tetgen file
+  CommandLineArgs::specify_command_line_flag("--tetgen_num",
+                                             &GP::Tetgen_num);
 }
 
 inline void setup_command_line_flags(DocInfo& doc_info)
 {
   namespace GP = Global_Parameters;
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--use_brick"))
+  {
+    GP::Use_brick = true;
+  }
+  else
+  {
+    GP::Use_brick = false;
+  }
 
   if(CommandLineArgs::command_line_flag_has_been_set(
         "--use_iterative_lin_solver"))
@@ -267,7 +289,26 @@ inline void setup_command_line_flags(DocInfo& doc_info)
     oomph_info << "--doc_label has not been set. Using default Doc_label=" 
                << GP::Doc_label << std::endl; 
   }
- doc_info.label()=GP::Doc_label;
+  doc_info.label()=GP::Doc_label;
+
+  if(!CommandLineArgs::command_line_flag_has_been_set("--tetgen_num"))
+  {
+    oomph_info << "--tetgen_num has not been set. Using default Tetgen_num=" 
+               << GP::Tetgen_num << std::endl; 
+  }
+  else
+  {
+    if((GP::Tetgen_num < 1)||(GP::Tetgen_num > 20))
+    {
+      std::ostringstream err_msg;
+      err_msg << "Tetgen_num=" << GP::Tetgen_num << "\n"
+              << "Must be between 1 and 20, use --tetgen_num\n";
+      throw OomphLibError(err_msg.str(),
+          OOMPH_CURRENT_FUNCTION,
+          OOMPH_EXCEPTION_LOCATION);
+    }
+
+  }
 
 } // setup_command_line_flags()
 
@@ -295,9 +336,11 @@ public:
  /// \short Update before Newton solve.
  void actions_before_newton_solve()
  {
-   Global_Parameters::Iterations.clear();
+   if(Global_Parameters::Use_iterative_lin_solver)
+   {
+     Global_Parameters::Iterations.clear();
+   }
  }
-
 
  /// \short Update after Newton step - document the number of iterations 
  /// required for the iterative solver to converge.
@@ -335,10 +378,11 @@ public:
   }
 
  /// Create the Parallel Outflow Elements
- void create_parall_outflow_lagrange_elements(const unsigned &b,
-                                              Vector<double> &tangent_direction,
-                                              Mesh* const &bulk_mesh_pt,
-                                              Mesh* const &surface_mesh_pt);
+ void create_parall_outflow_lagrange_elements(
+     const unsigned &b,
+     Vector<double> &tangent_direction,
+     Mesh* const &bulk_mesh_pt,
+     Mesh* const &surface_mesh_pt);
 
 
  //private:
@@ -351,7 +395,8 @@ public:
  void create_fluid_traction_elements();
 
  /// Bulk fluid mesh
- TetgenMesh<ELEMENT>* Fluid_mesh_pt;
+// TetgenMesh<ELEMENT>* Fluid_mesh_pt;
+ Mesh* Fluid_mesh_pt;
 
  /// Meshes of fluid traction elements that apply pressure at in/outflow
  Vector<Mesh*> Fluid_traction_mesh_pt;
@@ -392,19 +437,37 @@ public:
 template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
- 
+ std::stringstream ss;
+ ss<<Global_Parameters::Tetgen_num;
+
  //Create fluid bulk mesh, sub-dividing "corner" elements
- string node_file_name="fsi_bifurcation_fluid.1.node";
- string element_file_name="fsi_bifurcation_fluid.1.ele";
- string face_file_name="fsi_bifurcation_fluid.1.face";
+ string node_file_name="tetgenmesh/fsi_bifurcation_fluid."
+                       +ss.str()
+                       +".node";
+ string element_file_name="tetgenmesh/fsi_bifurcation_fluid."
+                           +ss.str()
+                           +".ele";
+ string face_file_name="tetgenmesh/fsi_bifurcation_fluid."
+                       +ss.str()
+                       +".face";
  bool split_corner_elements=true;
- Fluid_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
-                                          element_file_name,
-                                          face_file_name,
-                                          split_corner_elements);
+ if(Global_Parameters::Use_brick)
+ {
+   Fluid_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+                                                 element_file_name,
+                                                 face_file_name,
+                                                 split_corner_elements);
+ }
+ else
+ {
+   Fluid_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+                                            element_file_name,
+                                            face_file_name,
+                                            split_corner_elements);
+ }
  
  // Find elements next to boundaries
- //Fluid_mesh_pt->setup_boundary_element_info();
+ Fluid_mesh_pt->setup_boundary_element_info();
 
  // The following corresponds to the boundaries as specified by
  // facets in the tetgen input:
@@ -722,6 +785,9 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   // Pass the preconditioner to the solver.
   Solver_pt->preconditioner_pt() = lgr_prec_pt;
 
+  // Max linear solver iterations.
+  Solver_pt->max_iter() = 200;
+
   // Pass the solver to the problem.
   this->linear_solver_pt() = Solver_pt;
 
@@ -910,20 +976,36 @@ int main(int argc, char **argv)
  DriverCodeHelpers::setup_command_line_flags(doc_info);
 
  
+ if(Global_Parameters::Use_brick)
+ {
+   //Set up the problem
+   UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
+   // Solve the problem
+   problem.newton_solve();
+
+   // Output iteration counts if using iterative solver.
+   if(Global_Parameters::Use_iterative_lin_solver)
+   {
+     // Print out the iteration counts
+     const unsigned num_newton_steps = Global_Parameters::Iterations.size();
+     oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
+     for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
+     {
+       oomph_info << "RAYRAY num lin. iterations: "
+                  << Global_Parameters::Iterations[stepi] << "\n";
+     }
+   }
+
+ }
+ else
+ {
  //Set up the problem
  UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
  
  //Output initial guess
- problem.doc_solution(doc_info);
- doc_info.number()++;
+// problem.doc_solution(doc_info);
+// doc_info.number()++;
 
- // Parameter study
- double Re_increment=100.0;
- unsigned nstep=4;
-
- // Parameter study: Crank up the pressure drop along the vessel
- for (unsigned istep=0;istep<nstep;istep++)
-  {
    // Solve the problem
    problem.newton_solve();
   
@@ -939,15 +1021,10 @@ int main(int argc, char **argv)
                   << Global_Parameters::Iterations[stepi] << "\n";
      }
    }
-  
    //Output solution
-   problem.doc_solution(doc_info);
-   doc_info.number()++;
-   
-   // Bump up Reynolds number (equivalent to increasing the imposed pressure
-   // drop)
-   Global_Parameters::Re+=Re_increment;   
-  }
+//   problem.doc_solution(doc_info);
+//   doc_info.number()++;
+ }
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
