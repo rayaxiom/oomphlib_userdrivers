@@ -150,6 +150,17 @@ DOCNUM="--doc_num 8"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
 echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
+TETGENNUM="--tetgen_num 9"
+DOCNUM="--doc_num 9"
+PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
+
+TETGENNUM="--tetgen_num 10"
+DOCNUM="--doc_num 10"
+PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
+
+
 } # End of gen_tests
 
 ############################################################################
@@ -187,7 +198,7 @@ echo '#!/bin/bash' >> $QSUBFILE
 echo '#$ -S /bin/bash' >> $QSUBFILE
 echo '#$ -cwd' >> $QSUBFILE
 echo '#$ -V' >> $QSUBFILE
-echo '#$ -l highmem' >> $QSUBFILE
+echo '#$ -l vhighmem' >> $QSUBFILE
 
 echo -e "\n" >> $QSUBFILE
 
@@ -304,6 +315,12 @@ then
   ## Create the res_its and qsub output directories in scratch.
   mkdir -p $SCRATCH_TEST_DIR/$RESITS_DIR
   mkdir -p $SCRATCH_TEST_DIR/$QSUBOUTPUT_DIR
+
+  # symlink in folder 1
+  SCRATCH_TEST_DIR="$SCRATCH_PROGRAM_DIR/$FILEBASE/$TESTFOLDER1"
+  cd ${SCRATCH_TEST_DIR} 
+  ln -s /mnt/iusers01/mh01/mbax5ml3/trunk_optimized/user_drivers/unstructured_three_d_fluid/tetgen_original tetgen_original
+
 fi
 
 
