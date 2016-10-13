@@ -113,42 +113,42 @@ PARAM="${PARAM} ${TETGENLABEL} "
 TETGENNUM="--tetgen_num 1"
 DOCNUM="--doc_num 1"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 2"
 DOCNUM="--doc_num 2"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 3"
 DOCNUM="--doc_num 3"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 4"
 DOCNUM="--doc_num 4"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 5"
 DOCNUM="--doc_num 5"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 6"
 DOCNUM="--doc_num 6"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 7"
 DOCNUM="--doc_num 7"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 TETGENNUM="--tetgen_num 8"
 DOCNUM="--doc_num 8"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROG ${PARAM2}" >> ${TEST_LIST}
+echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 } # End of gen_tests
 
