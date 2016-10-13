@@ -842,18 +842,23 @@ int main(int argc, char **argv)
    // Solve the problem
    problem.newton_solve();
 
-   // Output iteration counts if using iterative solver.
-   if(Global_Parameters::Use_iterative_lin_solver)
-   {
-     // Print out the iteration counts
-     const unsigned num_newton_steps = Global_Parameters::Iterations.size();
-     oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
-     for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
-     {
-       oomph_info << "RAYRAY num lin. iterations: "
-                  << Global_Parameters::Iterations[stepi] << "\n";
-     }
-   }
+   std::ostringstream results_stream;
+  print_avg_iter(&Global_Parameters::Iterations,
+                 &results_stream);
+
+    // Create an out file.
+  // The output file.
+  std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+      std::ostringstream filename_stream;
+      filename_stream <<"res_iterations/iter"
+        << Global_Parameters::Doc_num;
+      outfile.open(filename_stream.str().c_str());
+
+      outfile << "\n" << results_stream.str();
+      outfile.close();
+
 
  }
  else
