@@ -36,6 +36,7 @@
 #include <iomanip>
 #include <ios>
 
+
 //Generic routines
 #include "generic.h"
 #include "constitutive.h"
@@ -88,7 +89,7 @@ namespace Global_Parameters
   traction[1]=0.0;
   traction[2]=-P_out;
  } 
-
+ 
  // These are the pre-sets (defaults) for problem parameters.
 
  /// Problem Dimension
@@ -353,6 +354,7 @@ public:
  /// Destructor (empty)
  ~UnstructuredFluidProblem(){}
 
+
  /// \short Update before Newton solve.
  void actions_before_newton_solve()
  {
@@ -375,6 +377,7 @@ public:
      Global_Parameters::Iterations.push_back(iter);
    }
  }
+
 
  /// Doc the solution
  void doc_solution(DocInfo& doc_info);
@@ -969,6 +972,34 @@ void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 }
 
 
+void print_avg_iter(const Vector<unsigned> * iters_pt,
+                    std::ostringstream* results_stream_pt)
+{
+  // 
+  const unsigned nnewtonstep = iters_pt->size();
+  unsigned total_its = 0;
+
+  for(unsigned istep = 0; istep < nnewtonstep; istep++)
+  {
+    total_its += (*iters_pt)[istep];
+  }
+
+  double average_its = ((double)total_its)
+    / ((double)nnewtonstep);
+
+  (*results_stream_pt) << "RAYAVGITS:\t";
+  // Print to one decimal place if the average is not an exact
+  // integer. Otherwise we print normally.
+  std::streamsize tmp_precision = results_stream_pt->precision();
+  (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
+    << average_its << "(" << nnewtonstep << ")" << "\n";
+
+  // reset the precision
+  (*results_stream_pt) << std::setprecision(tmp_precision);
+}
+
+
+
 //=============start_main=================================================
 /// Demonstrate how to solve an unstructured 3D fluids problem
 //========================================================================
@@ -993,7 +1024,7 @@ int main(int argc, char **argv)
  // Set up flags
  DriverCodeHelpers::setup_command_line_flags(doc_info);
 
- 
+
  if(Global_Parameters::Use_brick)
  {
    //Set up the problem
@@ -1001,18 +1032,23 @@ int main(int argc, char **argv)
    // Solve the problem
    problem.newton_solve();
 
-   // Output iteration counts if using iterative solver.
-   if(Global_Parameters::Use_iterative_lin_solver)
-   {
-     // Print out the iteration counts
-     const unsigned num_newton_steps = Global_Parameters::Iterations.size();
-     oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
-     for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
-     {
-       oomph_info << "RAYRAY num lin. iterations: "
-                  << Global_Parameters::Iterations[stepi] << "\n";
-     }
-   }
+   std::ostringstream results_stream;
+  print_avg_iter(&Global_Parameters::Iterations,
+                 &results_stream);
+
+    // Create an out file.
+  // The output file.
+  std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+      std::ostringstream filename_stream;
+      filename_stream <<"res_iterations/iter"
+        << Global_Parameters::Doc_num;
+      outfile.open(filename_stream.str().c_str());
+
+      outfile << "\n" << results_stream.str();
+      outfile.close();
+
 
  }
  else
@@ -1024,21 +1060,40 @@ int main(int argc, char **argv)
 // problem.doc_solution(doc_info);
 // doc_info.number()++;
 
-   // Solve the problem
-   problem.newton_solve();
+  // Solve the problem
+  problem.newton_solve();
   
-   // Output iteration counts if using iterative solver.
-   if(Global_Parameters::Use_iterative_lin_solver)
-   {
-     // Print out the iteration counts
-     const unsigned num_newton_steps = Global_Parameters::Iterations.size();
-     oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
-     for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
-     {
-       oomph_info << "RAYRAY num lin. iterations: "
-                  << Global_Parameters::Iterations[stepi] << "\n";
-     }
-   }
+  std::ostringstream results_stream;
+  print_avg_iter(&Global_Parameters::Iterations,
+                 &results_stream);
+
+    // Create an out file.
+  // The output file.
+  std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+      std::ostringstream filename_stream;
+      filename_stream <<"res_iterations/iter"
+        << Global_Parameters::Doc_num;
+      outfile.open(filename_stream.str().c_str());
+
+      outfile << "\n" << results_stream.str();
+      outfile.close();
+
+
+
+//  // Output iteration counts if using iterative solver.
+//  if(Global_Parameters::Use_iterative_lin_solver)
+//  {
+//   // Print out the iteration counts
+//   const unsigned num_newton_steps = Global_Parameters::Iterations.size();
+//   oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
+//   for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
+//   {
+//     oomph_info << "RAYRAY num lin. iterations: "
+//                << Global_Parameters::Iterations[stepi] << "\n";
+//   }
+//  }
    //Output solution
 //   problem.doc_solution(doc_info);
 //   doc_info.number()++;
@@ -1047,7 +1102,8 @@ int main(int argc, char **argv)
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
 #endif  
- 
+
+
 } // end_of_main
 
 

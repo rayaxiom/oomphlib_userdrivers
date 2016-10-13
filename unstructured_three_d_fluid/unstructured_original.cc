@@ -139,6 +139,7 @@ namespace Global_Parameters
 
 } //end namespace
 
+
 namespace DriverCodeHelpers
 {
 inline void specify_command_line_flag_helper()
@@ -334,6 +335,8 @@ inline void setup_command_line_flags(DocInfo& doc_info)
 
 
 } // namespace DriverCodeHelpers
+
+
 
 
 //======start_problem_class===========================================
