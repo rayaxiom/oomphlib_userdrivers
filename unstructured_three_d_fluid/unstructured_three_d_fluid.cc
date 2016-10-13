@@ -807,7 +807,7 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
   Solver_pt->preconditioner_pt() = lgr_prec_pt;
 
   // Max linear solver iterations.
-  Solver_pt->max_iter() = 200;
+  Solver_pt->max_iter() = 300;
 
   // Pass the solver to the problem.
   this->linear_solver_pt() = Solver_pt;
@@ -846,7 +846,7 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
                                            face_index);
 
     // Testing...
-    //flux_element_pt->set_tangent_direction(&tangent_direction);
+    flux_element_pt->set_tangent_direction(&tangent_direction);
     surface_mesh_pt->add_element_pt(flux_element_pt);
 
     // Loop over the nodes
