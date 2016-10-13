@@ -845,7 +845,8 @@ void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
      ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,
                                            face_index);
 
-    flux_element_pt->set_tangent_direction(&tangent_direction);
+    // Testing...
+    //flux_element_pt->set_tangent_direction(&tangent_direction);
     surface_mesh_pt->add_element_pt(flux_element_pt);
 
     // Loop over the nodes
