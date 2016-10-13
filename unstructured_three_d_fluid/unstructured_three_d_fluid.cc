@@ -59,8 +59,6 @@ using namespace oomph;
 //================================================================
 namespace Global_Parameters
 {
- /// Problem Dimension
- const unsigned Dim = 3;
 
  /// Fluid pressure on inflow boundary
  double P_in=0.5;
@@ -91,39 +89,49 @@ namespace Global_Parameters
   traction[2]=-P_out;
  } 
 
- // Use brick mesh?
+ // These are the pre-sets (defaults) for problem parameters.
+
+ /// Problem Dimension
+ const unsigned Dim = 3;
+
+ /// Switch for mesh: --use_brick
  bool Use_brick = false;
 
- // Use an iterative linear solver?
+ /// Switch for linear solver type: --use_iterative_lin_solver
  bool Use_iterative_lin_solver = false;
 
- // Use trilinos GMRES?
+ /// Switch for iterative linear solver: --use_trilinos
  bool Use_trilinos = false;
 
- // Use LSC preconditioner for the Navier-Stokes block?
+ /// Prec. for Navier-Stokes block: --use_lsc
  bool Use_lsc = false;
 
- // Use Boomer AMG for the momentum block?
+ /// Prec. for velocity block: --use_amg_for_f
  bool Use_amg_for_f = false;
 
- // Use Boomer AMG for the pressure block?
+ /// Use Boomer AMG for the pressure block?
  bool Use_amg_for_p = false;
 
- // Using stress divergence viscous term?
+ /// Using stress divergence viscous term?
  bool Use_stress_div = true;
 
- // Reynolds number
+ /// Reynolds number
  double Re = 100.0;
 
- // Doc number (for doc_solution)
+ /// Doc number (for doc_solution)
  unsigned Doc_num = 0;
 
- // Doc directory (for doc_solution)
+ /// Doc directory (for doc_solution)
  std::string Doc_dir = "RESLT";
 
+ /// Label for doc solution
  std::string Doc_label = "fluid_soln";
 
- unsigned Tetgen_num = 2;
+ /// Label for tetgen file (incl folder)
+ std::string Tetgen_label = "tetgen_original/fsi_bifurcation_fluid";
+
+ /// Number for tetgen file
+ unsigned Tetgen_num = 1;
 
  /// Storage for number of iterations during Newton steps 
  Vector<unsigned> Iterations;
@@ -167,8 +175,12 @@ inline void specify_command_line_flag_helper()
   CommandLineArgs::specify_command_line_flag("--doc_dir",&GP::Doc_dir);
   CommandLineArgs::specify_command_line_flag("--doc_num",&GP::Doc_num);
   CommandLineArgs::specify_command_line_flag("--doc_label",&GP::Doc_label);
-  
-  // number for tetgen file
+ 
+  // Label for tetgen file
+  CommandLineArgs::specify_command_line_flag("--tetgen_label",
+                                             &GP::Tetgen_label);
+
+  // Number for tetgen file
   CommandLineArgs::specify_command_line_flag("--tetgen_num",
                                              &GP::Tetgen_num);
 }
@@ -291,6 +303,14 @@ inline void setup_command_line_flags(DocInfo& doc_info)
   }
   doc_info.label()=GP::Doc_label;
 
+  
+  if(!CommandLineArgs::command_line_flag_has_been_set("--tetgen_label"))
+  {
+    oomph_info 
+      << "--tetgen_num has not been set. Using default Tetgen_label=" 
+      << GP::Tetgen_label << std::endl; 
+  }
+
   if(!CommandLineArgs::command_line_flag_has_been_set("--tetgen_num"))
   {
     oomph_info << "--tetgen_num has not been set. Using default Tetgen_num=" 
@@ -298,11 +318,11 @@ inline void setup_command_line_flags(DocInfo& doc_info)
   }
   else
   {
-    if((GP::Tetgen_num < 1)||(GP::Tetgen_num > 20))
+    if((GP::Tetgen_num < 1)||(GP::Tetgen_num > 13))
     {
       std::ostringstream err_msg;
       err_msg << "Tetgen_num=" << GP::Tetgen_num << "\n"
-              << "Must be between 1 and 20, use --tetgen_num\n";
+              << "Must be between 1 and 13, use --tetgen_num\n";
       throw OomphLibError(err_msg.str(),
           OOMPH_CURRENT_FUNCTION,
           OOMPH_EXCEPTION_LOCATION);
@@ -395,7 +415,6 @@ public:
  void create_fluid_traction_elements();
 
  /// Bulk fluid mesh
-// TetgenMesh<ELEMENT>* Fluid_mesh_pt;
  Mesh* Fluid_mesh_pt;
 
  /// Meshes of fluid traction elements that apply pressure at in/outflow
@@ -437,19 +456,18 @@ public:
 template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
+ 
+ // Set up the tetgen files.
  std::stringstream ss;
  ss<<Global_Parameters::Tetgen_num;
 
  //Create fluid bulk mesh, sub-dividing "corner" elements
- string node_file_name="tetgenmesh/fsi_bifurcation_fluid."
-                       +ss.str()
-                       +".node";
- string element_file_name="tetgenmesh/fsi_bifurcation_fluid."
-                           +ss.str()
-                           +".ele";
- string face_file_name="tetgenmesh/fsi_bifurcation_fluid."
-                       +ss.str()
-                       +".face";
+ string node_file_name=Global_Parameters::Tetgen_label
+                       +"."+ss.str()+".node";
+ string element_file_name=Global_Parameters::Tetgen_label
+                          +"."+ss.str()+".ele";
+ string face_file_name=Global_Parameters::Tetgen_label
+                       +"."+ss.str()+".face";
  bool split_corner_elements=true;
  if(Global_Parameters::Use_brick)
  {
@@ -934,11 +952,11 @@ void UnstructuredFluidProblem<ELEMENT>::create_fluid_traction_elements()
 template<class ELEMENT>
 void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
 { 
-  // Create the file name string.
-  std::stringstream filename;
-  filename << doc_info.directory() 
+ // Create the file name string.
+ std::stringstream filename;
+ filename << doc_info.directory() 
            << "/"
-           <<doc_info.label()<<doc_info.number()<<".dat";
+          <<doc_info.label()<<doc_info.number()<<".dat";
 
  // Number of plot points
  unsigned npts=5;
