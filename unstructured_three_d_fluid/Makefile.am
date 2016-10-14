@@ -1,6 +1,7 @@
 noinst_PROGRAMS= \
 unstructured_three_d_fluid \
-unstructured_original 
+unstructured_original \
+unstructured_lgr_pressureimposed
 
 #------------------------------------------------------------------------
 unstructured_three_d_fluid_SOURCES = unstructured_three_d_fluid.cc
@@ -10,6 +11,11 @@ unstructured_three_d_fluid_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERN
 unstructured_original_SOURCES = unstructured_original.cc
 
 unstructured_original_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
+
+#------------------------------------------------------------------------
+unstructured_lgr_pressureimposed_SOURCES = unstructured_lgr_pressureimposed.cc
+
+unstructured_lgr_pressureimposed_LDADD = -L@libdir@ -lnavier_stokes -lgeneric $(EXTERNAL_LIBS) $(FLIBS)
 
 # Include path for library headers: All library headers live in 
 # the include directory which we specify with -I
