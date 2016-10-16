@@ -966,136 +966,6 @@ create_parallel_outflow_lagrange_elements()
 }  // done
 
 
-
-////============start_of_fluid_traction_elements==============================
-///// Create parallel outflow elements. 
-////=======================================================================
-//template<class ELEMENT>
-//void UnstructuredFluidProblem<ELEMENT>::create_parall_outflow_lagrange_elements
-//(const unsigned &b, Vector<double>& tangent_direction,
-// Mesh* const &bulk_mesh_pt, Mesh* const &surface_mesh_pt)
-//{
-// // How many bulk elements are adjacent to boundary b?
-// unsigned n_element = bulk_mesh_pt->nboundary_element(b);
-//   
-// // Loop over the bulk elements adjacent to boundary b
-// for(unsigned e=0;e<n_element;e++)
-//  {
-//   // Get pointer to the bulk element that is adjacent to boundary b
-//   ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
-//    bulk_mesh_pt->boundary_element_pt(b,e));
-//     
-//   //What is the index of the face of the element e along boundary b
-//   int face_index = bulk_mesh_pt->face_index_at_boundary(b,e);
-//
-//    // Build the corresponding parallel outflow element
-//    ImposeParallelOutflowElement<ELEMENT>* flux_element_pt = new
-//     ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,
-//                                           face_index);
-//
-//    // Testing...
-//    flux_element_pt->set_tangent_direction(&tangent_direction);
-//    surface_mesh_pt->add_element_pt(flux_element_pt);
-//
-//    // Loop over the nodes
-//    unsigned nnod=flux_element_pt->nnode();
-//    for (unsigned j=0;j<nnod;j++)
-//     {
-//      Node* nod_pt = flux_element_pt->node_pt(j);
-//      
-//      std::set<unsigned>*bnd_pt=0;
-//      nod_pt->get_boundaries_pt(bnd_pt);
-//      if (bnd_pt != 0) 
-//      {
-//       if(bnd_pt->size() >= 2)
-//       {
-//        // How many nodal values were used by the "bulk" element
-//        // that originally created this node?
-//        unsigned n_bulk_value=flux_element_pt->nbulk_value(j);
-//
-//        // The remaining ones are Lagrange multipliers and we pin them.
-//        unsigned nval=nod_pt->nvalue();
-//        for (unsigned j=n_bulk_value;j<nval;j++)
-//         {
-//          nod_pt->pin(j);
-//         }
-//       }
-//      }
-//     }
-//  }
-//} // end of create_parall_outflow_lagrange_elements
-
-
-////============start_of_fluid_traction_elements==============================
-///// Create fluid traction elements 
-////=======================================================================
-//template<class ELEMENT>
-//void UnstructuredFluidProblem<ELEMENT>::create_fluid_traction_elements()
-//{
-//
-// // Counter for number of fluid traction meshes
-// unsigned count=0;
-//
-// // Loop over inflow/outflow boundaries
-// for (unsigned in_out=0;in_out<2;in_out++)
-//  {
-//   // Loop over boundaries with fluid traction elements
-//   unsigned n=nfluid_inflow_traction_boundary();
-//   if (in_out==1) n=nfluid_outflow_traction_boundary();
-//   for (unsigned i=0;i<n;i++)
-//    {
-//     // Get boundary ID
-//     unsigned b=0;
-//     if (in_out==0)
-//      {
-//       b=Inflow_boundary_id[i];
-//      }
-//     else
-//      {
-//       b=Outflow_boundary_id[i];
-//      }
-//     
-//     // How many bulk elements are adjacent to boundary b?
-//     unsigned n_element = Fluid_mesh_pt->nboundary_element(b);
-//     
-//     // Loop over the bulk elements adjacent to boundary b
-//     for(unsigned e=0;e<n_element;e++)
-//      {
-//       // Get pointer to the bulk element that is adjacent to boundary b
-//       ELEMENT* bulk_elem_pt = dynamic_cast<ELEMENT*>(
-//        Fluid_mesh_pt->boundary_element_pt(b,e));
-//       
-//       //What is the index of the face of the element e along boundary b
-//       int face_index = Fluid_mesh_pt->face_index_at_boundary(b,e);
-//       
-//       // Create new element 
-//       NavierStokesTractionElement<ELEMENT>* el_pt=
-//        new NavierStokesTractionElement<ELEMENT>(bulk_elem_pt,
-//                                                       face_index);
-//       
-//       // Add it to the mesh
-//       Fluid_traction_mesh_pt[count]->add_element_pt(el_pt);
-//       
-//       // Set the pointer to the prescribed traction function
-//       if (in_out==0)
-//        {
-//         el_pt->traction_fct_pt() = 
-//          &Global_Parameters::prescribed_inflow_traction;
-//        }
-//       else
-//        {
-//         el_pt->traction_fct_pt() = 
-//          &Global_Parameters::prescribed_outflow_traction;
-//        }
-//      }
-//     // Bump up counter
-//     count++;
-//    }
-//  }
-// 
-// } // end of create_traction_elements
-
-
 //========================================================================
 /// Doc the solution
 //========================================================================
@@ -1156,95 +1026,77 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
- // Store command line arguments
- CommandLineArgs::setup(argc,argv);
+  // Store command line arguments
+  CommandLineArgs::setup(argc,argv);
 
- DriverCodeHelpers::specify_command_line_flag_helper();
+  DriverCodeHelpers::specify_command_line_flag_helper();
 
- // Parse the above flags.
- CommandLineArgs::parse_and_assign();
- CommandLineArgs::doc_specified_flags();
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags();
 
- // Label for output
- DocInfo doc_info;
- 
- // Set up flags
- DriverCodeHelpers::setup_command_line_flags(doc_info);
+  // Label for output
+  DocInfo doc_info;
 
-
- if(Global_Parameters::Use_brick)
- {
-   //Set up the problem
-   UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
-   // Solve the problem
-   problem.newton_solve();
-
-   std::ostringstream results_stream;
-  print_avg_iter(&Global_Parameters::Iterations,
-                 &results_stream);
-
-    // Create an out file.
-  // The output file.
-  std::ofstream outfile;
-
-    // If we want to output to a file, we create the outfile.
-      std::ostringstream filename_stream;
-      filename_stream <<"res_iterations/iter"
-        << Global_Parameters::Doc_num;
-      outfile.open(filename_stream.str().c_str());
-
-      outfile << "\n" << results_stream.str();
-      outfile.close();
+  // Set up flags
+  DriverCodeHelpers::setup_command_line_flags(doc_info);
 
 
- }
- else
- {
- //Set up the problem
- UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
- 
- //Output initial guess
-// problem.doc_solution(doc_info);
-// doc_info.number()++;
+  if(Global_Parameters::Use_brick)
+  {
+    //Set up the problem
+    UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
+    // Solve the problem
+    problem.newton_solve();
 
-  // Solve the problem
-  problem.newton_solve();
-  
-  std::ostringstream results_stream;
-  print_avg_iter(&Global_Parameters::Iterations,
-                 &results_stream);
+    std::ostringstream results_stream;
+    print_avg_iter(&Global_Parameters::Iterations,
+        &results_stream);
 
     // Create an out file.
-  // The output file.
-  std::ofstream outfile;
+    // The output file.
+    std::ofstream outfile;
 
     // If we want to output to a file, we create the outfile.
-      std::ostringstream filename_stream;
-      filename_stream <<"res_iterations/iter"
-        << Global_Parameters::Doc_num;
-      outfile.open(filename_stream.str().c_str());
+    std::ostringstream filename_stream;
+    filename_stream <<"res_iterations/iter"
+      << Global_Parameters::Doc_num;
+    outfile.open(filename_stream.str().c_str());
 
-      outfile << "\n" << results_stream.str();
-      outfile.close();
+    outfile << "\n" << results_stream.str();
+    outfile.close();
 
 
+  }
+  else
+  {
+    //Set up the problem
+    UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
 
-//  // Output iteration counts if using iterative solver.
-//  if(Global_Parameters::Use_iterative_lin_solver)
-//  {
-//   // Print out the iteration counts
-//   const unsigned num_newton_steps = Global_Parameters::Iterations.size();
-//   oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
-//   for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
-//   {
-//     oomph_info << "RAYRAY num lin. iterations: "
-//                << Global_Parameters::Iterations[stepi] << "\n";
-//   }
-//  }
-   //Output solution
-//   problem.doc_solution(doc_info);
-//   doc_info.number()++;
- }
+    //Output initial guess
+    // problem.doc_solution(doc_info);
+    // doc_info.number()++;
+
+    // Solve the problem
+    problem.newton_solve();
+
+    std::ostringstream results_stream;
+    print_avg_iter(&Global_Parameters::Iterations,
+        &results_stream);
+
+    // Create an out file.
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    std::ostringstream filename_stream;
+    filename_stream <<"res_iterations/iter"
+      << Global_Parameters::Doc_num;
+    outfile.open(filename_stream.str().c_str());
+
+    outfile << "\n" << results_stream.str();
+    outfile.close();
+  }
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();

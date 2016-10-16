@@ -822,95 +822,77 @@ int main(int argc, char **argv)
   MPI_Helpers::init(argc,argv);
 #endif
 
- // Store command line arguments
- CommandLineArgs::setup(argc,argv);
+  // Store command line arguments
+  CommandLineArgs::setup(argc,argv);
 
- DriverCodeHelpers::specify_command_line_flag_helper();
+  DriverCodeHelpers::specify_command_line_flag_helper();
 
- // Parse the above flags.
- CommandLineArgs::parse_and_assign();
- CommandLineArgs::doc_specified_flags();
+  // Parse the above flags.
+  CommandLineArgs::parse_and_assign();
+  CommandLineArgs::doc_specified_flags();
 
- // Label for output
- DocInfo doc_info;
- 
- // Set up flags
- DriverCodeHelpers::setup_command_line_flags(doc_info);
+  // Label for output
+  DocInfo doc_info;
 
-
- if(Global_Parameters::Use_brick)
- {
-   //Set up the problem
-   UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
-   // Solve the problem
-   problem.newton_solve();
-
-   std::ostringstream results_stream;
-  print_avg_iter(&Global_Parameters::Iterations,
-                 &results_stream);
-
-    // Create an out file.
-  // The output file.
-  std::ofstream outfile;
-
-    // If we want to output to a file, we create the outfile.
-      std::ostringstream filename_stream;
-      filename_stream <<"res_iterations/iter"
-        << Global_Parameters::Doc_num;
-      outfile.open(filename_stream.str().c_str());
-
-      outfile << "\n" << results_stream.str();
-      outfile.close();
+  // Set up flags
+  DriverCodeHelpers::setup_command_line_flags(doc_info);
 
 
- }
- else
- {
- //Set up the problem
- UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
- 
- //Output initial guess
-// problem.doc_solution(doc_info);
-// doc_info.number()++;
+  if(Global_Parameters::Use_brick)
+  {
+    //Set up the problem
+    UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
+    // Solve the problem
+    problem.newton_solve();
 
-  // Solve the problem
-  problem.newton_solve();
-  
-  std::ostringstream results_stream;
-  print_avg_iter(&Global_Parameters::Iterations,
-                 &results_stream);
+    std::ostringstream results_stream;
+    print_avg_iter(&Global_Parameters::Iterations,
+        &results_stream);
 
     // Create an out file.
-  // The output file.
-  std::ofstream outfile;
+    // The output file.
+    std::ofstream outfile;
 
     // If we want to output to a file, we create the outfile.
-      std::ostringstream filename_stream;
-      filename_stream <<"res_iterations/iter"
-        << Global_Parameters::Doc_num;
-      outfile.open(filename_stream.str().c_str());
+    std::ostringstream filename_stream;
+    filename_stream <<"res_iterations/iter"
+      << Global_Parameters::Doc_num;
+    outfile.open(filename_stream.str().c_str());
 
-      outfile << "\n" << results_stream.str();
-      outfile.close();
+    outfile << "\n" << results_stream.str();
+    outfile.close();
 
 
+  }
+  else
+  {
+    //Set up the problem
+    UnstructuredFluidProblem<TTaylorHoodElement<3> > problem;
 
-//  // Output iteration counts if using iterative solver.
-//  if(Global_Parameters::Use_iterative_lin_solver)
-//  {
-//   // Print out the iteration counts
-//   const unsigned num_newton_steps = Global_Parameters::Iterations.size();
-//   oomph_info << "RAYRAY num Newton iteration: " << num_newton_steps << "\n";
-//   for (unsigned stepi = 0; stepi < num_newton_steps; stepi++) 
-//   {
-//     oomph_info << "RAYRAY num lin. iterations: "
-//                << Global_Parameters::Iterations[stepi] << "\n";
-//   }
-//  }
-   //Output solution
-//   problem.doc_solution(doc_info);
-//   doc_info.number()++;
- }
+    //Output initial guess
+    // problem.doc_solution(doc_info);
+    // doc_info.number()++;
+
+    // Solve the problem
+    problem.newton_solve();
+
+    std::ostringstream results_stream;
+    print_avg_iter(&Global_Parameters::Iterations,
+        &results_stream);
+
+    // Create an out file.
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    std::ostringstream filename_stream;
+    filename_stream <<"res_iterations/iter"
+      << Global_Parameters::Doc_num;
+    outfile.open(filename_stream.str().c_str());
+
+    outfile << "\n" << results_stream.str();
+    outfile.close();
+  }
 
 #ifdef OOMPH_HAS_MPI
   MPI_Helpers::finalize();
