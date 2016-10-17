@@ -65,8 +65,8 @@ DO_UNSTEADY="--do_unsteady"
 TSTART="--tstart 0.0"
 TEND="--tend 2.0"
 DT="--dt 0.04"
-DO_ADAPTTIME="--do_adapt_time"
-TIMETOL="--time_tol 0.0001"
+#DO_ADAPTTIME="--do_adapt_time"
+#TIMETOL="--time_tol 0.0001"
 TIMEPARAM="${DO_UNSTEADY} ${TSTART} ${TEND} ${DT} ${DO_ADAPTTIME} ${TIMETOL}"
 
 
@@ -85,7 +85,7 @@ TIMEPARAM="${DO_UNSTEADY} ${TSTART} ${TEND} ${DT} ${DO_ADAPTTIME} ${TIMETOL}"
 # 11- 319121/
 # 12- 647055/
 # 13- 1318343/
-TETGENNUM="--tetgen_num 2"
+TETGENNUM="--tetgen_num 1"
 
 # Concatenate the above parameters
 PARAM="${USEBRICK}"

@@ -485,7 +485,9 @@ public:
  {
    // Alias namespace for convenience
    namespace GP = Global_Parameters;
-   if(Global_Parameters::Do_adapt_time)
+
+   // Get rid of previous time step in case it's rejected.
+   if(Global_Parameters::Do_unsteady)
    {
      GP::Iterations.pop_back();
      GP::Lin_solver_time.pop_back();
@@ -1003,7 +1005,7 @@ create_parallel_outflow_lagrange_elements()
        ImposeParallelOutflowElement<ELEMENT>* el_pt = new 
         ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,face_index);
        
-//       el_pt->set_tangent_direction(&Tangent_direction);
+       el_pt->set_tangent_direction(&Tangent_direction);
        // Add it to the mesh
        Parallel_outflow_lagrange_multiplier_mesh_pt[count]->
         add_element_pt(el_pt);
