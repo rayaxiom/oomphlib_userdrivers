@@ -63,33 +63,13 @@ namespace Global_Parameters
 
  /// Fluid pressure on inflow boundary
  double P_in=0.5;
-
-// /// Applied traction on fluid at the inflow boundary
-// void prescribed_inflow_traction(const double& t,
-//                                 const Vector<double>& x,
-//                                 const Vector<double>& n,
-//                                 Vector<double>& traction)
-// {
-//  traction[0]=0.0;
-//  traction[1]=0.0;
-//  traction[2]=P_in;
-// } 
-
+ double P_in_max=1.0;
 
  /// Fluid pressure on outflow boundary
- double P_out=-0.5; 
+ double P_out=-0.5;
+ double P_out_max=-1.0;
 
-// /// Applied traction on fluid at the inflow boundary
-// void prescribed_outflow_traction(const double& t,
-//                                  const Vector<double>& x,
-//                                  const Vector<double>& n,
-//                                  Vector<double>& traction)
-// {
-//  traction[0]=0.0;
-//  traction[1]=0.0;
-//  traction[2]=-P_out;
-// } 
- 
+
  // These are the pre-sets (defaults) for problem parameters.
 
  /// Problem Dimension
@@ -135,7 +115,20 @@ namespace Global_Parameters
  unsigned Tetgen_num = 1;
 
  /// Storage for number of iterations during Newton steps 
- Vector<unsigned> Iterations;
+ Vector<Vector<unsigned> > Iterations;
+ Vector<Vector<double> > Lin_solver_time;
+ Vector<Vector<double> > Prec_setup_time;
+
+
+ // New time stepping stuff.
+ bool Do_unsteady = false;
+
+ double Time_start = 0.0;
+ double Time_end = 1.0;
+ double Delta_t = 0.04; // 1/25
+
+ bool Do_adapt_time = false;
+ double Time_tol = 0.0001; // 10^-4
 
 } //end namespace
 
@@ -184,6 +177,14 @@ inline void specify_command_line_flag_helper()
   // Number for tetgen file
   CommandLineArgs::specify_command_line_flag("--tetgen_num",
                                              &GP::Tetgen_num);
+
+  CommandLineArgs::specify_command_line_flag("--do_unsteady");
+  CommandLineArgs::specify_command_line_flag("--tstart",&GP::Time_start);
+  CommandLineArgs::specify_command_line_flag("--tend",&GP::Time_end);
+  CommandLineArgs::specify_command_line_flag("--dt",&GP::Delta_t);
+  CommandLineArgs::specify_command_line_flag("--do_adapt_time");
+  CommandLineArgs::specify_command_line_flag("--time_tol",&GP::Time_tol);
+  
 }
 
 inline void setup_command_line_flags(DocInfo& doc_info)
@@ -331,8 +332,84 @@ inline void setup_command_line_flags(DocInfo& doc_info)
 
   }
 
-} // setup_command_line_flags()
+  if(CommandLineArgs::command_line_flag_has_been_set("--do_unsteady"))
+  {
+    // Set the driving pressures to zero.
+    GP::P_in = 0.0;
+    GP::P_out = 0.0;
+    GP::Do_unsteady = true;
+    oomph_info << "Doing unsteady" << std::endl;
+    
+  }
+  else
+  {
+    GP::Do_unsteady = false;
+    oomph_info << "Doing steady state" << std::endl; 
+  }
 
+  if(GP::Do_unsteady)
+  {
+    if(CommandLineArgs::command_line_flag_has_been_set("--tstart"))
+    {
+      oomph_info << "Start time set to: "<< GP::Time_start << std::endl;
+    }
+    else
+    {
+      oomph_info << "Using default start time: "<< GP::Time_start 
+                 << std::endl;
+    }
+  }
+
+  if(GP::Do_unsteady)
+  {
+    if(CommandLineArgs::command_line_flag_has_been_set("--tend"))
+    {
+      oomph_info << "Set Time_end="<< GP::Time_end << std::endl;
+    }
+    else
+    {
+      oomph_info << "Using default Time_end="<< GP::Time_end
+                 << std::endl;
+    }
+  }
+
+  if(GP::Do_unsteady)
+  {
+    if(CommandLineArgs::command_line_flag_has_been_set("--dt"))
+    {
+      oomph_info << "Set Delta_t="<< GP::Delta_t << std::endl;
+    }
+    else
+    {
+      oomph_info << "Using default Delta_t="<< GP::Delta_t
+                 << std::endl;
+    }
+  }
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--do_adapt_time"))
+  {
+    GP::Do_adapt_time = true;
+    oomph_info << "Doing adaptive time stepping." << std::endl;
+  }
+  else
+  {
+    GP::Do_adapt_time = false;
+    oomph_info << "Fixed time step." << std::endl; 
+  }
+
+  if(GP::Do_adapt_time)
+  {
+    if(CommandLineArgs::command_line_flag_has_been_set("--time_tol"))
+    {
+      oomph_info << "Set Time_tol="<< GP::Time_tol << std::endl;
+    }
+    else
+    {
+      oomph_info << "Using default Time_tol="<< GP::Time_tol
+                 << std::endl;
+    }
+  }
+} // setup_command_line_flags()
 
 } // namespace DriverCodeHelpers
 
@@ -358,25 +435,92 @@ public:
  /// \short Update before Newton solve.
  void actions_before_newton_solve()
  {
-   if(Global_Parameters::Use_iterative_lin_solver)
-   {
-     Global_Parameters::Iterations.clear();
-   }
+//   if(Global_Parameters::Use_iterative_lin_solver)
+//   {
+//     Global_Parameters::Iterations.clear();
+//   }
  }
+
+ /// \short Update after Newton solve.
+ void actions_after_newton_solve() { }
+
+ /// \short Update before Newton step.
+ void actions_before_newton_step() {}
 
  /// \short Update after Newton step - document the number of iterations 
  /// required for the iterative solver to converge.
  void actions_after_newton_step()
  {
+   namespace GP = Global_Parameters;
+
    // Get the iteration counts if using iterative linear solver
    if(Global_Parameters::Use_iterative_lin_solver)
    {
      unsigned iter = static_cast<IterativeLinearSolver*>
       (this->linear_solver_pt())->iterations();
+     double prec_setup_time = static_cast<IterativeLinearSolver*>
+      (this->linear_solver_pt())->preconditioner_pt()->setup_time();
 
-     Global_Parameters::Iterations.push_back(iter);
+     double solver_time = 0.0;
+     if(GP::Use_trilinos)
+     {
+      TrilinosAztecOOSolver* trilinos_solver_pt 
+        = dynamic_cast<TrilinosAztecOOSolver*>(this->linear_solver_pt());
+      solver_time = trilinos_solver_pt->linear_solver_solution_time();
+     }
+     else
+     {
+      solver_time 
+        = this->linear_solver_pt()->linear_solver_solution_time();
+     }
+
+     GP::Iterations.back().push_back(iter);
+     GP::Prec_setup_time.back().push_back(prec_setup_time);
+     GP::Lin_solver_time.back().push_back(solver_time);
    }
  }
+
+ /// RRR
+ void actions_before_implicit_timestep()
+ {
+   // Alias namespace for convenience
+   namespace GP = Global_Parameters;
+   if(Global_Parameters::Do_adapt_time)
+   {
+     GP::Iterations.pop_back();
+     GP::Lin_solver_time.pop_back();
+     GP::Prec_setup_time.pop_back();
+
+     GP::Iterations.push_back(Vector<unsigned>());
+     GP::Lin_solver_time.push_back(Vector<double>());
+     GP::Prec_setup_time.push_back(Vector<double>());
+   }
+
+
+
+   if(Global_Parameters::Do_unsteady)
+   {
+     const double time = time_pt()->time(); 
+     const double scaling = -cos(MathematicalConstants::Pi*time)/2.0 + 0.5;
+     Global_Parameters::P_in = Global_Parameters::P_in_max*scaling;
+     Global_Parameters::P_out = Global_Parameters::P_out_max*scaling;
+   }
+ }
+
+ /// RRR
+ void actions_after_implicit_timestep(){}
+
+ /// RRR
+ void actions_before_adapt(){}
+
+ /// RRR
+ void actions_after_adapt(){}
+
+ /// RRR
+ void actions_before_distribute() {}
+
+ /// RRR
+ void actions_after_distribute() {}
 
 
  /// Doc the solution
@@ -403,13 +547,11 @@ public:
  /// Create Lagrange multiplier elements that enforce parallel outflow
  void create_parallel_outflow_lagrange_elements();
 
- /// Create the Parallel Outflow Elements
-// void create_parall_outflow_lagrange_elements(
-//     const unsigned &b,
-//     Vector<double> &tangent_direction,
-//     Mesh* const &bulk_mesh_pt,
-//     Mesh* const &surface_mesh_pt);
+ /// TODO
+ double global_temporal_error_norm();
 
+ /// TODO
+ void unsteady_run();
 
  //private:
 
@@ -423,12 +565,6 @@ public:
  /// Bulk fluid mesh
  Mesh* Fluid_mesh_pt;
 
- /// Meshes of fluid traction elements that apply pressure at in/outflow
-// Vector<Mesh*> Fluid_traction_mesh_pt;
-
- /// Mesh for the parallel outflow elements.
-// Mesh* Parallel_outflow_mesh_pt;
- 
  /// \short Meshes of FaceElements imposing parallel outflow 
  /// and a pressure at the in/outflow
  Vector<Mesh*> Parallel_outflow_lagrange_multiplier_mesh_pt;
@@ -468,7 +604,24 @@ public:
 template<class ELEMENT>
 UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
 { 
- 
+
+ // first set up the time stepper:
+ if(Global_Parameters::Do_adapt_time)
+ {
+   oomph_info << "RAYINFO: Adding adding adaptive BDF2" << std::endl;
+   add_time_stepper_pt(new BDF<2>(true));
+ }
+ else if(Global_Parameters::Do_unsteady)
+ {
+   oomph_info << "RAYINFO: Adding adding fixed BDF2" << std::endl;
+   add_time_stepper_pt(new BDF<2>);
+ }
+ else
+ {
+   oomph_info << "RAYINFO: Doing steady state" << std::endl;
+ }
+
+
  // Set up the tetgen files.
  std::stringstream ss;
  ss<<Global_Parameters::Tetgen_num;
@@ -481,21 +634,49 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  string face_file_name=Global_Parameters::Tetgen_label
                        +"."+ss.str()+".face";
  bool split_corner_elements=true;
- if(Global_Parameters::Use_brick)
+
+
+ // Create the mesh
+ if(Global_Parameters::Do_unsteady)
  {
-   Fluid_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
-                                                 element_file_name,
-                                                 face_file_name,
-                                                 split_corner_elements);
+   if(Global_Parameters::Use_brick)
+   {
+     Fluid_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements,
+          time_stepper_pt());
+   }
+   else
+   {
+     Fluid_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+                                              element_file_name,
+                                              face_file_name,
+                                              split_corner_elements,
+                                              time_stepper_pt());
+   }
  }
  else
  {
-   Fluid_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
-                                            element_file_name,
-                                            face_file_name,
-                                            split_corner_elements);
+   if(Global_Parameters::Use_brick)
+   {
+     Fluid_mesh_pt = new BrickFromTetMesh<ELEMENT>(node_file_name,
+          element_file_name,
+          face_file_name,
+          split_corner_elements,
+          time_stepper_pt());
+   }
+   else
+   {
+     Fluid_mesh_pt =  new TetgenMesh<ELEMENT>(node_file_name,
+                                              element_file_name,
+                                              face_file_name,
+                                              split_corner_elements,
+                                              time_stepper_pt());
+   }
  }
- 
+
+
  // Find elements next to boundaries
  Fluid_mesh_pt->setup_boundary_element_info();
 
@@ -657,133 +838,12 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
    
    //Set the Reynolds number
    el_pt->re_pt() = &Global_Parameters::Re;   
+   el_pt->re_st_pt()=&Global_Parameters::Re;
 
   } 
 
  // Setup equation numbering scheme
  std::cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
-// // Apply BCs
-// //----------
-// 
-// // Map to indicate which boundary has been done
-// std::map<unsigned,bool> done; 
-//  
-// // Loop over inflow/outflow boundaries to impose parallel flow
-// for (unsigned in_out=0;in_out<2;in_out++)
-//  {
-//   // Loop over in/outflow boundaries
-//   unsigned n=nfluid_inflow_traction_boundary();
-//   if (in_out==1) n=nfluid_outflow_traction_boundary();
-//   for (unsigned i=0;i<n;i++)
-//    {
-//     // Get boundary ID
-//     unsigned b=0;
-//     if (in_out==0)
-//      {
-//       b=Inflow_boundary_id[i];
-//      }
-//     else
-//      {
-//       b=Outflow_boundary_id[i];
-//      }
-//
-//     // Number of nodes on that boundary
-//     unsigned num_nod=Fluid_mesh_pt->nboundary_node(b);
-//     for (unsigned inod=0;inod<num_nod;inod++)
-//      {
-//       // Get the node
-//       Node* nod_pt=Fluid_mesh_pt->boundary_node_pt(b,inod);
-//       
-//       // Pin transverse velocities
-//       nod_pt->pin(0);
-//       nod_pt->pin(1);
-//      }
-//     
-//     // Done!
-//     done[b]=true;
-//    }
-//
-//  } // done in and outflow
- 
- 
- 
-// // Loop over all fluid mesh boundaries and pin velocities
-// // of nodes that haven't been dealt with yet
-// unsigned nbound=Fluid_mesh_pt->nboundary();
-// for(unsigned b=0;b<nbound;b++)
-//  {
-//
-//   // Has the boundary been done yet?
-//   if (!done[b])
-//    {
-//     unsigned num_nod=Fluid_mesh_pt->nboundary_node(b);
-//     for (unsigned inod=0;inod<num_nod;inod++)
-//      {
-//       // Get node
-//       Node* nod_pt= Fluid_mesh_pt->boundary_node_pt(b,inod);
-//       
-//       // Pin all velocities
-//       nod_pt->pin(0); 
-//       nod_pt->pin(1); 
-//       nod_pt->pin(2); 
-//      }
-//    }
-//
-//  } // done no slip elsewhere 
- 
- 
-// // Complete the build of the fluid elements so they are fully functional
-// //----------------------------------------------------------------------
-// unsigned n_element = Fluid_mesh_pt->nelement();
-// for(unsigned e=0;e<n_element;e++)
-//  {
-//
-//   // Upcast from GeneralisedElement to the present element
-//   ELEMENT* el_pt = dynamic_cast<ELEMENT*>(Fluid_mesh_pt->element_pt(e));
-//   
-//   //Set the Reynolds number
-//   el_pt->re_pt() = &Global_Parameters::Re;   
-//
-//  } 
- 
- 
-// // Create meshes of fluid traction elements at inflow/outflow
-// //-----------------------------------------------------------
-// 
-// // Create the meshes
-// unsigned n=nfluid_traction_boundary();
-// Fluid_traction_mesh_pt.resize(n);
-// for (unsigned i=0;i<n;i++)
-//  {
-//   Fluid_traction_mesh_pt[i]=new Mesh;
-//  } 
-// 
-// // Populate them with elements
-// create_fluid_traction_elements();
- 
- 
-// // Combine the lot
-// //----------------
-// 
-// // Add sub meshes:
-//
-// // Fluid bulk mesh
-// add_sub_mesh(Fluid_mesh_pt);
-// 
-// // The fluid traction meshes
-// n=nfluid_traction_boundary();
-// for (unsigned i=0;i<n;i++)
-//  { 
-//   add_sub_mesh(Fluid_traction_mesh_pt[i]);
-//  }
-// 
-// // Build global mesh
-// build_global_mesh();
-//
-// // Setup equation numbering scheme
-// std::cout <<"Number of equations: " << assign_eqn_numbers() << std::endl; 
-
 
  ///////////////////////////////////////////////////////////////////////////
  ///////////////////////////////////////////////////////////////////////////
@@ -988,31 +1048,197 @@ void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
  some_file.close();
 }
 
-
-void print_avg_iter(const Vector<unsigned> * iters_pt,
-                    std::ostringstream* results_stream_pt)
+template<class ELEMENT>
+double UnstructuredFluidProblem<ELEMENT>::global_temporal_error_norm()
 {
-  // 
-  const unsigned nnewtonstep = iters_pt->size();
-  unsigned total_its = 0;
+#ifdef OOMPH_HAS_MPI
+double global_error = 0.0;
 
-  for(unsigned istep = 0; istep < nnewtonstep; istep++)
+// Find out how many nodes there are in the problem.
+unsigned n_node = Fluid_mesh_pt->nnode();
+
+// Loop over the nodes and calculate the estimate error in the values
+// for non-haloes
+int count = 0;
+for (unsigned nod_i = 0; nod_i < n_node; nod_i++) 
+{
+  Node* nod_pt = Fluid_mesh_pt->node_pt(nod_i);
+  if(!(nod_pt->is_halo()))
   {
-    total_its += (*iters_pt)[istep];
+    // Get the error in solution: Difference between the predicted and
+    // actual value for nodal values 0, ... dim-1
+    double node_error = 0.0;
+    for (unsigned nodal_i = 0; nodal_i < Global_Parameters::Dim; nodal_i++) 
+    {
+      double error = nod_pt->time_stepper_pt()->
+        temporal_error_in_value(nod_pt,nodal_i);
+      node_error += error*error;
+      count++;
+    } // for loop over the nodal values 0,..,dim-1
+    global_error += node_error;
+  } // if the node is not halo
+} // for loop over nodes
+
+// Accumulate
+int n_node_local = count;
+int n_node_total = 0;
+
+MPI_Allreduce(&n_node_local,&n_node_total,1,MPI_INT,MPI_SUM,
+    this->communicator_pt()->mpi_comm());
+
+double global_error_total = 0.0;
+MPI_Allreduce(&global_error,&global_error_total,1,MPI_DOUBLE,MPI_SUM,
+    this->communicator_pt()->mpi_comm());
+
+// Divide by the number of nodes
+global_error_total /= double(n_node_total);
+
+// Return square root...
+return sqrt(global_error_total);
+#else
+double global_error = 0.0;
+
+// Find out how many nodes there are in the problem
+unsigned n_node = Fluid_mesh_pt->nnode();
+
+// Loop over the nodes and calculate the errors in the values.
+for (unsigned node_i = 0; node_i < n_node; node_i++) 
+{
+  Node* nod_pt = Fluid_mesh_pt->node_pt(node_i);
+
+  // Get the error in the solution: Difference between predicted and 
+  // actual value for nodal values 0,..,dim-1
+  double nodal_error = 0.0;
+  for (unsigned nodal_i = 0; nodal_i < Global_Parameters::Dim; nodal_i++) 
+  {
+    double error = nod_pt->time_stepper_pt()->
+      temporal_error_in_value(nod_pt,nodal_i);
+
+    // Add the squared value to the nodal error.
+    nodal_error += error*error;
   }
 
-  double average_its = ((double)total_its)
-    / ((double)nnewtonstep);
+  // add the nodal error to the global error.
+  global_error += nodal_error;
+}
 
-  (*results_stream_pt) << "RAYAVGITS:\t";
-  // Print to one decimal place if the average is not an exact
-  // integer. Otherwise we print normally.
-  std::streamsize tmp_precision = results_stream_pt->precision();
-  (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
-    << average_its << "(" << nnewtonstep << ")" << "\n";
+global_error /= double(n_node*Global_Parameters::Dim);
 
-  // reset the precision
-  (*results_stream_pt) << std::setprecision(tmp_precision);
+// Return square root
+return sqrt(global_error);
+#endif
+} // EoF global_temporal_error_norm
+
+
+template<class ELEMENT>
+void UnstructuredFluidProblem<ELEMENT>::unsteady_run()
+{
+  // Alias namespace for convenience
+  namespace GP = Global_Parameters;
+
+  double dt = GP::Delta_t;
+
+  // Initialise all history values for an impulsive start
+  this->assign_initial_values_impulsive(dt);
+  oomph_info << "RAYINFO: IC = Impulsive start" << std::endl;
+
+  unsigned current_time_step = 0;
+
+//  if(Doc_soln_flag)
+//  {
+//    doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
+//  }
+//
+//
+  double time_tol = GP::Time_tol;
+
+//
+while(this->time_pt()->time() < GP::Time_end)
+{
+  oomph_info << "TIMESTEP: " << current_time_step << std::endl;
+
+  // Setup storage for a new time step
+  if(Global_Parameters::Do_unsteady)
+  {
+    // Initialise counters for each newton solve.
+    Global_Parameters::Iterations.push_back(Vector<unsigned>());
+    Global_Parameters::Prec_setup_time.push_back(Vector<double>());
+    Global_Parameters::Lin_solver_time.push_back(Vector<double>());
+  }
+
+  if (GP::Do_adapt_time)
+  {
+    oomph_info << "DELTA_T: " << dt << std::endl;
+
+    // Calculate the next time step.
+    dt = this->adaptive_unsteady_newton_solve(dt,time_tol);
+  }
+  else
+  {
+    // Take one fixed time step
+    this->unsteady_newton_solve(dt);
+  }
+
+  oomph_info << "Time is now: " 
+    << this->time_pt()->time() << std::endl;
+
+//  if(Doc_soln_flag)
+//  {
+//    doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
+//  }
+  current_time_step++;
+}
+
+
+
+
+} // unsteady_run
+
+
+
+
+void format_avgits_avgnewtonsteps_ntimesteps
+(const Vector<Vector<unsigned> >* iters_pt,
+ std::ostringstream* results_stream_pt)
+{
+  namespace GP = Global_Parameters;
+
+  // Loop through all the time steps.
+  const unsigned ntimestep = GP::Iterations.size();
+
+  unsigned total_nnewton_step = 0;
+
+  unsigned total_its = 0;
+  unsigned n_total_its = 0;
+
+  for(unsigned intimestep = 0; intimestep < ntimestep; intimestep++)
+  {
+      // Loop through the Newton Steps
+      unsigned nnewtonstep = (*iters_pt)[intimestep].size();
+      total_nnewton_step += nnewtonstep;
+
+      for(unsigned innewtonstep = 0; innewtonstep < nnewtonstep;
+          innewtonstep++)
+      {
+        total_its += (*iters_pt)[intimestep][innewtonstep];
+        n_total_its++;
+      }
+    }
+
+    double average_its = ((double)total_its)
+      / ((double)n_total_its);
+
+    double average_n_newton_step = ((double)total_nnewton_step)
+      / ((double)ntimestep);
+
+    (*results_stream_pt) << "RAYAVGAVGITS:\t";
+    std::streamsize tmp_precision = results_stream_pt->precision();
+    (*results_stream_pt) << "\t" << std::fixed << std::setprecision(1)
+      << average_its << "(" << average_n_newton_step << ")"
+      << "(" << ntimestep << ")\n";
+
+    // reset the precision
+    (*results_stream_pt) << std::setprecision(tmp_precision);
 }
 
 
@@ -1046,12 +1272,14 @@ int main(int argc, char **argv)
   {
     //Set up the problem
     UnstructuredFluidProblem<QTaylorHoodElement<3> > problem;
-    // Solve the problem
-    problem.newton_solve();
 
+    if(Global_Parameters::Do_unsteady)
+    {
+      problem.unsteady_run();
     std::ostringstream results_stream;
-    print_avg_iter(&Global_Parameters::Iterations,
-        &results_stream);
+
+    format_avgits_avgnewtonsteps_ntimesteps(&Global_Parameters::Iterations,
+                                            &results_stream);
 
     // Create an out file.
     // The output file.
@@ -1065,6 +1293,33 @@ int main(int argc, char **argv)
 
     outfile << "\n" << results_stream.str();
     outfile.close();
+
+    }
+    else
+    {
+    // Solve the problem
+    problem.newton_solve();
+
+    std::ostringstream results_stream;
+
+    format_avgits_avgnewtonsteps_ntimesteps(&Global_Parameters::Iterations,
+                                            &results_stream);
+
+    // Create an out file.
+    // The output file.
+    std::ofstream outfile;
+
+    // If we want to output to a file, we create the outfile.
+    std::ostringstream filename_stream;
+    filename_stream <<"res_iterations/iter"
+      << Global_Parameters::Doc_num;
+    outfile.open(filename_stream.str().c_str());
+
+    outfile << "\n" << results_stream.str();
+    outfile.close();
+
+    }
+
 
 
   }
@@ -1081,8 +1336,8 @@ int main(int argc, char **argv)
     problem.newton_solve();
 
     std::ostringstream results_stream;
-    print_avg_iter(&Global_Parameters::Iterations,
-        &results_stream);
+//    print_avg_iter(&Global_Parameters::Iterations,
+//        &results_stream);
 
     // Create an out file.
     // The output file.
