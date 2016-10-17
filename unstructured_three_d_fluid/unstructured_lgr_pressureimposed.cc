@@ -1003,7 +1003,7 @@ create_parallel_outflow_lagrange_elements()
        ImposeParallelOutflowElement<ELEMENT>* el_pt = new 
         ImposeParallelOutflowElement<ELEMENT>(bulk_elem_pt,face_index);
        
-       el_pt->set_tangent_direction(&Tangent_direction);
+//       el_pt->set_tangent_direction(&Tangent_direction);
        // Add it to the mesh
        Parallel_outflow_lagrange_multiplier_mesh_pt[count]->
         add_element_pt(el_pt);
