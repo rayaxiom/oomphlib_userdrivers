@@ -13,7 +13,7 @@ RUNCOMMAND="mpirun -np 1"
 
 # Use brick mesh? If empty, tetgen mesh is used.
 # Comment out if not required.
-#USEBRICK="--use_brick"
+USEBRICK="--use_brick"
 
 # Use an iterative linear solver? If empty, SuperLU is used.
 # Comment out if not required.
@@ -25,12 +25,12 @@ TRILINOSSOLVER="--use_trilinos"
 # Use AMG for the velocity block?
 # If empty, SuperLUPreconditioner is used.
 # Comment out if not required.
-#FSOLVER="--use_amg_for_f"
+FSOLVER="--use_amg_for_f"
 
 # Use AMG for the pressure block?
 # If empty, SuperLUPreconditioner is used.
 # Comment out if not required.
-#PSOLVER="--use_amg_for_p"
+PSOLVER="--use_amg_for_p"
 
 # Use stress divergence form of the viscous term?
 # If empty, the simple form of the viscous term is used.
@@ -54,6 +54,18 @@ DOCNUM="--doc_num 0"
 DOCLABEL="--doc_label fluid_soln"
 
 TETGENLABEL="--tetgen_label tetgen_original/fsi_bifurcation_fluid"
+
+#### Time stepping stuff
+DO_UNSTEADY="--do_unsteady"
+TSTART="--tstart 0.0"
+TEND="--tend 2.0"
+DT="--dt 0.04"
+DO_ADAPTTIME="--do_adapt_time"
+TIMETOL="--time_tol 0.0001"
+TIMEPARAM="${DO_UNSTEADY} ${TSTART} ${TEND} ${DT} ${DO_ADAPTTIME} ${TIMETOL}"
+
+
+
 
 # (Try go close to 500,000 for exact, and 1,000,000 for amg)
 #     tet/brick
@@ -79,6 +91,7 @@ PARAM="${PARAM} ${FSOLVER} ${PSOLVER} "
 PARAM="${PARAM} ${VISCTERM} ${RE} "
 PARAM="${PARAM} ${DOCDIR} ${DOCNUM} ${DOCLABEL}"
 PARAM="${PARAM} ${TETGENLABEL} ${TETGENNUM}"
+PARAM="${PARAM} ${TIMEPARAM}"
 
 # mkdir $DIR
 touch ${DIR} && rm -rf ${DIR} && mkdir ${DIR}
