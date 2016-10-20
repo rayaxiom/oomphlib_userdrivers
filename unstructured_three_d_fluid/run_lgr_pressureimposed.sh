@@ -57,16 +57,19 @@ DOCNUM="--doc_num 0"
 # Label for DocInfo. If empty, the default is fluid_soln
 # Comment out if not required.
 DOCLABEL="--doc_label fluid_soln"
+#DOCSOLNFLAG="--doc_soln"
+
 
 TETGENLABEL="--tetgen_label tetgen_original/fsi_bifurcation_fluid"
+#TETGENLABEL="--tetgen_label tetgen_notaligned/fsi_bifurcation_fluid"
 
 #### Time stepping stuff
 DO_UNSTEADY="--do_unsteady"
 TSTART="--tstart 0.0"
-TEND="--tend 2.0"
+TEND="--tend 1.0"
 DT="--dt 0.04"
-#DO_ADAPTTIME="--do_adapt_time"
-#TIMETOL="--time_tol 0.0001"
+DO_ADAPTTIME="--do_adapt_time"
+TIMETOL="--time_tol 0.0001"
 TIMEPARAM="${DO_UNSTEADY} ${TSTART} ${TEND} ${DT} ${DO_ADAPTTIME} ${TIMETOL}"
 
 
@@ -92,7 +95,7 @@ PARAM="${USEBRICK}"
 PARAM="${PARAM} ${TRILINOSSOLVER} ${LINSOLVER}"
 PARAM="${PARAM} ${NSSOLVER} ${FSOLVER} ${PSOLVER} "
 PARAM="${PARAM} ${VISCTERM} ${RE} "
-PARAM="${PARAM} ${DOCDIR} ${DOCNUM} ${DOCLABEL}"
+PARAM="${PARAM} ${DOCDIR} ${DOCNUM} ${DOCLABEL} ${DOCSOLNFLAG}"
 PARAM="${PARAM} ${TETGENLABEL} ${TETGENNUM}"
 PARAM="${PARAM} ${TIMEPARAM}"
 

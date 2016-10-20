@@ -63,11 +63,11 @@ namespace Global_Parameters
 
  /// Fluid pressure on inflow boundary
  double P_in=0.5;
- double P_in_max=1.0;
+ double P_in_max=0.5;
 
  /// Fluid pressure on outflow boundary
  double P_out=-0.5;
- double P_out_max=-1.0;
+ double P_out_max=-0.5;
 
 
  // These are the pre-sets (defaults) for problem parameters.
@@ -107,6 +107,9 @@ namespace Global_Parameters
 
  /// Label for doc solution
  std::string Doc_label = "fluid_soln";
+
+ // RRR
+ bool Doc_soln_flag = false;
 
  /// Label for tetgen file (incl folder)
  std::string Tetgen_label = "tetgen_original/fsi_bifurcation_fluid";
@@ -169,6 +172,7 @@ inline void specify_command_line_flag_helper()
   CommandLineArgs::specify_command_line_flag("--doc_dir",&GP::Doc_dir);
   CommandLineArgs::specify_command_line_flag("--doc_num",&GP::Doc_num);
   CommandLineArgs::specify_command_line_flag("--doc_label",&GP::Doc_label);
+  CommandLineArgs::specify_command_line_flag("--doc_soln");
  
   // Label for tetgen file
   CommandLineArgs::specify_command_line_flag("--tetgen_label",
@@ -304,6 +308,16 @@ inline void setup_command_line_flags(DocInfo& doc_info)
                << GP::Doc_label << std::endl; 
   }
   doc_info.label()=GP::Doc_label;
+
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--doc_soln"))
+  {
+    GP::Doc_soln_flag = true;
+  }
+  else
+  {
+    GP::Doc_soln_flag = false;
+  }
 
   
   if(!CommandLineArgs::command_line_flag_has_been_set("--tetgen_label"))
@@ -524,10 +538,9 @@ public:
  /// RRR
  void actions_after_distribute() {}
 
-
  /// Doc the solution
- void doc_solution(DocInfo& doc_info);
- 
+ void doc_solution(DocInfo& doc_info, unsigned& time=0);
+
  /// Return total number of fluid inflow traction boundaries
  unsigned nfluid_inflow_traction_boundary()
   {
@@ -553,7 +566,7 @@ public:
  double global_temporal_error_norm();
 
  /// TODO
- void unsteady_run();
+ void unsteady_run(DocInfo& doc_info);
 
  //private:
 
@@ -890,9 +903,6 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  LagrangeEnforcedFlowPreconditioner* lgr_prec_pt
    = new LagrangeEnforcedFlowPreconditioner;
 
- // Use this thing.
- ///  Mesh(const Vector<Mesh*>& sub_mesh_pt)
-
  Combined_surface_mesh_pt 
    = new Mesh(Parallel_outflow_lagrange_multiplier_mesh_pt);
 
@@ -903,6 +913,12 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
  mesh_pt[0] = Fluid_mesh_pt;
  mesh_pt[1] = Combined_surface_mesh_pt;
 
+//  mesh_pt.resize(4,0);
+//  mesh_pt[0] = Fluid_mesh_pt;
+//  mesh_pt[1] = Parallel_outflow_lagrange_multiplier_mesh_pt[0];
+//  mesh_pt[2] = Parallel_outflow_lagrange_multiplier_mesh_pt[1];
+//  mesh_pt[3] = Parallel_outflow_lagrange_multiplier_mesh_pt[2];
+ 
  // Set the meshes
  lgr_prec_pt->set_meshes(mesh_pt);
 
@@ -1017,7 +1033,7 @@ create_parallel_outflow_lagrange_elements()
         }
        else
         {
-         el_pt->pressure_pt()= &Global_Parameters::P_out;
+         //el_pt->pressure_pt()= &Global_Parameters::P_out;
         }
       }
      // Bump up counter
@@ -1032,13 +1048,15 @@ create_parallel_outflow_lagrange_elements()
 /// Doc the solution
 //========================================================================
 template<class ELEMENT>
-void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info)
+void UnstructuredFluidProblem<ELEMENT>::doc_solution(DocInfo& doc_info,
+                                                     unsigned& time)
 { 
  // Create the file name string.
  std::stringstream filename;
  filename << doc_info.directory() 
-           << "/"
-          <<doc_info.label()<<doc_info.number()<<".dat";
+          << "/"
+          <<doc_info.label()<<doc_info.number()
+          << "t"<<time<<".dat";
 
  // Number of plot points
  unsigned npts=5;
@@ -1133,7 +1151,7 @@ return sqrt(global_error);
 
 
 template<class ELEMENT>
-void UnstructuredFluidProblem<ELEMENT>::unsteady_run()
+void UnstructuredFluidProblem<ELEMENT>::unsteady_run(DocInfo& doc_info)
 {
   // Alias namespace for convenience
   namespace GP = Global_Parameters;
@@ -1146,12 +1164,12 @@ void UnstructuredFluidProblem<ELEMENT>::unsteady_run()
 
   unsigned current_time_step = 0;
 
-//  if(Doc_soln_flag)
-//  {
-//    doc_solution(mesh_pt,soln_dir_str,label_str,current_time_step);
-//  }
-//
-//
+  if(GP::Doc_soln_flag)
+  {
+    doc_solution(doc_info,current_time_step);
+  }
+
+
   double time_tol = GP::Time_tol;
 
 //
@@ -1277,8 +1295,8 @@ int main(int argc, char **argv)
 
     if(Global_Parameters::Do_unsteady)
     {
-      problem.unsteady_run();
-    std::ostringstream results_stream;
+      problem.unsteady_run(doc_info);
+      std::ostringstream results_stream;
 
     format_avgits_avgnewtonsteps_ntimesteps(&Global_Parameters::Iterations,
                                             &results_stream);
