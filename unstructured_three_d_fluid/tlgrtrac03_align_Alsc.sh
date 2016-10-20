@@ -142,10 +142,10 @@ DOCNUM="--doc_num 7"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
 echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
-TETGENNUM="--tetgen_num 8"
-DOCNUM="--doc_num 8"
-PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
+#TETGENNUM="--tetgen_num 8"
+#DOCNUM="--doc_num 8"
+#PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
+#echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
 } # End of gen_tests
 

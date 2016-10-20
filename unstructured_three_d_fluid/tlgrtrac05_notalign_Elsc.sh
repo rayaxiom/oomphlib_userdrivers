@@ -127,11 +127,11 @@ DOCNUM="--doc_num 4"
 PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
 echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
 
-TETGENNUM="--tetgen_num 5"
-DOCNUM="--doc_num 5"
-PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
-echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
-
+#TETGENNUM="--tetgen_num 5"
+#DOCNUM="--doc_num 5"
+#PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
+#echo "$RUNCOMMAND ./$PROGRAM ${PARAM2}" >> ${TEST_LIST}
+#
 #TETGENNUM="--tetgen_num 6"
 #DOCNUM="--doc_num 6"
 #PARAM2="${PARAM} ${TETGENNUM} ${DOCNUM}"
