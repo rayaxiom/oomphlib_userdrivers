@@ -90,6 +90,9 @@ namespace Global_Parameters
  /// Prec. for velocity block: --use_amg_for_f
  bool Use_amg_for_f = false;
 
+ /// Prec. for velocity block: --use_amg_for_f
+ bool Use_amg2v22_for_f = false;
+
  /// Use Boomer AMG for the pressure block?
  bool Use_amg_for_p = false;
 
@@ -272,6 +275,16 @@ inline void setup_command_line_flags(DocInfo& doc_info)
     GP::Use_amg_for_f = false;
   }
 
+  // Set the flag for amg for the momentum block
+  if(CommandLineArgs::command_line_flag_has_been_set("--use_amg2v22_for_f"))
+  {
+    GP::Use_amg2v22_for_f = true;
+  }
+  else
+  {
+    GP::Use_amg2v22_for_f = false;
+  }
+
   // Set the flag for amg for the pressure block
   if(CommandLineArgs::command_line_flag_has_been_set("--use_amg_for_p"))
   {
@@ -279,7 +292,7 @@ inline void setup_command_line_flags(DocInfo& doc_info)
   }
   else
   {
-    GP::Use_amg_for_f = false;
+    GP::Use_amg_for_p = false;
   }
 
   if(CommandLineArgs::command_line_flag_has_been_set("--use_stress_div"))
@@ -1018,10 +1031,20 @@ UnstructuredFluidProblem<ELEMENT>::UnstructuredFluidProblem()
     // Use AMG for f block?
     if(Global_Parameters::Use_amg_for_f)
     {
+      if(Global_Parameters::Use_amg2v22_for_f)
+      {
+        F_preconditioner_pt
+          =Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper::
+          boomer_amg2v22_for_3D_momentum();
+      }
+      else
+      {
       F_preconditioner_pt
         = Lagrange_Enforced_Flow_Preconditioner_Subsidiary_Operator_Helper::
           boomer_amg_for_3D_momentum();
-        lsc_prec_pt->set_f_preconditioner(F_preconditioner_pt);
+      }
+
+      lsc_prec_pt->set_f_preconditioner(F_preconditioner_pt);
     }
  
     // Use AMG for p block?
