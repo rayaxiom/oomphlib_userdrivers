@@ -180,6 +180,9 @@ inline void specify_command_line_flag_helper()
   // Use AMG for F block?
   CommandLineArgs::specify_command_line_flag("--use_amg_for_f");
 
+  // Use AMG for F block?
+  CommandLineArgs::specify_command_line_flag("--use_amg2v22_for_f");
+
   // Use AMG for P block?
   CommandLineArgs::specify_command_line_flag("--use_amg_for_p");
 
