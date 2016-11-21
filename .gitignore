@@ -14,6 +14,7 @@ lagrange_cube/cube
 unstructured_three_d_fluid/unstructured_three_d_fluid
 unstructured_three_d_fluid/unstructured_original
 unstructured_three_d_fluid/unstructured_lgr_pressureimposed
+unstructured_three_d_fluid/unstructured_lgr_trac
 
 poisson_three_d/poisson_3d
 poisson_three_d/test_5_weak_scaling_using_BPF/poisson_3d
