@@ -99,6 +99,9 @@ namespace Global_Parameters
  /// Using stress divergence viscous term?
  bool Use_stress_div = true;
 
+ /// Set the outflow pressure?
+ bool Set_outflow_pressure = false;
+
  /// Reynolds number
  double Re = 100.0;
 
@@ -188,6 +191,9 @@ inline void specify_command_line_flag_helper()
 
   // Use stress divergence viscous term?
   CommandLineArgs::specify_command_line_flag("--use_stress_div");
+
+  // Set outflow pressure
+  CommandLineArgs::specify_command_line_flag("--set_outpres");
 
   // Reynolds number.
   CommandLineArgs::specify_command_line_flag("--re",&GP::Re);
@@ -313,6 +319,15 @@ inline void setup_command_line_flags(DocInfo& doc_info)
     {
       NavierStokesEquations<GP::Dim>::Gamma[d] = 0.0;
     }
+  }
+
+  if(CommandLineArgs::command_line_flag_has_been_set("--set_outpres"))
+  {
+    Global_Parameters::Set_outflow_pressure = true;
+  }
+  else
+  {
+    Global_Parameters::Set_outflow_pressure = false;
   }
  
   if(!CommandLineArgs::command_line_flag_has_been_set("--re"))
@@ -493,7 +508,18 @@ public:
  void actions_after_newton_solve() { }
 
  /// \short Update before Newton step.
- void actions_before_newton_step() {}
+ void actions_before_newton_step() 
+ {
+   if(Global_Parameters::Set_outflow_pressure)
+   {
+     // Get current time
+     double time=time_pt()->time();
+     const double scaling = -cos(MathematicalConstants::Pi*time)/2.0 + 0.5;
+
+     // Update the P_out value
+     Global_Parameters::P_out = Global_Parameters::P_out_max*scaling;
+   }
+ }
 
  /// \short Update after Newton step - document the number of iterations 
  /// required for the iterative solver to converge.
@@ -1143,7 +1169,10 @@ create_parallel_outflow_lagrange_elements()
         }
        else
         {
-         //el_pt->pressure_pt()= &Global_Parameters::P_out;
+         if(Global_Parameters::Set_outflow_pressure)
+         {
+           el_pt->pressure_pt()= &Global_Parameters::P_out;
+         }
         }
       }
      // Bump up counter
