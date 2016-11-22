@@ -510,15 +510,6 @@ public:
  /// \short Update before Newton step.
  void actions_before_newton_step() 
  {
-   if(Global_Parameters::Set_outflow_pressure)
-   {
-     // Get current time
-     double time=time_pt()->time();
-     const double scaling = -cos(MathematicalConstants::Pi*time)/2.0 + 0.5;
-
-     // Update the P_out value
-     Global_Parameters::P_out = Global_Parameters::P_out_max*scaling;
-   }
  }
 
  /// \short Update after Newton step - document the number of iterations 
@@ -572,8 +563,7 @@ public:
      GP::Prec_setup_time.push_back(Vector<double>());
    }
 
-
-
+   // Update the P_in and P_out values
    if(Global_Parameters::Do_unsteady)
    {
      const double time = time_pt()->time(); 
