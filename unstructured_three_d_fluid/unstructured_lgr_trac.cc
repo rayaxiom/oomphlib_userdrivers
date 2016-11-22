@@ -1165,7 +1165,7 @@ create_parallel_outflow_lagrange_elements()
        // Set the pointer to the prescribed pressure
        if (in_out==0)
         {
-         el_pt->pressure_pt()= &Global_Parameters::P_in;
+//         el_pt->pressure_pt()= &Global_Parameters::P_in;
         }
        else
         {
